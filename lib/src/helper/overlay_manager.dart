@@ -4,10 +4,11 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 
 import '../config/enum_config.dart';
-import '../custom/custom_overlay.dart';
 import '../custom/custom_loading.dart';
+import '../custom/custom_overlay.dart';
 import '../custom/toast_tool.dart';
 import '../data/show_param.dart';
+import '../kit/debounce_utils.dart';
 import '../kit/super_overlay_entry.dart';
 import '../kit/view_utils.dart';
 
@@ -32,6 +33,7 @@ class OverlayManager {
   void initialize() {
     _dialogQueue.clear();
     ToastTool.instance.reset();
+    DebounceUtils.instance.reset();
     _nextTagId = 0;
     CustomLoading? loading;
     entryLoading = SuperOverlayEntry(builder: (_) => loading!.getWidget());
@@ -53,6 +55,13 @@ class OverlayManager {
     return overlay.show<T>(param: param);
   }
 
+  Future<T?> showAttach<T>({required ShowAttachParam param}) {
+    CustomOverlay? overlay;
+    final entry = SuperOverlayEntry(builder: (_) => overlay!.getWidget());
+    overlay = CustomOverlay(overlayEntry: entry);
+    return overlay.showAttach<T>(param: param);
+  }
+
   Future<T?> showLoading<T>({required ShowLoadingParam param}) {
     return loadingOverlay.showLoading<T>(param: param);
   }
@@ -62,26 +71,53 @@ class OverlayManager {
   }
 
   CustomPushResult pushCustom(CustomOverlay overlay, ShowCustomParam param) {
-    final overlayContext = contextCustom;
+    return _pushDialog(
+      overlay: overlay,
+      type: OverlayType.custom,
+      tag: param.tag,
+      keepSingle: param.keepSingle,
+      permanent: param.permanent,
+      displayTime: param.displayTime,
+    );
+  }
+
+  CustomPushResult pushAttach(CustomOverlay overlay, ShowAttachParam param) {
+    return _pushDialog(
+      overlay: overlay,
+      type: OverlayType.attach,
+      tag: param.tag,
+      keepSingle: param.keepSingle,
+      permanent: param.permanent,
+      displayTime: param.displayTime,
+    );
+  }
+
+  CustomPushResult _pushDialog({
+    required CustomOverlay overlay,
+    required OverlayType type,
+    required String? tag,
+    required bool keepSingle,
+    required bool permanent,
+    required Duration? displayTime,
+  }) {
+    final overlayContext = type == OverlayType.attach
+        ? contextAttach ?? contextCustom
+        : contextCustom;
     if (overlayContext == null) {
       throw StateError(
         'SuperOverlay is not initialized. Use SuperOverlayInit.init() in MaterialApp.builder.',
       );
     }
 
-    final tag = param.keepSingle
-        ? param.tag ?? '_super_overlay_keep_single'
-        : param.tag ?? '_super_overlay_${_nextTagId++}';
+    final effectiveTag = keepSingle
+        ? tag ?? '_super_overlay_keep_single'
+        : tag ?? '_super_overlay_${_nextTagId++}';
 
-    if (param.keepSingle) {
-      final existing = _findRecord(
-        type: OverlayType.custom,
-        tag: tag,
-        force: true,
-      );
+    if (keepSingle) {
+      final existing = _findRecord(type: type, tag: effectiveTag, force: true);
       if (existing != null) {
-        existing.permanent = param.permanent;
-        _scheduleDisplayTimer(existing, param.displayTime);
+        existing.permanent = permanent;
+        _scheduleDisplayTimer(existing, displayTime);
         return CustomPushResult(
           tag: existing.tag,
           overlay: existing.overlay,
@@ -92,19 +128,19 @@ class OverlayManager {
 
     final record = _OverlayRecord(
       overlay: overlay,
-      type: OverlayType.custom,
-      tag: tag,
-      permanent: param.permanent,
+      type: type,
+      tag: effectiveTag,
+      permanent: permanent,
     );
     _dialogQueue.addLast(record);
-    _scheduleDisplayTimer(record, param.displayTime);
+    _scheduleDisplayTimer(record, displayTime);
 
     ViewUtils.addSafeUse(() {
       overlayOf(
         overlayContext,
       ).insert(overlay.overlayEntry, below: entryLoading);
     });
-    return CustomPushResult(tag: tag, overlay: overlay, reused: false);
+    return CustomPushResult(tag: effectiveTag, overlay: overlay, reused: false);
   }
 
   bool checkExist({
@@ -139,12 +175,8 @@ class OverlayManager {
     bool force = false,
     OverlayCloseType closeType = OverlayCloseType.normal,
   }) async {
-    if (status == DismissStatus.auto ||
-        status == DismissStatus.custom ||
-        status == DismissStatus.dialog) {
-      if (status == DismissStatus.auto &&
-          loadingOverlay.isVisible &&
-          (tag == null || _dialogQueue.isEmpty)) {
+    if (status == DismissStatus.auto) {
+      if (loadingOverlay.isVisible && (tag == null || _dialogQueue.isEmpty)) {
         await loadingOverlay.dismiss(closeType: closeType);
         return;
       }
@@ -152,18 +184,40 @@ class OverlayManager {
         tag: tag,
         result: result,
         force: force,
-        type: OverlayType.custom,
+        type: null,
+        closeType: closeType,
+      );
+      return;
+    }
+
+    if (status == DismissStatus.custom ||
+        status == DismissStatus.attach ||
+        status == DismissStatus.dialog) {
+      await _closeSingle<T>(
+        tag: tag,
+        result: result,
+        force: force,
+        type: switch (status) {
+          DismissStatus.custom => OverlayType.custom,
+          DismissStatus.attach => OverlayType.attach,
+          _ => null,
+        },
         closeType: closeType,
       );
       return;
     }
 
     if (status == DismissStatus.allCustom ||
+        status == DismissStatus.allAttach ||
         status == DismissStatus.allDialog) {
       await _closeAll<T>(
         result: result,
         force: force,
-        type: OverlayType.custom,
+        type: switch (status) {
+          DismissStatus.allCustom => OverlayType.custom,
+          DismissStatus.allAttach => OverlayType.attach,
+          _ => null,
+        },
         closeType: closeType,
       );
       return;
@@ -187,10 +241,10 @@ class OverlayManager {
   Future<void> _closeAll<T>({
     required T? result,
     required bool force,
-    required OverlayType type,
+    required OverlayType? type,
     required OverlayCloseType closeType,
   }) async {
-    while (_dialogQueue.any((record) => record.type == type)) {
+    while (_dialogQueue.any((record) => type == null || record.type == type)) {
       await _closeSingle<T>(
         result: result,
         force: force,
@@ -203,7 +257,7 @@ class OverlayManager {
   Future<void> _closeSingle<T>({
     required T? result,
     required bool force,
-    required OverlayType type,
+    required OverlayType? type,
     required OverlayCloseType closeType,
     String? tag,
   }) async {
@@ -225,12 +279,17 @@ class OverlayManager {
       return;
     }
     record.displayTimer = Timer(displayTime, () {
-      dismiss<void>(status: DismissStatus.custom, tag: record.tag);
+      dismiss<void>(
+        status: record.type == OverlayType.attach
+            ? DismissStatus.attach
+            : DismissStatus.custom,
+        tag: record.tag,
+      );
     });
   }
 
   _OverlayRecord? _findRecord({
-    required OverlayType type,
+    required OverlayType? type,
     required String? tag,
     required bool force,
   }) {
@@ -242,7 +301,7 @@ class OverlayManager {
     if (tag != null) {
       for (var index = records.length - 1; index >= 0; index--) {
         final record = records[index];
-        if (record.tag == tag) {
+        if (record.tag == tag && (type == null || record.type == type)) {
           return record;
         }
       }
@@ -252,7 +311,7 @@ class OverlayManager {
     if (force) {
       for (var index = records.length - 1; index >= 0; index--) {
         final record = records[index];
-        if (record.permanent && record.type == type) {
+        if (record.permanent && (type == null || record.type == type)) {
           return record;
         }
       }
@@ -260,7 +319,7 @@ class OverlayManager {
 
     for (var index = records.length - 1; index >= 0; index--) {
       final record = records[index];
-      if (record.type == type) {
+      if (type == null || record.type == type) {
         return record;
       }
     }

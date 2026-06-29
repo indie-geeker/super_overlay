@@ -43,6 +43,39 @@ class CustomOverlay extends BaseOverlay {
     );
   }
 
+  Future<T?> showAttach<T>({required ShowAttachParam param}) {
+    if (DebounceUtils.instance.banContinue(
+      OverlayDebounceType.attach,
+      debounce: param.debounce,
+      duration: const Duration(milliseconds: 300),
+    )) {
+      return Future<T?>.value();
+    }
+
+    final push = OverlayManager.instance.pushAttach(this, param);
+    if (push.reused && push.overlay != this) {
+      overlayEntry.remove();
+    }
+
+    return push.overlay.mainOverlay.showAttach<T>(
+      param: param,
+      onMask: () {
+        param.onMask?.call();
+        if (!param.clickMaskDismiss || param.permanent) {
+          return;
+        }
+        if (DebounceUtils.instance.banMaskContinue()) {
+          return;
+        }
+        OverlayManager.instance.dismiss<void>(
+          status: DismissStatus.attach,
+          tag: push.tag,
+          closeType: OverlayCloseType.mask,
+        );
+      },
+    );
+  }
+
   Future<void> dismiss<T>({
     T? result,
     OverlayCloseType closeType = OverlayCloseType.normal,

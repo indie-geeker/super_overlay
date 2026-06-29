@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 
 class HighlightMask extends StatelessWidget {
-  final Rect targetRect;
-  final Color maskColor;
-  final VoidCallback? onDismiss;
-  final EdgeInsets padding;
-  final BorderRadius borderRadius;
-
   const HighlightMask({
     super.key,
     required this.targetRect,
@@ -15,6 +9,12 @@ class HighlightMask extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     this.borderRadius = BorderRadius.zero,
   });
+
+  final Rect targetRect;
+  final Color maskColor;
+  final VoidCallback? onDismiss;
+  final EdgeInsets padding;
+  final BorderRadius borderRadius;
 
   @override
   Widget build(BuildContext context) {
@@ -25,32 +25,29 @@ class HighlightMask extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onDismiss,
-        child: Container(
-          color: maskColor,
-        ),
+        child: ColoredBox(color: maskColor),
       ),
     );
   }
 }
 
 class _HoleClipper extends CustomClipper<Path> {
+  _HoleClipper(this.holeRect, this.borderRadius);
+
   final Rect holeRect;
   final BorderRadius borderRadius;
 
-  _HoleClipper(this.holeRect, this.borderRadius);
-
   @override
   Path getClip(Size size) {
-    final fullScreenPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
-    
-    final holePath = Path()
-      ..addRRect(borderRadius.toRRect(holeRect));
-
+    final fullScreenPath = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final holePath = Path()..addRRect(borderRadius.toRRect(holeRect));
     return Path.combine(PathOperation.difference, fullScreenPath, holePath);
   }
 
   @override
   bool shouldReclip(covariant _HoleClipper oldClipper) {
-    return oldClipper.holeRect != holeRect || oldClipper.borderRadius != borderRadius;
+    return oldClipper.holeRect != holeRect ||
+        oldClipper.borderRadius != borderRadius;
   }
 }

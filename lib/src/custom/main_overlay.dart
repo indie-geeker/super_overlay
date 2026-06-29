@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../data/show_param.dart';
 import '../helper/overlay_manager.dart';
 import '../kit/super_overlay_entry.dart';
+import '../widget/attach_dialog_widget.dart';
 import '../widget/helper/dialog_scope.dart';
 import '../widget/overlay_dialog_widget.dart';
 
@@ -41,6 +42,20 @@ class MainOverlay {
       onMask: onMask,
       child: DialogScope(controller: param.controller, builder: param.builder),
     );
+    overlayEntry.markNeedsBuild();
+
+    final completer = Completer<T?>();
+    _completer = completer;
+    return completer.future;
+  }
+
+  Future<T?> showAttach<T>({
+    required ShowAttachParam param,
+    required VoidCallback onMask,
+  }) {
+    _onDismiss = param.onDismiss;
+    _dialogController = null;
+    _widget = AttachDialogWidget(param: param, onMask: onMask);
     overlayEntry.markNeedsBuild();
 
     final completer = Completer<T?>();

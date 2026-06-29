@@ -363,13 +363,91 @@ class SuperToastOverlayBuilder {
 class SuperPopupOverlayBuilder {
   SuperPopupOverlayBuilder({
     required this.targetContext,
-    required this.builder,
-  });
+    required WidgetBuilder builder,
+  }) : _builder = builder;
 
   final BuildContext targetContext;
-  final WidgetBuilder builder;
+  WidgetBuilder _builder;
+  Alignment _alignment = SuperOverlay.config.attach.alignment;
+  Color? _maskColor = Colors.transparent;
+  Widget? _maskWidget;
+  bool _clickMaskDismiss = SuperOverlay.config.attach.clickMaskDismiss;
+  String? _tag;
+  bool _highlight = false;
 
-  Future<T?> fire<T>() => Future<T?>.value();
+  SuperPopupOverlayBuilder withBuilder(WidgetBuilder builder) {
+    _builder = builder;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withAlignment(Alignment alignment) {
+    _alignment = alignment;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withMask({
+    Color? color,
+    Widget? widget,
+    bool dismissible = true,
+  }) {
+    _maskColor = color ?? _maskColor;
+    _maskWidget = widget;
+    _clickMaskDismiss = dismissible;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withTag(String tag) {
+    _tag = tag;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withHighlight() {
+    _highlight = true;
+    return this;
+  }
+
+  Future<T?> fire<T>() {
+    final attach = SuperOverlay.config.attach;
+    return OverlayManager.instance.showAttach<T>(
+      param: ShowAttachParam(
+        builder: _builder,
+        alignment: _alignment,
+        clickMaskDismiss: _clickMaskDismiss,
+        animationType: attach.animationType,
+        nonAnimationTypes: attach.nonAnimationTypes,
+        animationBuilder: null,
+        usePenetrate: attach.usePenetrate,
+        useAnimation: attach.useAnimation,
+        animationTime: attach.animationTime,
+        maskColor: _maskColor ?? attach.maskColor,
+        maskWidget: _maskWidget ?? attach.maskWidget,
+        onDismiss: null,
+        onMask: null,
+        debounce: attach.debounce,
+        displayTime: null,
+        tag: _tag,
+        keepSingle: false,
+        permanent: false,
+        bindPage: attach.bindPage,
+        bindWidget: null,
+        ignoreArea: null,
+        maskTriggerType: attach.maskTriggerType,
+        controller: null,
+        backType: attach.backType,
+        onBack: null,
+        targetContext: targetContext,
+        targetBuilder: null,
+        replaceBuilder: null,
+        adjustBuilder: null,
+        scalePointBuilder: null,
+        maskIgnoreArea: null,
+        highlightBuilder: _highlight
+            ? (targetOffset, targetSize) =>
+                  const Positioned(child: SizedBox.shrink())
+            : null,
+      ),
+    );
+  }
 }
 
 class SuperNotifyOverlayBuilder {

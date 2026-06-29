@@ -74,7 +74,7 @@ void main() {
 
     expect(find.text('Mask Dialog'), findsOneWidget);
 
-    await tester.tapAt(const Offset(10, 10));
+    await tester.tapAt(const Offset(790, 590));
     await tester.pumpAndSettle();
 
     expect(find.text('Mask Dialog'), findsNothing);
@@ -393,4 +393,210 @@ void main() {
     await SuperOverlay.dismiss(status: DismissStatus.allToast);
     await tester.pumpAndSettle();
   });
+
+  testWidgets('popup appears relative to target widget', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        Align(
+          alignment: Alignment.topLeft,
+          child: Builder(
+            builder: (targetContext) {
+              return SizedBox(
+                width: 80,
+                height: 40,
+                child: ElevatedButton(
+                  onPressed: () {
+                    SuperOverlay.showPopup(
+                      targetContext: targetContext,
+                      builder: (_) => const SizedBox(
+                        width: 120,
+                        height: 40,
+                        child: Text('Popup Content'),
+                      ),
+                    ).withTag('popup').fire<void>();
+                  },
+                  child: const Text('Target'),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Target'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Popup Content'), findsOneWidget);
+    final targetBottom = tester.getBottomLeft(find.text('Target')).dy;
+    final popupTop = tester.getTopLeft(find.text('Popup Content')).dy;
+    expect(popupTop, greaterThanOrEqualTo(targetBottom));
+
+    await SuperOverlay.dismiss(status: DismissStatus.attach, tag: 'popup');
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('popup clamps inside screen bounds', (tester) async {
+    await tester.pumpWidget(
+      buildApp(
+        Align(
+          alignment: Alignment.bottomRight,
+          child: Builder(
+            builder: (targetContext) {
+              return SizedBox(
+                width: 48,
+                height: 32,
+                child: ElevatedButton(
+                  onPressed: () {
+                    SuperOverlay.showPopup(
+                      targetContext: targetContext,
+                      builder: (_) => const SizedBox(
+                        width: 320,
+                        height: 160,
+                        child: Text('Clamped Popup'),
+                      ),
+                    ).fire<void>();
+                  },
+                  child: const Text('Edge'),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Edge'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+
+    final popupRect = tester.getRect(find.byType(SizedBox).last);
+    final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+    expect(popupRect.left, greaterThanOrEqualTo(0));
+    expect(popupRect.top, greaterThanOrEqualTo(0));
+    expect(popupRect.right, lessThanOrEqualTo(screen.width));
+    expect(popupRect.bottom, lessThanOrEqualTo(screen.height));
+
+    await SuperOverlay.dismiss(status: DismissStatus.allAttach);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('popup highlight creates a transparent target area', (
+    tester,
+  ) async {
+    var targetClicks = 0;
+
+    await tester.pumpWidget(
+      buildApp(
+        Center(
+          child: Builder(
+            builder: (targetContext) {
+              return ElevatedButton(
+                onPressed: () {
+                  targetClicks++;
+                  if (targetClicks == 1) {
+                    SuperOverlay.showPopup(
+                      targetContext: targetContext,
+                      builder: (_) => const Text('Highlighted Popup'),
+                    ).withHighlight().fire<void>();
+                  }
+                },
+                child: const Text('Highlight Target'),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Highlight Target'));
+    await tester.pumpAndSettle();
+    expect(find.text('Highlighted Popup'), findsOneWidget);
+
+    await tester.tap(find.text('Highlight Target'));
+    await tester.pumpAndSettle();
+    expect(targetClicks, 2);
+
+    await SuperOverlay.dismiss(status: DismissStatus.allAttach);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('popup mask click dismisses only when enabled', (tester) async {
+    late BuildContext targetContext;
+    await tester.pumpWidget(
+      buildApp(
+        Builder(
+          builder: (context) {
+            targetContext = context;
+            return const Text('mask target');
+          },
+        ),
+      ),
+    );
+
+    SuperOverlay.showPopup(
+      targetContext: targetContext,
+      builder: (_) => const Text('Locked Popup'),
+    ).withMask(dismissible: false).withTag('locked').fire<void>();
+    await tester.pumpAndSettle();
+
+    await tester.tapAt(const Offset(790, 590));
+    await tester.pumpAndSettle();
+    expect(find.text('Locked Popup'), findsOneWidget);
+
+    await SuperOverlay.dismiss(status: DismissStatus.attach, tag: 'locked');
+    await tester.pumpAndSettle();
+
+    SuperOverlay.showPopup(
+      targetContext: targetContext,
+      builder: (_) => const Text('Dismissible Popup'),
+    ).withMask(dismissible: true).fire<void>();
+    await tester.pumpAndSettle();
+
+    await tester.tapAt(const Offset(790, 590));
+    await tester.pumpAndSettle();
+    expect(find.text('Dismissible Popup'), findsNothing);
+  });
+
+  testWidgets(
+    'attach dialogs participate in attach and dialog dismiss statuses',
+    (tester) async {
+      late BuildContext targetContext;
+      await tester.pumpWidget(
+        buildApp(
+          Builder(
+            builder: (context) {
+              targetContext = context;
+              return const Text('dismiss target');
+            },
+          ),
+        ),
+      );
+
+      SuperOverlay.showPopup(
+        targetContext: targetContext,
+        builder: (_) => const Text('Attach One'),
+      ).withTag('attach-one').fire<void>();
+      await tester.pumpAndSettle();
+
+      await SuperOverlay.dismiss(
+        status: DismissStatus.attach,
+        tag: 'attach-one',
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Attach One'), findsNothing);
+
+      SuperOverlay.showPopup(
+        targetContext: targetContext,
+        builder: (_) => const Text('Attach Two'),
+      ).fire<void>();
+      SuperOverlay.show(builder: (_) => const Text('Custom Two')).fire<void>();
+      await tester.pumpAndSettle();
+
+      await SuperOverlay.dismiss(status: DismissStatus.allDialog);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Attach Two'), findsNothing);
+      expect(find.text('Custom Two'), findsNothing);
+    },
+  );
 }
