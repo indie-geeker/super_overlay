@@ -17,7 +17,9 @@ void main() {
     expect(find.text('home'), findsOneWidget);
   });
 
-  testWidgets('custom overlay new API renders and dismisses by tag', (tester) async {
+  testWidgets('custom overlay new API renders and dismisses by tag', (
+    tester,
+  ) async {
     Object? result;
 
     await tester.pumpWidget(
@@ -78,7 +80,9 @@ void main() {
     expect(find.text('Mask Dialog'), findsNothing);
   });
 
-  testWidgets('loading, toast, popup, and notify call sites use new API', (tester) async {
+  testWidgets('loading, toast, popup, and notify call sites use new API', (
+    tester,
+  ) async {
     late BuildContext targetContext;
 
     await tester.pumpWidget(
@@ -101,5 +105,126 @@ void main() {
     SuperOverlay.showNotify(msg: 'Done', type: NotifyType.success).fire<void>();
 
     await tester.pump();
+  });
+
+  testWidgets('displayTime auto dismisses and calls onDismiss', (tester) async {
+    var dismissed = false;
+
+    await tester.pumpWidget(
+      buildApp(
+        ElevatedButton(
+          onPressed: () {
+            SuperOverlay.show(builder: (_) => const Text('Auto Dialog'))
+                .withTag('auto')
+                .withDisplayTime(const Duration(milliseconds: 300))
+                .onDismiss(() => dismissed = true)
+                .fire<void>();
+          },
+          child: const Text('Show Auto'),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Show Auto'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Auto Dialog'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Auto Dialog'), findsNothing);
+    expect(dismissed, isTrue);
+  });
+
+  testWidgets('keepSingle reuses an existing tagged overlay', (tester) async {
+    await tester.pumpWidget(buildApp(const SizedBox.shrink()));
+
+    SuperOverlay.show(
+      builder: (_) => const Text('First Single'),
+    ).withTag('single').withKeepSingle().fire<void>();
+    await tester.pumpAndSettle();
+
+    SuperOverlay.show(
+      builder: (_) => const Text('Second Single'),
+    ).withTag('single').withKeepSingle().fire<void>();
+    await tester.pumpAndSettle();
+
+    expect(find.text('First Single'), findsNothing);
+    expect(find.text('Second Single'), findsOneWidget);
+    expect(SuperOverlay.checkExist(tag: 'single'), isTrue);
+
+    await SuperOverlay.dismiss(tag: 'single');
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets(
+    'permanent overlay ignores normal dismiss and closes with force',
+    (tester) async {
+      await tester.pumpWidget(buildApp(const SizedBox.shrink()));
+
+      SuperOverlay.show(
+        builder: (_) => const Text('Permanent Dialog'),
+      ).withTag('permanent').withPermanent().fire<void>();
+      await tester.pumpAndSettle();
+
+      await SuperOverlay.dismiss(tag: 'permanent');
+      await tester.pumpAndSettle();
+      expect(find.text('Permanent Dialog'), findsOneWidget);
+
+      await SuperOverlay.dismiss(tag: 'permanent', force: true);
+      await tester.pumpAndSettle();
+      expect(find.text('Permanent Dialog'), findsNothing);
+    },
+  );
+
+  testWidgets('controller refresh rebuilds overlay content', (tester) async {
+    final controller = SuperOverlayController();
+    var count = 0;
+
+    await tester.pumpWidget(buildApp(const SizedBox.shrink()));
+
+    SuperOverlay.show(
+      builder: (_) => Text('Count $count'),
+    ).withTag('refresh').withController(controller).fire<void>();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Count 0'), findsOneWidget);
+
+    count = 1;
+    controller.refresh();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Count 0'), findsNothing);
+    expect(find.text('Count 1'), findsOneWidget);
+
+    await SuperOverlay.dismiss(tag: 'refresh');
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('mask trigger fires at configured pointer phase', (tester) async {
+    var maskCount = 0;
+
+    await tester.pumpWidget(buildApp(const SizedBox.shrink()));
+
+    SuperOverlay.show(builder: (_) => const Text('Pointer Dialog'))
+        .withMask(dismissible: false, triggerType: MaskTriggerType.down)
+        .onMask(() => maskCount++)
+        .fire<void>();
+    await tester.pumpAndSettle();
+
+    final gesture = await tester.startGesture(const Offset(10, 10));
+    await tester.pump();
+
+    expect(maskCount, 1);
+
+    await gesture.up();
+    await tester.pump();
+
+    expect(maskCount, 1);
+
+    await SuperOverlay.dismiss(force: true);
+    await tester.pumpAndSettle();
   });
 }

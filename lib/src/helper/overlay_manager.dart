@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
@@ -45,7 +46,7 @@ class OverlayManager {
     return overlay.show<T>(param: param);
   }
 
-  String pushCustom(CustomOverlay overlay, ShowCustomParam param) {
+  CustomPushResult pushCustom(CustomOverlay overlay, ShowCustomParam param) {
     final overlayContext = contextCustom;
     if (overlayContext == null) {
       throw StateError(
@@ -53,22 +54,42 @@ class OverlayManager {
       );
     }
 
-    final tag = param.tag ?? '_super_overlay_${_nextTagId++}';
-    _dialogQueue.addLast(
-      _OverlayRecord(
-        overlay: overlay,
+    final tag = param.keepSingle
+        ? param.tag ?? '_super_overlay_keep_single'
+        : param.tag ?? '_super_overlay_${_nextTagId++}';
+
+    if (param.keepSingle) {
+      final existing = _findRecord(
         type: OverlayType.custom,
         tag: tag,
-        permanent: param.permanent,
-      ),
+        force: true,
+      );
+      if (existing != null) {
+        existing.permanent = param.permanent;
+        _scheduleDisplayTimer(existing, param.displayTime);
+        return CustomPushResult(
+          tag: existing.tag,
+          overlay: existing.overlay,
+          reused: true,
+        );
+      }
+    }
+
+    final record = _OverlayRecord(
+      overlay: overlay,
+      type: OverlayType.custom,
+      tag: tag,
+      permanent: param.permanent,
     );
+    _dialogQueue.addLast(record);
+    _scheduleDisplayTimer(record, param.displayTime);
 
     ViewUtils.addSafeUse(() {
       overlayOf(
         overlayContext,
       ).insert(overlay.overlayEntry, below: entryLoading);
     });
-    return tag;
+    return CustomPushResult(tag: tag, overlay: overlay, reused: false);
   }
 
   bool checkExist({
@@ -147,8 +168,20 @@ class OverlayManager {
     }
 
     _dialogQueue.remove(record);
+    record.displayTimer?.cancel();
     await record.overlay.dismiss<T>(result: result, closeType: closeType);
     record.overlay.overlayEntry.remove();
+  }
+
+  void _scheduleDisplayTimer(_OverlayRecord record, Duration? displayTime) {
+    record.displayTimer?.cancel();
+    if (displayTime == null) {
+      record.displayTimer = null;
+      return;
+    }
+    record.displayTimer = Timer(displayTime, () {
+      dismiss<void>(status: DismissStatus.custom, tag: record.tag);
+    });
   }
 
   _OverlayRecord? _findRecord({
@@ -191,7 +224,7 @@ class OverlayManager {
 }
 
 class _OverlayRecord {
-  const _OverlayRecord({
+  _OverlayRecord({
     required this.overlay,
     required this.type,
     required this.tag,
@@ -201,5 +234,18 @@ class _OverlayRecord {
   final CustomOverlay overlay;
   final OverlayType type;
   final String tag;
-  final bool permanent;
+  bool permanent;
+  Timer? displayTimer;
+}
+
+class CustomPushResult {
+  const CustomPushResult({
+    required this.tag,
+    required this.overlay,
+    required this.reused,
+  });
+
+  final String tag;
+  final CustomOverlay overlay;
+  final bool reused;
 }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../data/show_param.dart';
 import '../helper/overlay_manager.dart';
 import '../kit/super_overlay_entry.dart';
+import '../widget/helper/dialog_scope.dart';
 import '../widget/overlay_dialog_widget.dart';
 
 class MainOverlay {
@@ -16,19 +17,29 @@ class MainOverlay {
   Widget _widget = const SizedBox.shrink();
   Completer<dynamic>? _completer;
   VoidCallback? _onDismiss;
+  OverlayDialogWidgetController? _dialogController;
 
   Future<T?> show<T>({
     required ShowCustomParam param,
     required VoidCallback onMask,
   }) {
     _onDismiss = param.onDismiss;
+    _dialogController = OverlayDialogWidgetController();
     _widget = OverlayDialogWidget(
+      controller: _dialogController!,
       alignment: param.alignment,
       usePenetrate: param.usePenetrate,
+      useAnimation: param.useAnimation,
+      animationTime: param.animationTime,
+      animationType: param.animationType,
+      nonAnimationTypes: param.nonAnimationTypes,
+      animationBuilder: param.animationBuilder,
       maskColor: param.maskColor,
       maskWidget: param.maskWidget,
+      maskTriggerType: param.maskTriggerType,
+      ignoreArea: param.ignoreArea,
       onMask: onMask,
-      child: Builder(builder: param.builder),
+      child: DialogScope(controller: param.controller, builder: param.builder),
     );
     overlayEntry.markNeedsBuild();
 
@@ -43,6 +54,8 @@ class MainOverlay {
   }) async {
     _onDismiss?.call();
     _onDismiss = null;
+    await _dialogController?.dismiss(closeType: closeType);
+    _dialogController = null;
     _widget = const SizedBox.shrink();
     overlayEntry.markNeedsBuild();
 

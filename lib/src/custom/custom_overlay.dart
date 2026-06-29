@@ -19,8 +19,12 @@ class CustomOverlay extends BaseOverlay {
       return Future<T?>.value();
     }
 
-    final tag = OverlayManager.instance.pushCustom(this, param);
-    return mainOverlay.show<T>(
+    final push = OverlayManager.instance.pushCustom(this, param);
+    if (push.reused && push.overlay != this) {
+      overlayEntry.remove();
+    }
+
+    return push.overlay.mainOverlay.show<T>(
       param: param,
       onMask: () {
         param.onMask?.call();
@@ -32,7 +36,7 @@ class CustomOverlay extends BaseOverlay {
         }
         OverlayManager.instance.dismiss<void>(
           status: DismissStatus.custom,
-          tag: tag,
+          tag: push.tag,
           closeType: OverlayCloseType.mask,
         );
       },

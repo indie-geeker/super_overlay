@@ -17,7 +17,13 @@ enum DismissStatus {
 
 enum ToastDisplayType { normal, last, onlyRefresh, multi }
 
-enum AnimationType { fade, scale, centerFadeOtherSlide, centerScaleOtherSlide }
+enum AnimationType {
+  fade,
+  scale,
+  size,
+  centerFadeOtherSlide,
+  centerScaleOtherSlide,
+}
 
 enum AwaitOverType { overlayDismiss, overlayAppear, none }
 

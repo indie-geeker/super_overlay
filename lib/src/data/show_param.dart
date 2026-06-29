@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/enum_config.dart';
+import '../kit/overlay_controller.dart';
 import '../kit/typedef.dart';
 
 class ShowParamBase {
@@ -58,6 +59,8 @@ class ShowCustomParam extends ShowParamBase {
     required this.bindPage,
     required this.bindWidget,
     required this.ignoreArea,
+    required this.maskTriggerType,
+    required this.controller,
     required this.backType,
     required this.onBack,
   });
@@ -70,6 +73,8 @@ class ShowCustomParam extends ShowParamBase {
   final bool bindPage;
   final BuildContext? bindWidget;
   final Rect? ignoreArea;
+  final MaskTriggerType maskTriggerType;
+  final SuperOverlayController? controller;
   final BackType backType;
   final SuperOverlayOnBack? onBack;
 
@@ -95,6 +100,8 @@ class ShowCustomParam extends ShowParamBase {
     bool? bindPage,
     BuildContext? bindWidget,
     Rect? ignoreArea,
+    MaskTriggerType? maskTriggerType,
+    SuperOverlayController? controller,
     BackType? backType,
     SuperOverlayOnBack? onBack,
   }) {
@@ -120,6 +127,8 @@ class ShowCustomParam extends ShowParamBase {
       bindPage: bindPage ?? this.bindPage,
       bindWidget: bindWidget ?? this.bindWidget,
       ignoreArea: ignoreArea ?? this.ignoreArea,
+      maskTriggerType: maskTriggerType ?? this.maskTriggerType,
+      controller: controller ?? this.controller,
       backType: backType ?? this.backType,
       onBack: onBack ?? this.onBack,
     );
@@ -149,6 +158,8 @@ class ShowAttachParam extends ShowCustomParam {
     required super.bindPage,
     required super.bindWidget,
     required super.ignoreArea,
+    required super.maskTriggerType,
+    required super.controller,
     required super.backType,
     required super.onBack,
     required this.targetContext,

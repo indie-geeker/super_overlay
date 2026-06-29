@@ -4,6 +4,7 @@ import 'config/enum_config.dart';
 import 'config/overlay_config.dart';
 import 'data/show_param.dart';
 import 'helper/overlay_manager.dart';
+import 'kit/overlay_controller.dart';
 import 'kit/typedef.dart';
 
 class SuperOverlay {
@@ -92,6 +93,8 @@ class SuperCustomOverlayBuilder {
   bool _bindPage = SuperOverlay.config.custom.bindPage;
   BuildContext? _bindWidget;
   Rect? _ignoreArea;
+  MaskTriggerType _maskTriggerType = SuperOverlay.config.custom.maskTriggerType;
+  SuperOverlayController? _controller;
   BackType _backType = SuperOverlay.config.custom.backType;
   SuperOverlayOnBack? _onBack;
   VoidCallback? _onDismiss;
@@ -106,10 +109,12 @@ class SuperCustomOverlayBuilder {
     Color? color,
     Widget? widget,
     bool dismissible = true,
+    MaskTriggerType? triggerType,
   }) {
     _maskColor = color;
     _maskWidget = widget;
     _clickMaskDismiss = dismissible;
+    _maskTriggerType = triggerType ?? _maskTriggerType;
     return this;
   }
 
@@ -158,6 +163,11 @@ class SuperCustomOverlayBuilder {
     return this;
   }
 
+  SuperCustomOverlayBuilder withController(SuperOverlayController controller) {
+    _controller = controller;
+    return this;
+  }
+
   SuperCustomOverlayBuilder withBack({
     BackType type = BackType.normal,
     SuperOverlayOnBack? onBack,
@@ -202,6 +212,8 @@ class SuperCustomOverlayBuilder {
         bindPage: _bindPage,
         bindWidget: _bindWidget,
         ignoreArea: _ignoreArea,
+        maskTriggerType: _maskTriggerType,
+        controller: _controller,
         backType: _backType,
         onBack: _onBack,
       ),
