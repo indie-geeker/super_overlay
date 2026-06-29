@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../config/enum_config.dart';
 import '../custom/custom_loading.dart';
+import '../custom/custom_notify.dart';
 import '../custom/custom_overlay.dart';
 import '../custom/toast_tool.dart';
 import '../data/show_param.dart';
@@ -20,6 +21,7 @@ class OverlayManager {
   static final OverlayManager instance = OverlayManager._();
 
   final Queue<_OverlayRecord> _dialogQueue = ListQueue<_OverlayRecord>();
+  final Queue<_NotifyRecord> _notifyQueue = ListQueue<_NotifyRecord>();
 
   late SuperOverlayEntry entryLoading;
   late CustomLoading loadingOverlay;
@@ -31,7 +33,12 @@ class OverlayManager {
   var _nextTagId = 0;
 
   void initialize() {
+    for (final record in _notifyQueue) {
+      record.displayTimer?.cancel();
+      record.overlay.overlayEntry.remove();
+    }
     _dialogQueue.clear();
+    _notifyQueue.clear();
     ToastTool.instance.reset();
     DebounceUtils.instance.reset();
     _nextTagId = 0;
@@ -66,6 +73,13 @@ class OverlayManager {
     return loadingOverlay.showLoading<T>(param: param);
   }
 
+  Future<T?> showNotify<T>({required ShowNotifyParam param}) {
+    CustomNotify? notify;
+    final entry = SuperOverlayEntry(builder: (_) => notify!.getWidget());
+    notify = CustomNotify(overlayEntry: entry);
+    return notify.showNotify<T>(param: param);
+  }
+
   Future<void> showToast({required ShowToastParam param}) async {
     ToastTool.instance.show(param);
   }
@@ -90,6 +104,41 @@ class OverlayManager {
       permanent: param.permanent,
       displayTime: param.displayTime,
     );
+  }
+
+  NotifyPushResult pushNotify(CustomNotify notify, ShowNotifyParam param) {
+    final overlayContext = contextNotify ?? contextCustom;
+    if (overlayContext == null) {
+      throw StateError(
+        'SuperOverlay is not initialized. Use SuperOverlayInit.init() in MaterialApp.builder.',
+      );
+    }
+
+    final tag = param.keepSingle
+        ? param.tag ?? '_super_overlay_notify_keep_single'
+        : param.tag ?? '_super_overlay_notify_${_nextTagId++}';
+
+    if (param.keepSingle) {
+      final existing = _findNotify(tag: tag);
+      if (existing != null) {
+        _scheduleNotifyTimer(existing, param.displayTime);
+        return NotifyPushResult(
+          tag: existing.tag,
+          overlay: existing.overlay,
+          reused: true,
+        );
+      }
+    }
+
+    final record = _NotifyRecord(overlay: notify, tag: tag);
+    _notifyQueue.addLast(record);
+    _scheduleNotifyTimer(record, param.displayTime);
+    ViewUtils.addSafeUse(() {
+      overlayOf(
+        overlayContext,
+      ).insert(notify.overlayEntry, below: entryLoading);
+    });
+    return NotifyPushResult(tag: tag, overlay: notify, reused: false);
   }
 
   CustomPushResult _pushDialog({
@@ -154,7 +203,8 @@ class OverlayManager {
     },
   }) {
     if (tag != null) {
-      return _dialogQueue.any((record) => record.tag == tag);
+      return _dialogQueue.any((record) => record.tag == tag) ||
+          _notifyQueue.any((record) => record.tag == tag);
     }
     if (_dialogQueue.any((record) => types.contains(record.type))) {
       return true;
@@ -163,6 +213,9 @@ class OverlayManager {
       return true;
     }
     if (types.contains(OverlayType.toast) && ToastTool.instance.isExist) {
+      return true;
+    }
+    if (types.contains(OverlayType.notify) && _notifyQueue.isNotEmpty) {
       return true;
     }
     return false;
@@ -178,6 +231,10 @@ class OverlayManager {
     if (status == DismissStatus.auto) {
       if (loadingOverlay.isVisible && (tag == null || _dialogQueue.isEmpty)) {
         await loadingOverlay.dismiss(closeType: closeType);
+        return;
+      }
+      if (_notifyQueue.isNotEmpty) {
+        await _closeNotify<T>(tag: tag, result: result, closeType: closeType);
         return;
       }
       await _closeSingle<T>(
@@ -220,6 +277,18 @@ class OverlayManager {
         },
         closeType: closeType,
       );
+      return;
+    }
+
+    if (status == DismissStatus.notify) {
+      await _closeNotify<T>(tag: tag, result: result, closeType: closeType);
+      return;
+    }
+
+    if (status == DismissStatus.allNotify) {
+      while (_notifyQueue.isNotEmpty) {
+        await _closeNotify<T>(result: result, closeType: closeType);
+      }
       return;
     }
 
@@ -288,6 +357,49 @@ class OverlayManager {
     });
   }
 
+  void _scheduleNotifyTimer(_NotifyRecord record, Duration? displayTime) {
+    record.displayTimer?.cancel();
+    if (displayTime == null) {
+      record.displayTimer = null;
+      return;
+    }
+    record.displayTimer = Timer(displayTime, () {
+      dismiss<void>(status: DismissStatus.notify, tag: record.tag);
+    });
+  }
+
+  Future<void> _closeNotify<T>({
+    String? tag,
+    T? result,
+    OverlayCloseType closeType = OverlayCloseType.normal,
+  }) async {
+    final record = _findNotify(tag: tag);
+    if (record == null) {
+      return;
+    }
+
+    _notifyQueue.remove(record);
+    record.displayTimer?.cancel();
+    await record.overlay.dismiss<T>(result: result, closeType: closeType);
+    record.overlay.overlayEntry.remove();
+  }
+
+  _NotifyRecord? _findNotify({String? tag}) {
+    if (_notifyQueue.isEmpty) {
+      return null;
+    }
+    final records = _notifyQueue.toList(growable: false);
+    if (tag != null) {
+      for (var index = records.length - 1; index >= 0; index--) {
+        if (records[index].tag == tag) {
+          return records[index];
+        }
+      }
+      return null;
+    }
+    return records.last;
+  }
+
   _OverlayRecord? _findRecord({
     required OverlayType? type,
     required String? tag,
@@ -342,6 +454,14 @@ class _OverlayRecord {
   Timer? displayTimer;
 }
 
+class _NotifyRecord {
+  _NotifyRecord({required this.overlay, required this.tag});
+
+  final CustomNotify overlay;
+  final String tag;
+  Timer? displayTimer;
+}
+
 class CustomPushResult {
   const CustomPushResult({
     required this.tag,
@@ -351,5 +471,17 @@ class CustomPushResult {
 
   final String tag;
   final CustomOverlay overlay;
+  final bool reused;
+}
+
+class NotifyPushResult {
+  const NotifyPushResult({
+    required this.tag,
+    required this.overlay,
+    required this.reused,
+  });
+
+  final String tag;
+  final CustomNotify overlay;
   final bool reused;
 }

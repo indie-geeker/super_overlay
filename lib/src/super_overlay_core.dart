@@ -7,6 +7,11 @@ import 'helper/overlay_manager.dart';
 import 'kit/overlay_controller.dart';
 import 'kit/typedef.dart';
 import 'widget/default/loading_widget.dart';
+import 'widget/default/notify_alert.dart';
+import 'widget/default/notify_error.dart';
+import 'widget/default/notify_failure.dart';
+import 'widget/default/notify_success.dart';
+import 'widget/default/notify_warning.dart';
 import 'widget/default/toast_widget.dart';
 
 class SuperOverlay {
@@ -454,12 +459,70 @@ class SuperNotifyOverlayBuilder {
   SuperNotifyOverlayBuilder({
     required this.message,
     required this.type,
-    required this.builder,
-  });
+    required WidgetBuilder? builder,
+  }) : _builder = builder;
 
   final String message;
   final NotifyType type;
-  final WidgetBuilder? builder;
+  WidgetBuilder? _builder;
+  Duration? _displayTime = SuperOverlay.config.notify.displayTime;
+  String? _tag;
+  bool _keepSingle = false;
 
-  Future<T?> fire<T>() => Future<T?>.value();
+  SuperNotifyOverlayBuilder withBuilder(WidgetBuilder builder) {
+    _builder = builder;
+    return this;
+  }
+
+  SuperNotifyOverlayBuilder withDisplayTime(Duration displayTime) {
+    _displayTime = displayTime;
+    return this;
+  }
+
+  SuperNotifyOverlayBuilder withTag(String tag) {
+    _tag = tag;
+    return this;
+  }
+
+  SuperNotifyOverlayBuilder withKeepSingle([bool enabled = true]) {
+    _keepSingle = enabled;
+    return this;
+  }
+
+  Future<T?> fire<T>() {
+    final notify = SuperOverlay.config.notify;
+    return OverlayManager.instance.showNotify<T>(
+      param: ShowNotifyParam(
+        builder: _builder ?? (_) => _defaultNotifyWidget(),
+        alignment: notify.alignment,
+        clickMaskDismiss: notify.clickMaskDismiss,
+        animationType: notify.animationType,
+        nonAnimationTypes: notify.nonAnimationTypes,
+        animationBuilder: null,
+        usePenetrate: notify.usePenetrate,
+        useAnimation: notify.useAnimation,
+        animationTime: notify.animationTime,
+        maskColor: notify.maskColor,
+        maskWidget: notify.maskWidget,
+        onDismiss: null,
+        onMask: null,
+        debounce: notify.debounce,
+        displayTime: _displayTime,
+        tag: _tag,
+        keepSingle: _keepSingle,
+        backType: notify.backType,
+        onBack: null,
+      ),
+    );
+  }
+
+  Widget _defaultNotifyWidget() {
+    return switch (type) {
+      NotifyType.success => NotifySuccess(message: message),
+      NotifyType.failure => NotifyFailure(message: message),
+      NotifyType.warning => NotifyWarning(message: message),
+      NotifyType.error => NotifyError(message: message),
+      NotifyType.alert => NotifyAlert(message: message),
+    };
+  }
 }
