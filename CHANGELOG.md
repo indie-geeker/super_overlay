@@ -1,3 +1,4 @@
 ## 0.0.1
 
-* TODO: Describe initial release.
+* Development rewrite started for the new `OverlayEntry` based SuperOverlay API.
+* Removed the planned compatibility path for the old Navigator route API.

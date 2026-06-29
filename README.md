@@ -1,39 +1,41 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# SuperOverlay
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+SuperOverlay is a Flutter overlay package built around a self-managed
+`OverlayEntry` tree. The development rewrite intentionally removes the older
+Navigator route API and exposes initialization through `SuperOverlayInit`.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/guides/libraries/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+## Initialization
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
-
-## Features
-
-TODO: List what your package can do. Maybe include images, gifs, or videos.
-
-## Getting started
-
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+```dart
+MaterialApp(
+  builder: SuperOverlayInit.init(),
+  navigatorObservers: [SuperOverlayInit.observer],
+  home: const AppHome(),
+);
+```
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
 ```dart
-const like = 'sample';
+await SuperOverlay.show(builder: (_) => const MyDialog())
+    .withTag('profile')
+    .withMask(dismissible: true)
+    .fire<String>();
+
+await SuperOverlay.showLoading(msg: 'Loading...').fire();
+await SuperOverlay.showToast('Saved').fire();
+await SuperOverlay.showPopup(
+  targetContext: targetContext,
+  builder: (_) => const PopupMenu(),
+).fire();
+await SuperOverlay.showNotify(msg: 'Done', type: NotifyType.success).fire();
+
+await SuperOverlay.dismiss(status: DismissStatus.auto, tag: 'profile');
+final exists = SuperOverlay.checkExist(tag: 'profile');
 ```
 
-## Additional information
+## Migration Notes
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+This rewrite is not compatible with the initial route-based API. The package no
+longer exposes `SuperOverlay.navigatorKey`, `show(content:)`,
+`showToast(msg:)`, or `showPopup(content:)`.
