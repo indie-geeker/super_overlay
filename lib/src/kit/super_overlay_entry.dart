@@ -31,6 +31,8 @@ class SuperOverlayEntry extends OverlayEntry {
     _removedByOwner = true;
     if (mounted) {
       super.remove();
+      widgetsBinding.addPostFrameCallback((_) => _disposeOnce());
+      return;
     }
     _disposeOnce();
   }

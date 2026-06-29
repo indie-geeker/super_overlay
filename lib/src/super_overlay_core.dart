@@ -6,6 +6,8 @@ import 'data/show_param.dart';
 import 'helper/overlay_manager.dart';
 import 'kit/overlay_controller.dart';
 import 'kit/typedef.dart';
+import 'widget/default/loading_widget.dart';
+import 'widget/default/toast_widget.dart';
 
 class SuperOverlay {
   static final OverlayConfig config = OverlayConfig();
@@ -222,21 +224,140 @@ class SuperCustomOverlayBuilder {
 }
 
 class SuperLoadingOverlayBuilder {
-  SuperLoadingOverlayBuilder({required this.message, required this.builder});
+  SuperLoadingOverlayBuilder({
+    required this.message,
+    required WidgetBuilder? builder,
+  }) : _builder = builder;
 
   final String message;
-  final WidgetBuilder? builder;
+  WidgetBuilder? _builder;
+  Duration? _displayTime;
+  Duration _leastLoadingTime = SuperOverlay.config.loading.leastLoadingTime;
+  Color? _maskColor;
+  Widget? _maskWidget;
+  bool _clickMaskDismiss = SuperOverlay.config.loading.clickMaskDismiss;
 
-  Future<T?> fire<T>() => Future<T?>.value();
+  SuperLoadingOverlayBuilder withBuilder(WidgetBuilder builder) {
+    _builder = builder;
+    return this;
+  }
+
+  SuperLoadingOverlayBuilder withDisplayTime(Duration displayTime) {
+    _displayTime = displayTime;
+    return this;
+  }
+
+  SuperLoadingOverlayBuilder withLeastLoadingTime(Duration duration) {
+    _leastLoadingTime = duration;
+    return this;
+  }
+
+  SuperLoadingOverlayBuilder withMask({
+    Color? color,
+    Widget? widget,
+    bool dismissible = false,
+  }) {
+    _maskColor = color;
+    _maskWidget = widget;
+    _clickMaskDismiss = dismissible;
+    return this;
+  }
+
+  Future<T?> fire<T>() {
+    final loading = SuperOverlay.config.loading;
+    return OverlayManager.instance.showLoading<T>(
+      param: ShowLoadingParam(
+        builder: _builder ?? (_) => LoadingWidget(message: message),
+        alignment: loading.alignment,
+        clickMaskDismiss: _clickMaskDismiss,
+        animationType: loading.animationType,
+        nonAnimationTypes: loading.nonAnimationTypes,
+        animationBuilder: null,
+        usePenetrate: loading.usePenetrate,
+        useAnimation: loading.useAnimation,
+        animationTime: loading.animationTime,
+        maskColor: _maskColor ?? loading.maskColor,
+        maskWidget: _maskWidget ?? loading.maskWidget,
+        onDismiss: null,
+        onMask: null,
+        displayTime: _displayTime,
+        leastLoadingTime: _leastLoadingTime,
+        backType: loading.backType,
+        onBack: null,
+      ),
+    );
+  }
 }
 
 class SuperToastOverlayBuilder {
-  SuperToastOverlayBuilder({required this.message, required this.builder});
+  SuperToastOverlayBuilder({
+    required this.message,
+    required WidgetBuilder? builder,
+  }) : _builder = builder;
 
   final String message;
-  final WidgetBuilder? builder;
+  WidgetBuilder? _builder;
+  Duration _displayTime = SuperOverlay.config.toast.displayTime;
+  ToastDisplayType _displayType = SuperOverlay.config.toast.displayType;
+  Alignment _alignment = SuperOverlay.config.toast.alignment;
+  bool _consumeEvent = SuperOverlay.config.toast.consumeEvent;
+  bool _debounce = SuperOverlay.config.toast.debounce;
 
-  Future<T?> fire<T>() => Future<T?>.value();
+  SuperToastOverlayBuilder withBuilder(WidgetBuilder builder) {
+    _builder = builder;
+    return this;
+  }
+
+  SuperToastOverlayBuilder withDisplayTime(Duration displayTime) {
+    _displayTime = displayTime;
+    return this;
+  }
+
+  SuperToastOverlayBuilder withDisplayType(ToastDisplayType displayType) {
+    _displayType = displayType;
+    return this;
+  }
+
+  SuperToastOverlayBuilder withAlignment(Alignment alignment) {
+    _alignment = alignment;
+    return this;
+  }
+
+  SuperToastOverlayBuilder withConsumeEvent(bool enabled) {
+    _consumeEvent = enabled;
+    return this;
+  }
+
+  SuperToastOverlayBuilder withDebounce(bool enabled) {
+    _debounce = enabled;
+    return this;
+  }
+
+  Future<T?> fire<T>() {
+    final toast = SuperOverlay.config.toast;
+    OverlayManager.instance.showToast(
+      param: ShowToastParam(
+        builder: _builder ?? (_) => ToastWidget(message: message),
+        alignment: _alignment,
+        clickMaskDismiss: toast.clickMaskDismiss,
+        animationType: toast.animationType,
+        nonAnimationTypes: toast.nonAnimationTypes,
+        animationBuilder: null,
+        usePenetrate: toast.usePenetrate,
+        useAnimation: toast.useAnimation,
+        animationTime: toast.animationTime,
+        maskColor: toast.maskColor,
+        maskWidget: toast.maskWidget,
+        onDismiss: null,
+        onMask: null,
+        displayTime: _displayTime,
+        debounce: _debounce,
+        displayType: _displayType,
+        consumeEvent: _consumeEvent,
+      ),
+    );
+    return Future<T?>.value();
+  }
 }
 
 class SuperPopupOverlayBuilder {

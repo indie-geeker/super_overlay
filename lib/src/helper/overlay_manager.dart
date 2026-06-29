@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import '../config/enum_config.dart';
 import '../custom/custom_overlay.dart';
+import '../custom/custom_loading.dart';
+import '../custom/toast_tool.dart';
 import '../data/show_param.dart';
 import '../kit/super_overlay_entry.dart';
 import '../kit/view_utils.dart';
@@ -19,6 +21,7 @@ class OverlayManager {
   final Queue<_OverlayRecord> _dialogQueue = ListQueue<_OverlayRecord>();
 
   late SuperOverlayEntry entryLoading;
+  late CustomLoading loadingOverlay;
   BuildContext? contextCustom;
   BuildContext? contextAttach;
   BuildContext? contextNotify;
@@ -28,8 +31,12 @@ class OverlayManager {
 
   void initialize() {
     _dialogQueue.clear();
+    ToastTool.instance.reset();
     _nextTagId = 0;
-    entryLoading = SuperOverlayEntry(builder: (_) => const SizedBox.shrink());
+    CustomLoading? loading;
+    entryLoading = SuperOverlayEntry(builder: (_) => loading!.getWidget());
+    loading = CustomLoading(overlayEntry: entryLoading);
+    loadingOverlay = loading;
   }
 
   void captureContexts(BuildContext context) {
@@ -44,6 +51,14 @@ class OverlayManager {
     final entry = SuperOverlayEntry(builder: (_) => overlay!.getWidget());
     overlay = CustomOverlay(overlayEntry: entry);
     return overlay.show<T>(param: param);
+  }
+
+  Future<T?> showLoading<T>({required ShowLoadingParam param}) {
+    return loadingOverlay.showLoading<T>(param: param);
+  }
+
+  Future<void> showToast({required ShowToastParam param}) async {
+    ToastTool.instance.show(param);
   }
 
   CustomPushResult pushCustom(CustomOverlay overlay, ShowCustomParam param) {
@@ -105,7 +120,16 @@ class OverlayManager {
     if (tag != null) {
       return _dialogQueue.any((record) => record.tag == tag);
     }
-    return _dialogQueue.any((record) => types.contains(record.type));
+    if (_dialogQueue.any((record) => types.contains(record.type))) {
+      return true;
+    }
+    if (types.contains(OverlayType.loading) && loadingOverlay.isVisible) {
+      return true;
+    }
+    if (types.contains(OverlayType.toast) && ToastTool.instance.isExist) {
+      return true;
+    }
+    return false;
   }
 
   Future<void> dismiss<T>({
@@ -118,6 +142,12 @@ class OverlayManager {
     if (status == DismissStatus.auto ||
         status == DismissStatus.custom ||
         status == DismissStatus.dialog) {
+      if (status == DismissStatus.auto &&
+          loadingOverlay.isVisible &&
+          (tag == null || _dialogQueue.isEmpty)) {
+        await loadingOverlay.dismiss(closeType: closeType);
+        return;
+      }
       await _closeSingle<T>(
         tag: tag,
         result: result,
@@ -136,6 +166,21 @@ class OverlayManager {
         type: OverlayType.custom,
         closeType: closeType,
       );
+      return;
+    }
+
+    if (status == DismissStatus.loading) {
+      await loadingOverlay.dismiss(closeType: closeType);
+      return;
+    }
+
+    if (status == DismissStatus.toast) {
+      await ToastTool.instance.dismiss();
+      return;
+    }
+
+    if (status == DismissStatus.allToast) {
+      await ToastTool.instance.dismiss(closeAll: true);
     }
   }
 

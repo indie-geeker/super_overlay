@@ -196,11 +196,13 @@ class ShowLoadingParam extends ShowParamBase {
     required super.onDismiss,
     required super.onMask,
     required this.displayTime,
+    required this.leastLoadingTime,
     required this.backType,
     required this.onBack,
   });
 
   final Duration? displayTime;
+  final Duration leastLoadingTime;
   final BackType backType;
   final SuperOverlayOnBack? onBack;
 }
