@@ -11,7 +11,9 @@ import '../custom/toast_tool.dart';
 import '../data/show_param.dart';
 import '../kit/debounce_utils.dart';
 import '../kit/super_overlay_entry.dart';
+import '../kit/typedef.dart';
 import '../kit/view_utils.dart';
+import 'route_record.dart';
 
 enum OverlayCloseType { normal, mask, route, back }
 
@@ -33,6 +35,10 @@ class OverlayManager {
   var _nextTagId = 0;
 
   void initialize() {
+    for (final record in _dialogQueue) {
+      record.displayTimer?.cancel();
+      record.overlay.overlayEntry.remove();
+    }
     for (final record in _notifyQueue) {
       record.displayTimer?.cancel();
       record.overlay.overlayEntry.remove();
@@ -41,6 +47,7 @@ class OverlayManager {
     _notifyQueue.clear();
     ToastTool.instance.reset();
     DebounceUtils.instance.reset();
+    RouteRecord.instance.reset();
     _nextTagId = 0;
     CustomLoading? loading;
     entryLoading = SuperOverlayEntry(builder: (_) => loading!.getWidget());
@@ -92,6 +99,10 @@ class OverlayManager {
       keepSingle: param.keepSingle,
       permanent: param.permanent,
       displayTime: param.displayTime,
+      bindPage: param.bindPage,
+      bindWidget: param.bindWidget,
+      backType: param.backType,
+      onBack: param.onBack,
     );
   }
 
@@ -103,6 +114,10 @@ class OverlayManager {
       keepSingle: param.keepSingle,
       permanent: param.permanent,
       displayTime: param.displayTime,
+      bindPage: param.bindPage,
+      bindWidget: param.bindWidget,
+      backType: param.backType,
+      onBack: param.onBack,
     );
   }
 
@@ -130,7 +145,12 @@ class OverlayManager {
       }
     }
 
-    final record = _NotifyRecord(overlay: notify, tag: tag);
+    final record = _NotifyRecord(
+      overlay: notify,
+      tag: tag,
+      backType: param.backType,
+      onBack: param.onBack,
+    );
     _notifyQueue.addLast(record);
     _scheduleNotifyTimer(record, param.displayTime);
     ViewUtils.addSafeUse(() {
@@ -148,6 +168,10 @@ class OverlayManager {
     required bool keepSingle,
     required bool permanent,
     required Duration? displayTime,
+    required bool bindPage,
+    required BuildContext? bindWidget,
+    required BackType backType,
+    required SuperOverlayOnBack? onBack,
   }) {
     final overlayContext = type == OverlayType.attach
         ? contextAttach ?? contextCustom
@@ -180,6 +204,11 @@ class OverlayManager {
       type: type,
       tag: effectiveTag,
       permanent: permanent,
+      route: RouteRecord.instance.currentRoute,
+      bindPage: bindPage,
+      bindWidget: bindWidget,
+      backType: backType,
+      onBack: onBack,
     );
     _dialogQueue.addLast(record);
     _scheduleDisplayTimer(record, displayTime);
@@ -219,6 +248,152 @@ class OverlayManager {
       return true;
     }
     return false;
+  }
+
+  bool get hasWidgetBoundOverlays {
+    return _dialogQueue.any((record) => record.bindWidget != null);
+  }
+
+  void handleRoutePushed({
+    required Route<dynamic> route,
+    required Route<dynamic>? previousRoute,
+  }) {
+    if (route is PopupRoute || previousRoute == null) {
+      return;
+    }
+
+    for (final record in _dialogQueue) {
+      if (_isRouteBoundRecord(record, previousRoute)) {
+        record.overlay.hide();
+      }
+    }
+  }
+
+  void handleRoutePopped({
+    required Route<dynamic> route,
+    required Route<dynamic>? previousRoute,
+  }) {
+    handleRouteRemoved(route);
+    if (route is PopupRoute || previousRoute == null) {
+      return;
+    }
+
+    for (final record in _dialogQueue) {
+      if (_isRouteBoundRecord(record, previousRoute)) {
+        record.overlay.appear();
+      }
+    }
+  }
+
+  void handleRouteRemoved(Route<dynamic> route) {
+    if (route is PopupRoute) {
+      return;
+    }
+
+    final removeList = _dialogQueue
+        .where((record) => _isRouteBoundRecord(record, route))
+        .toList(growable: false);
+    for (final record in removeList.reversed) {
+      unawaited(
+        _closeSingle<void>(
+          tag: record.tag,
+          result: null,
+          force: true,
+          type: record.type,
+          closeType: OverlayCloseType.route,
+        ),
+      );
+    }
+  }
+
+  Future<bool> handleBackEvent() async {
+    if (loadingOverlay.isVisible) {
+      final handled = await _handleBackConfig(
+        backType: loadingOverlay.backType,
+        onBack: loadingOverlay.onBack,
+        close: () => dismiss<void>(
+          status: DismissStatus.loading,
+          closeType: OverlayCloseType.back,
+        ),
+      );
+      if (handled != null) {
+        return handled;
+      }
+    }
+
+    final notifyRecords = _notifyQueue.toList(growable: false);
+    for (var index = notifyRecords.length - 1; index >= 0; index--) {
+      final record = notifyRecords[index];
+      final handled = await _handleBackConfig(
+        backType: record.backType,
+        onBack: record.onBack,
+        close: () => dismiss<void>(
+          status: DismissStatus.notify,
+          tag: record.tag,
+          closeType: OverlayCloseType.back,
+        ),
+      );
+      if (handled != null) {
+        return handled;
+      }
+    }
+
+    final record = _lastBackRecord();
+    if (record == null) {
+      return false;
+    }
+
+    final handled = await _handleBackConfig(
+      backType: record.backType,
+      onBack: record.onBack,
+      close: () => dismiss<void>(
+        status: record.type == OverlayType.attach
+            ? DismissStatus.attach
+            : DismissStatus.custom,
+        tag: record.tag,
+        closeType: OverlayCloseType.back,
+      ),
+    );
+    return handled ?? false;
+  }
+
+  void handleWidgetBindingFrame() {
+    final removeList = <_OverlayRecord>[];
+    for (final record in _dialogQueue.toList(growable: false)) {
+      final context = record.bindWidget;
+      if (context == null) {
+        continue;
+      }
+
+      if (!_isContextMounted(context)) {
+        removeList.add(record);
+        continue;
+      }
+
+      if (!_isRecordOnCurrentRoute(record)) {
+        record.overlay.hide();
+        continue;
+      }
+
+      final renderBox = _safeRenderBox(context);
+      if (renderBox == null || _hasInvalidGeometry(renderBox)) {
+        record.overlay.hide();
+      } else {
+        record.overlay.appear();
+      }
+    }
+
+    for (final record in removeList.reversed) {
+      unawaited(
+        _closeSingle<void>(
+          tag: record.tag,
+          result: null,
+          force: true,
+          type: record.type,
+          closeType: OverlayCloseType.normal,
+        ),
+      );
+    }
   }
 
   Future<void> dismiss<T>({
@@ -437,6 +612,86 @@ class OverlayManager {
     }
     return null;
   }
+
+  bool _isRouteBoundRecord(_OverlayRecord record, Route<dynamic> route) {
+    return record.bindPage &&
+        identical(record.route, route) &&
+        record.route is! PopupRoute;
+  }
+
+  bool _isRecordOnCurrentRoute(_OverlayRecord record) {
+    final currentRoute = RouteRecord.instance.currentRoute;
+    return currentRoute == null ||
+        identical(record.route, currentRoute) ||
+        currentRoute is PopupRoute ||
+        !record.bindPage;
+  }
+
+  _OverlayRecord? _lastBackRecord() {
+    final records = _dialogQueue.toList(growable: false);
+    for (var index = records.length - 1; index >= 0; index--) {
+      final record = records[index];
+      if (record.permanent || !record.overlay.mainOverlay.visible) {
+        continue;
+      }
+      return record;
+    }
+    return null;
+  }
+
+  Future<bool?> _handleBackConfig({
+    required BackType backType,
+    required SuperOverlayOnBack? onBack,
+    required Future<void> Function() close,
+  }) async {
+    if (await onBack?.call() == true) {
+      return true;
+    }
+
+    return switch (backType) {
+      BackType.normal => () async {
+        await close();
+        return true;
+      }(),
+      BackType.block => true,
+      BackType.ignore => null,
+    };
+  }
+
+  bool _isContextMounted(BuildContext context) {
+    if (context is Element) {
+      return context.mounted;
+    }
+    return true;
+  }
+
+  RenderBox? _safeRenderBox(BuildContext context) {
+    try {
+      final renderObject = context.findRenderObject();
+      if (renderObject is RenderBox &&
+          renderObject.attached &&
+          renderObject.hasSize) {
+        return renderObject;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  bool _hasInvalidGeometry(RenderBox renderBox) {
+    try {
+      final offset = renderBox.localToGlobal(Offset.zero);
+      final size = renderBox.size;
+      return size.isEmpty ||
+          offset.dx < 0 ||
+          offset.dy < 0 ||
+          offset.dx.isNaN ||
+          offset.dy.isNaN ||
+          offset.dx.isInfinite ||
+          offset.dy.isInfinite;
+    } catch (_) {
+      return true;
+    }
+  }
 }
 
 class _OverlayRecord {
@@ -445,20 +700,37 @@ class _OverlayRecord {
     required this.type,
     required this.tag,
     required this.permanent,
+    required this.route,
+    required this.bindPage,
+    required this.bindWidget,
+    required this.backType,
+    required this.onBack,
   });
 
   final CustomOverlay overlay;
   final OverlayType type;
   final String tag;
+  final Route<dynamic>? route;
+  final bool bindPage;
+  final BuildContext? bindWidget;
+  final BackType backType;
+  final SuperOverlayOnBack? onBack;
   bool permanent;
   Timer? displayTimer;
 }
 
 class _NotifyRecord {
-  _NotifyRecord({required this.overlay, required this.tag});
+  _NotifyRecord({
+    required this.overlay,
+    required this.tag,
+    required this.backType,
+    required this.onBack,
+  });
 
   final CustomNotify overlay;
   final String tag;
+  final BackType backType;
+  final SuperOverlayOnBack? onBack;
   Timer? displayTimer;
 }
 

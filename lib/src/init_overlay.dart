@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'helper/monitor_widget_helper.dart';
+import 'helper/navigator_observer.dart';
 import 'helper/overlay_manager.dart';
+import 'helper/pop_route_monitor.dart';
 import 'kit/super_overlay_entry.dart';
 
 typedef SuperOverlayStyleBuilder = Widget Function(Widget child);
@@ -11,7 +14,7 @@ class SuperOverlayInit extends StatefulWidget {
   final Widget? child;
   final SuperOverlayStyleBuilder? styleBuilder;
 
-  static final NavigatorObserver observer = NavigatorObserver();
+  static final NavigatorObserver observer = SuperOverlayObserver();
 
   static TransitionBuilder init({
     TransitionBuilder? builder,
@@ -40,6 +43,8 @@ class _SuperOverlayInitState extends State<SuperOverlayInit> {
   void initState() {
     super.initState();
     OverlayManager.instance.initialize();
+    PopRouteMonitor.instance.ensureRegistered();
+    MonitorWidgetHelper.instance.ensureRegistered();
     _appEntry = SuperOverlayEntry(
       builder: (context) {
         OverlayManager.instance.captureContexts(context);

@@ -4,6 +4,7 @@ import '../config/enum_config.dart';
 import '../data/show_param.dart';
 import '../helper/overlay_manager.dart';
 import '../kit/super_overlay_entry.dart';
+import '../kit/typedef.dart';
 import 'base_overlay.dart';
 
 class CustomLoading extends BaseOverlay {
@@ -15,13 +16,19 @@ class CustomLoading extends BaseOverlay {
   bool _visible = false;
   bool _canDismiss = true;
   Future<void> Function()? _pendingDismiss;
+  BackType _backType = BackType.normal;
+  SuperOverlayOnBack? _onBack;
 
   bool get isVisible => _visible;
+  BackType get backType => _backType;
+  SuperOverlayOnBack? get onBack => _onBack;
 
   Future<T?> showLoading<T>({required ShowLoadingParam param}) {
     _visible = true;
     _canDismiss = param.leastLoadingTime == Duration.zero;
     _pendingDismiss = null;
+    _backType = param.backType;
+    _onBack = param.onBack;
     _leastTimer?.cancel();
     _displayTimer?.cancel();
 
@@ -77,6 +84,8 @@ class CustomLoading extends BaseOverlay {
     _pendingDismiss = null;
     _visible = false;
     _canDismiss = true;
+    _backType = BackType.normal;
+    _onBack = null;
   }
 }
 

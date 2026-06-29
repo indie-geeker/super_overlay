@@ -29,8 +29,15 @@ class SuperOverlayEntry extends OverlayEntry {
     }
 
     _removedByOwner = true;
-    if (mounted) {
+    var removedFromOverlay = false;
+    try {
       super.remove();
+      removedFromOverlay = true;
+    } catch (_) {
+      removedFromOverlay = false;
+    }
+
+    if (removedFromOverlay) {
       widgetsBinding.addPostFrameCallback((_) => _disposeOnce());
       return;
     }

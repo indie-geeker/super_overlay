@@ -241,6 +241,8 @@ class SuperLoadingOverlayBuilder {
   Color? _maskColor;
   Widget? _maskWidget;
   bool _clickMaskDismiss = SuperOverlay.config.loading.clickMaskDismiss;
+  BackType _backType = SuperOverlay.config.loading.backType;
+  SuperOverlayOnBack? _onBack;
 
   SuperLoadingOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -268,6 +270,15 @@ class SuperLoadingOverlayBuilder {
     return this;
   }
 
+  SuperLoadingOverlayBuilder withBack({
+    BackType type = BackType.normal,
+    SuperOverlayOnBack? onBack,
+  }) {
+    _backType = type;
+    _onBack = onBack;
+    return this;
+  }
+
   Future<T?> fire<T>() {
     final loading = SuperOverlay.config.loading;
     return OverlayManager.instance.showLoading<T>(
@@ -287,8 +298,8 @@ class SuperLoadingOverlayBuilder {
         onMask: null,
         displayTime: _displayTime,
         leastLoadingTime: _leastLoadingTime,
-        backType: loading.backType,
-        onBack: null,
+        backType: _backType,
+        onBack: _onBack,
       ),
     );
   }
@@ -379,6 +390,8 @@ class SuperPopupOverlayBuilder {
   bool _clickMaskDismiss = SuperOverlay.config.attach.clickMaskDismiss;
   String? _tag;
   bool _highlight = false;
+  BackType _backType = SuperOverlay.config.attach.backType;
+  SuperOverlayOnBack? _onBack;
 
   SuperPopupOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -411,6 +424,15 @@ class SuperPopupOverlayBuilder {
     return this;
   }
 
+  SuperPopupOverlayBuilder withBack({
+    BackType type = BackType.normal,
+    SuperOverlayOnBack? onBack,
+  }) {
+    _backType = type;
+    _onBack = onBack;
+    return this;
+  }
+
   Future<T?> fire<T>() {
     final attach = SuperOverlay.config.attach;
     return OverlayManager.instance.showAttach<T>(
@@ -434,12 +456,12 @@ class SuperPopupOverlayBuilder {
         keepSingle: false,
         permanent: false,
         bindPage: attach.bindPage,
-        bindWidget: null,
+        bindWidget: targetContext,
         ignoreArea: null,
         maskTriggerType: attach.maskTriggerType,
         controller: null,
-        backType: attach.backType,
-        onBack: null,
+        backType: _backType,
+        onBack: _onBack,
         targetContext: targetContext,
         targetBuilder: null,
         replaceBuilder: null,
@@ -468,6 +490,8 @@ class SuperNotifyOverlayBuilder {
   Duration? _displayTime = SuperOverlay.config.notify.displayTime;
   String? _tag;
   bool _keepSingle = false;
+  BackType _backType = SuperOverlay.config.notify.backType;
+  SuperOverlayOnBack? _onBack;
 
   SuperNotifyOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -486,6 +510,15 @@ class SuperNotifyOverlayBuilder {
 
   SuperNotifyOverlayBuilder withKeepSingle([bool enabled = true]) {
     _keepSingle = enabled;
+    return this;
+  }
+
+  SuperNotifyOverlayBuilder withBack({
+    BackType type = BackType.normal,
+    SuperOverlayOnBack? onBack,
+  }) {
+    _backType = type;
+    _onBack = onBack;
     return this;
   }
 
@@ -510,8 +543,8 @@ class SuperNotifyOverlayBuilder {
         displayTime: _displayTime,
         tag: _tag,
         keepSingle: _keepSingle,
-        backType: notify.backType,
-        onBack: null,
+        backType: _backType,
+        onBack: _onBack,
       ),
     );
   }
