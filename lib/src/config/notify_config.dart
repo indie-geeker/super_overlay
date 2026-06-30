@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../data/notify_style.dart';
 import 'enum_config.dart';
 
 class NotifyConfig {
@@ -15,10 +16,11 @@ class NotifyConfig {
     this.debounce = false,
     this.debounceTime = const Duration(milliseconds: 300),
     this.displayTime = const Duration(milliseconds: 2500),
-    this.awaitOverType = AwaitOverType.overlayDismiss,
     this.maskTriggerType = MaskTriggerType.up,
-    this.nonAnimationTypes = const [],
+    this.nonAnimationTypes = const [NonAnimationType.close],
     this.backType = BackType.ignore,
+    this.style,
+    this.awaitCompletion = AwaitCompletion.dismiss,
   });
 
   final Alignment alignment;
@@ -32,8 +34,30 @@ class NotifyConfig {
   final bool debounce;
   final Duration debounceTime;
   final Duration? displayTime;
-  final AwaitOverType awaitOverType;
   final MaskTriggerType maskTriggerType;
   final List<NonAnimationType> nonAnimationTypes;
   final BackType backType;
+  final NotifyStyle? style;
+  final AwaitCompletion awaitCompletion;
+
+  NotifyConfig copyWith({NotifyStyle? style}) {
+    return NotifyConfig(
+      alignment: alignment,
+      animationType: animationType,
+      animationTime: animationTime,
+      useAnimation: useAnimation,
+      usePenetrate: usePenetrate,
+      maskColor: maskColor,
+      maskWidget: maskWidget,
+      clickMaskDismiss: clickMaskDismiss,
+      debounce: debounce,
+      debounceTime: debounceTime,
+      displayTime: displayTime,
+      maskTriggerType: maskTriggerType,
+      nonAnimationTypes: nonAnimationTypes,
+      backType: backType,
+      style: style ?? this.style,
+      awaitCompletion: awaitCompletion,
+    );
+  }
 }

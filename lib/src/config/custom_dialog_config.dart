@@ -15,10 +15,13 @@ class CustomDialogConfig {
     this.debounce = false,
     this.debounceTime = const Duration(milliseconds: 300),
     this.bindPage = true,
-    this.awaitOverType = AwaitOverType.overlayDismiss,
     this.maskTriggerType = MaskTriggerType.up,
-    this.nonAnimationTypes = const [NonAnimationType.routeClose],
+    this.nonAnimationTypes = const [
+      NonAnimationType.routeClose,
+      NonAnimationType.close,
+    ],
     this.backType = BackType.normal,
+    this.awaitCompletion = AwaitCompletion.dismiss,
   });
 
   final Alignment alignment;
@@ -32,8 +35,8 @@ class CustomDialogConfig {
   final bool debounce;
   final Duration debounceTime;
   final bool bindPage;
-  final AwaitOverType awaitOverType;
   final MaskTriggerType maskTriggerType;
   final List<NonAnimationType> nonAnimationTypes;
   final BackType backType;
+  final AwaitCompletion awaitCompletion;
 }

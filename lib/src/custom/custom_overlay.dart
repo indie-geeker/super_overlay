@@ -14,7 +14,7 @@ class CustomOverlay extends BaseOverlay {
     if (DebounceUtils.instance.banContinue(
       OverlayDebounceType.custom,
       debounce: config,
-      duration: const Duration(milliseconds: 300),
+      duration: param.debounceTime,
     )) {
       return Future<T?>.value();
     }
@@ -47,7 +47,7 @@ class CustomOverlay extends BaseOverlay {
     if (DebounceUtils.instance.banContinue(
       OverlayDebounceType.attach,
       debounce: param.debounce,
-      duration: const Duration(milliseconds: 300),
+      duration: param.debounceTime,
     )) {
       return Future<T?>.value();
     }

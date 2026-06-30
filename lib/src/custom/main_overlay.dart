@@ -2,9 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../config/enum_config.dart';
 import '../data/show_param.dart';
 import '../helper/overlay_manager.dart';
 import '../kit/super_overlay_entry.dart';
+import '../kit/view_utils.dart';
 import '../widget/attach_dialog_widget.dart';
 import '../widget/helper/dialog_scope.dart';
 import '../widget/overlay_dialog_widget.dart';
@@ -44,9 +46,7 @@ class MainOverlay {
     );
     overlayEntry.markNeedsBuild();
 
-    final completer = Completer<T?>();
-    _completer = completer;
-    return completer.future;
+    return _completionFuture<T>(param);
   }
 
   Future<T?> showAttach<T>({
@@ -58,9 +58,35 @@ class MainOverlay {
     _widget = AttachDialogWidget(param: param, onMask: onMask);
     overlayEntry.markNeedsBuild();
 
+    return _completionFuture<T>(param);
+  }
+
+  Future<T?> _completionFuture<T>(ShowCustomParam param) {
+    if (param.awaitCompletion == AwaitCompletion.appear) {
+      return Future<T?>.delayed(_openDuration(param), () => null);
+    }
+
+    if (param.awaitCompletion == AwaitCompletion.none) {
+      final completer = Completer<T?>();
+      ViewUtils.addSafeUse(() {
+        if (!completer.isCompleted) {
+          completer.complete(null);
+        }
+      });
+      return completer.future;
+    }
+
     final completer = Completer<T?>();
     _completer = completer;
     return completer.future;
+  }
+
+  Duration _openDuration(ShowCustomParam param) {
+    if (!param.useAnimation ||
+        param.nonAnimationTypes.contains(NonAnimationType.open)) {
+      return Duration.zero;
+    }
+    return param.animationTime;
   }
 
   Future<void> dismiss<T>({

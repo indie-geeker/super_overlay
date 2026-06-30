@@ -4,6 +4,16 @@ import '../config/enum_config.dart';
 import '../kit/overlay_controller.dart';
 import '../kit/typedef.dart';
 
+class HighlightConfig {
+  const HighlightConfig({
+    this.padding = EdgeInsets.zero,
+    this.borderRadius = BorderRadius.zero,
+  });
+
+  final EdgeInsets padding;
+  final BorderRadius borderRadius;
+}
+
 class ShowParamBase {
   const ShowParamBase({
     required this.builder,
@@ -19,6 +29,7 @@ class ShowParamBase {
     required this.maskWidget,
     required this.onDismiss,
     required this.onMask,
+    required this.awaitCompletion,
   });
 
   final WidgetBuilder builder;
@@ -34,6 +45,7 @@ class ShowParamBase {
   final Widget? maskWidget;
   final VoidCallback? onDismiss;
   final VoidCallback? onMask;
+  final AwaitCompletion awaitCompletion;
 }
 
 class ShowCustomParam extends ShowParamBase {
@@ -51,7 +63,9 @@ class ShowCustomParam extends ShowParamBase {
     required super.maskWidget,
     required super.onDismiss,
     required super.onMask,
+    required super.awaitCompletion,
     required this.debounce,
+    required this.debounceTime,
     required this.displayTime,
     required this.tag,
     required this.keepSingle,
@@ -66,6 +80,7 @@ class ShowCustomParam extends ShowParamBase {
   });
 
   final bool debounce;
+  final Duration debounceTime;
   final Duration? displayTime;
   final String? tag;
   final bool keepSingle;
@@ -92,7 +107,9 @@ class ShowCustomParam extends ShowParamBase {
     Widget? maskWidget,
     VoidCallback? onDismiss,
     VoidCallback? onMask,
+    AwaitCompletion? awaitCompletion,
     bool? debounce,
+    Duration? debounceTime,
     Duration? displayTime,
     String? tag,
     bool? keepSingle,
@@ -119,7 +136,9 @@ class ShowCustomParam extends ShowParamBase {
       maskWidget: maskWidget ?? this.maskWidget,
       onDismiss: onDismiss ?? this.onDismiss,
       onMask: onMask ?? this.onMask,
+      awaitCompletion: awaitCompletion ?? this.awaitCompletion,
       debounce: debounce ?? this.debounce,
+      debounceTime: debounceTime ?? this.debounceTime,
       displayTime: displayTime ?? this.displayTime,
       tag: tag ?? this.tag,
       keepSingle: keepSingle ?? this.keepSingle,
@@ -150,7 +169,9 @@ class ShowAttachParam extends ShowCustomParam {
     required super.maskWidget,
     required super.onDismiss,
     required super.onMask,
+    required super.awaitCompletion,
     required super.debounce,
+    required super.debounceTime,
     required super.displayTime,
     required super.tag,
     required super.keepSingle,
@@ -163,21 +184,25 @@ class ShowAttachParam extends ShowCustomParam {
     required super.backType,
     required super.onBack,
     required this.targetContext,
-    required this.targetBuilder,
-    required this.replaceBuilder,
-    required this.adjustBuilder,
-    required this.scalePointBuilder,
+    required this.targetRectBuilder,
+    required this.targetPointBuilder,
+    required this.alignmentMode,
+    required this.replacementBuilder,
+    required this.adjustmentBuilder,
+    required this.scaleOriginBuilder,
     required this.maskIgnoreArea,
-    required this.highlightBuilder,
+    required this.highlight,
   });
 
   final BuildContext? targetContext;
-  final AttachTargetBuilder? targetBuilder;
-  final AttachReplaceBuilder? replaceBuilder;
-  final AttachAdjustBuilder? adjustBuilder;
-  final AttachScalePointBuilder? scalePointBuilder;
+  final PopupTargetRectBuilder? targetRectBuilder;
+  final PopupTargetPointBuilder? targetPointBuilder;
+  final PopupAlignmentMode alignmentMode;
+  final PopupReplacementBuilder? replacementBuilder;
+  final PopupAdjustmentBuilder? adjustmentBuilder;
+  final PopupScaleOriginBuilder? scaleOriginBuilder;
   final Rect? maskIgnoreArea;
-  final AttachHighlightBuilder? highlightBuilder;
+  final HighlightConfig? highlight;
 }
 
 class ShowLoadingParam extends ShowParamBase {
@@ -195,6 +220,7 @@ class ShowLoadingParam extends ShowParamBase {
     required super.maskWidget,
     required super.onDismiss,
     required super.onMask,
+    required super.awaitCompletion,
     required this.displayTime,
     required this.leastLoadingTime,
     required this.backType,
@@ -222,13 +248,16 @@ class ShowToastParam extends ShowParamBase {
     required super.maskWidget,
     required super.onDismiss,
     required super.onMask,
+    required super.awaitCompletion,
     required this.displayTime,
+    required this.debounceTime,
     required this.debounce,
     required this.displayType,
     required this.consumeEvent,
   });
 
   final Duration displayTime;
+  final Duration debounceTime;
   final bool debounce;
   final ToastDisplayType displayType;
   final bool consumeEvent;
@@ -249,7 +278,9 @@ class ShowNotifyParam extends ShowParamBase {
     required super.maskWidget,
     required super.onDismiss,
     required super.onMask,
+    required super.awaitCompletion,
     required this.debounce,
+    required this.debounceTime,
     required this.displayTime,
     required this.tag,
     required this.keepSingle,
@@ -258,6 +289,7 @@ class ShowNotifyParam extends ShowParamBase {
   });
 
   final bool debounce;
+  final Duration debounceTime;
   final Duration? displayTime;
   final String? tag;
   final bool keepSingle;

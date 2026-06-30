@@ -8,6 +8,7 @@ class MonitorWidgetHelper {
 
   bool _registered = false;
   bool _checking = false;
+  bool _scheduled = false;
 
   void ensureRegistered() {
     if (_registered) {
@@ -18,15 +19,25 @@ class MonitorWidgetHelper {
   }
 
   void _handleFrame(Duration timeStamp) {
-    if (_checking || !OverlayManager.instance.hasWidgetBoundOverlays) {
+    if (_checking ||
+        _scheduled ||
+        !OverlayManager.instance.hasWidgetBoundOverlays) {
       return;
     }
 
-    _checking = true;
-    try {
-      OverlayManager.instance.handleWidgetBindingFrame();
-    } finally {
-      _checking = false;
-    }
+    _scheduled = true;
+    widgetsBinding.addPostFrameCallback((_) {
+      _scheduled = false;
+      if (_checking || !OverlayManager.instance.hasWidgetBoundOverlays) {
+        return;
+      }
+
+      _checking = true;
+      try {
+        OverlayManager.instance.handleWidgetBindingFrame();
+      } finally {
+        _checking = false;
+      }
+    });
   }
 }

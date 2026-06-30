@@ -25,8 +25,6 @@ enum AnimationType {
   centerScaleOtherSlide,
 }
 
-enum AwaitOverType { overlayDismiss, overlayAppear, none }
-
 enum MaskTriggerType { down, move, up }
 
 enum NonAnimationType {
@@ -36,11 +34,11 @@ enum NonAnimationType {
   maskClose,
   backClose,
   highlightMask,
-  continueLoading,
-  continueKeepSingle,
 }
 
-enum AttachAlignmentType { inside, center, outside }
+enum PopupAlignmentMode { inside, center, outside }
+
+enum AwaitCompletion { dismiss, appear, none }
 
 enum BackType { normal, block, ignore }
 

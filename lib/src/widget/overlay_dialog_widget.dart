@@ -86,16 +86,7 @@ class _OverlayDialogWidgetState extends State<OverlayDialogWidget>
       child: Stack(
         fit: StackFit.expand,
         children: [
-          MaskEvent(
-            maskTriggerType: widget.maskTriggerType,
-            onMask: widget.onMask,
-            child: MaskAnimation(
-              controller: _maskController,
-              maskWidget: widget.maskWidget,
-              maskColor: widget.maskColor,
-              usePenetrate: widget.usePenetrate,
-            ),
-          ),
+          _buildMask(),
           SafeArea(
             child: Align(
               alignment: widget.alignment,
@@ -107,6 +98,25 @@ class _OverlayDialogWidgetState extends State<OverlayDialogWidget>
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildMask() {
+    final mask = MaskAnimation(
+      controller: _maskController,
+      maskWidget: widget.maskWidget,
+      maskColor: widget.maskColor,
+      usePenetrate: widget.usePenetrate,
+    );
+
+    if (widget.usePenetrate) {
+      return IgnorePointer(child: mask);
+    }
+
+    return MaskEvent(
+      maskTriggerType: widget.maskTriggerType,
+      onMask: widget.onMask,
+      child: mask,
     );
   }
 
@@ -180,9 +190,12 @@ class _OverlayDialogWidgetState extends State<OverlayDialogWidget>
     final duration = _closeDuration(closeType);
     _maskController.duration = duration;
     _bodyController.duration = duration;
+    _animationParam?.onDismiss?.call();
     _maskController.reverse();
     _bodyController.reverse();
-    _animationParam?.onDismiss?.call();
+    if (duration > Duration.zero) {
+      await Future<void>.delayed(duration);
+    }
   }
 
   Duration _closeDuration(OverlayCloseType closeType) {

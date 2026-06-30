@@ -12,7 +12,7 @@ class CustomNotify extends BaseOverlay {
     if (DebounceUtils.instance.banContinue(
       OverlayDebounceType.notify,
       debounce: param.debounce,
-      duration: const Duration(milliseconds: 300),
+      duration: param.debounceTime,
     )) {
       return Future<T?>.value();
     }
@@ -62,7 +62,9 @@ extension on ShowNotifyParam {
       maskWidget: maskWidget,
       onDismiss: onDismiss,
       onMask: onMask,
+      awaitCompletion: awaitCompletion,
       debounce: debounce,
+      debounceTime: debounceTime,
       displayTime: displayTime,
       tag: tag,
       keepSingle: keepSingle,
