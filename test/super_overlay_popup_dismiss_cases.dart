@@ -1,4 +1,18 @@
-part of 'super_overlay_test.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:super_overlay/super_overlay.dart';
+
+Widget buildPopupDismissApp(Widget child) {
+  return MaterialApp(
+    builder: SuperOverlayInit.init(),
+    navigatorObservers: [SuperOverlayInit.observer],
+    home: Scaffold(body: child),
+  );
+}
+
+void main() {
+  registerPopupDismissTests();
+}
 
 void registerPopupDismissTests() {
   testWidgets('popup target rect transform controls attachment geometry', (
@@ -7,7 +21,7 @@ void registerPopupDismissTests() {
     const targetKey = Key('popup-target-box');
 
     await tester.pumpWidget(
-      buildApp(
+      buildPopupDismissApp(
         Align(
           alignment: Alignment.topLeft,
           child: Builder(
@@ -58,7 +72,7 @@ void registerPopupDismissTests() {
   testWidgets('popup mask click dismisses only when enabled', (tester) async {
     late BuildContext targetContext;
     await tester.pumpWidget(
-      buildApp(
+      buildPopupDismissApp(
         Builder(
           builder: (context) {
             targetContext = context;
@@ -92,12 +106,73 @@ void registerPopupDismissTests() {
     expect(find.text('Dismissible Popup'), findsNothing);
   });
 
+  testWidgets('popup mask ignore area lets uncovered taps pass through', (
+    tester,
+  ) async {
+    var bottomTaps = 0;
+    late BuildContext targetContext;
+
+    await tester.pumpWidget(
+      buildPopupDismissApp(
+        Stack(
+          children: [
+            Positioned(
+              left: 80,
+              top: 80,
+              child: Builder(
+                builder: (context) {
+                  targetContext = context;
+                  return const SizedBox(
+                    width: 80,
+                    height: 40,
+                    child: Text('Ignore Target'),
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 80,
+              child: TextButton(
+                onPressed: () => bottomTaps++,
+                child: const Text('Bottom Action'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    SuperOverlay.showPopup(
+          targetContext: targetContext,
+          builder: (_) => const Text('Ignore Area Popup'),
+        )
+        .withMask(dismissible: true)
+        .withMaskIgnoreArea(const Rect.fromLTRB(0, 0, 0, 100))
+        .withTag('ignore-area-popup')
+        .fire<void>();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Bottom Action'));
+    await tester.pumpAndSettle();
+
+    expect(bottomTaps, 1);
+    expect(find.text('Ignore Area Popup'), findsOneWidget);
+
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Ignore Area Popup'), findsNothing);
+  });
+
   testWidgets(
     'attach dialogs participate in attach and dialog dismiss statuses',
     (tester) async {
       late BuildContext targetContext;
       await tester.pumpWidget(
-        buildApp(
+        buildPopupDismissApp(
           Builder(
             builder: (context) {
               targetContext = context;

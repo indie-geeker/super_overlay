@@ -156,6 +156,21 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
             icon: const Icon(Icons.library_add_outlined),
             label: const Text('多个 Toast'),
           ),
+          OutlinedButton.icon(
+            onPressed: _showDefaultToast,
+            icon: const Icon(Icons.branding_watermark_outlined),
+            label: const Text('默认 Toast'),
+          ),
+          OutlinedButton.icon(
+            onPressed: () => unawaited(_showDefaultLoading()),
+            icon: const Icon(Icons.hourglass_top_outlined),
+            label: const Text('默认 Loading'),
+          ),
+          OutlinedButton.icon(
+            onPressed: _showDefaultNotify,
+            icon: const Icon(Icons.notification_important_outlined),
+            label: const Text('默认 Notify'),
+          ),
         ],
       ),
     );
@@ -206,10 +221,36 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
           const SizedBox(height: 12),
           Builder(
             builder: (targetContext) {
-              return FilledButton.icon(
-                onPressed: () => _showChoicePopup(targetContext),
-                icon: const Icon(Icons.tune_outlined),
-                label: const Text('打开选择器'),
+              return Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => _showChoicePopup(targetContext),
+                    icon: const Icon(Icons.tune_outlined),
+                    label: const Text('打开选择器'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _showPointPopup,
+                    icon: const Icon(Icons.my_location_outlined),
+                    label: const Text('定点 Popup'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _showAdjustedPopup(targetContext),
+                    icon: const Icon(Icons.flip_to_front_outlined),
+                    label: const Text('替换/调整 Popup'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => _showScaleOriginPopup(targetContext),
+                    icon: const Icon(Icons.open_with_outlined),
+                    label: const Text('缩放原点 Popup'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _showMaskIgnorePopup,
+                    icon: const Icon(Icons.layers_clear_outlined),
+                    label: const Text('忽略遮罩区域'),
+                  ),
+                ],
               );
             },
           ),
@@ -323,6 +364,12 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final event in _events.take(4)) ActivityRow(text: event),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => unawaited(_showAwaitDemo()),
+            icon: const Icon(Icons.av_timer_outlined),
+            label: const Text('Await 事件'),
+          ),
         ],
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'enum_config.dart';
+import '../kit/typedef.dart';
 
 class LoadingConfig {
   const LoadingConfig({
@@ -19,6 +20,8 @@ class LoadingConfig {
       NonAnimationType.close,
     ],
     this.backType = BackType.normal,
+    this.builder,
+    this.awaitCompletion = AwaitCompletion.dismiss,
   });
 
   final Alignment alignment;
@@ -33,4 +36,25 @@ class LoadingConfig {
   final MaskTriggerType maskTriggerType;
   final List<NonAnimationType> nonAnimationTypes;
   final BackType backType;
+  final SuperOverlayLoadingBuilder? builder;
+  final AwaitCompletion awaitCompletion;
+
+  LoadingConfig copyWith({SuperOverlayLoadingBuilder? builder}) {
+    return LoadingConfig(
+      alignment: alignment,
+      animationType: animationType,
+      animationTime: animationTime,
+      useAnimation: useAnimation,
+      usePenetrate: usePenetrate,
+      maskColor: maskColor,
+      maskWidget: maskWidget,
+      clickMaskDismiss: clickMaskDismiss,
+      leastLoadingTime: leastLoadingTime,
+      maskTriggerType: maskTriggerType,
+      nonAnimationTypes: nonAnimationTypes,
+      backType: backType,
+      builder: builder ?? this.builder,
+      awaitCompletion: awaitCompletion,
+    );
+  }
 }

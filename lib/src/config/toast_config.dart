@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'enum_config.dart';
+import '../kit/typedef.dart';
 
 class ToastConfig {
   const ToastConfig({
@@ -19,6 +20,8 @@ class ToastConfig {
     this.displayTime = const Duration(milliseconds: 2000),
     this.maskTriggerType = MaskTriggerType.up,
     this.nonAnimationTypes = const [NonAnimationType.close],
+    this.builder,
+    this.awaitCompletion = AwaitCompletion.none,
   });
 
   final Alignment alignment;
@@ -36,4 +39,28 @@ class ToastConfig {
   final Duration displayTime;
   final MaskTriggerType maskTriggerType;
   final List<NonAnimationType> nonAnimationTypes;
+  final SuperOverlayToastBuilder? builder;
+  final AwaitCompletion awaitCompletion;
+
+  ToastConfig copyWith({SuperOverlayToastBuilder? builder}) {
+    return ToastConfig(
+      alignment: alignment,
+      animationType: animationType,
+      animationTime: animationTime,
+      useAnimation: useAnimation,
+      usePenetrate: usePenetrate,
+      maskColor: maskColor,
+      maskWidget: maskWidget,
+      clickMaskDismiss: clickMaskDismiss,
+      debounce: debounce,
+      debounceTime: debounceTime,
+      displayType: displayType,
+      consumeEvent: consumeEvent,
+      displayTime: displayTime,
+      maskTriggerType: maskTriggerType,
+      nonAnimationTypes: nonAnimationTypes,
+      builder: builder ?? this.builder,
+      awaitCompletion: awaitCompletion,
+    );
+  }
 }

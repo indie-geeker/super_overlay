@@ -15,6 +15,8 @@ class SuperLoadingOverlayBuilder {
   bool _clickMaskDismiss = SuperOverlay.config.loading.clickMaskDismiss;
   BackType _backType = SuperOverlay.config.loading.backType;
   SuperOverlayOnBack? _onBack;
+  AwaitCompletion _awaitCompletion =
+      SuperOverlay.config.loading.awaitCompletion;
 
   SuperLoadingOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -51,11 +53,20 @@ class SuperLoadingOverlayBuilder {
     return this;
   }
 
+  SuperLoadingOverlayBuilder withAwait(AwaitCompletion completion) {
+    _awaitCompletion = completion;
+    return this;
+  }
+
   Future<T?> fire<T>() {
     final loading = SuperOverlay.config.loading;
     return OverlayManager.instance.showLoading<T>(
       param: ShowLoadingParam(
-        builder: _builder ?? (_) => LoadingWidget(message: message),
+        builder:
+            _builder ??
+            (_) =>
+                loading.builder?.call(message) ??
+                LoadingWidget(message: message),
         alignment: loading.alignment,
         clickMaskDismiss: _clickMaskDismiss,
         animationType: loading.animationType,
@@ -68,6 +79,7 @@ class SuperLoadingOverlayBuilder {
         maskWidget: _maskWidget ?? loading.maskWidget,
         onDismiss: null,
         onMask: null,
+        awaitCompletion: _awaitCompletion,
         displayTime: _displayTime,
         leastLoadingTime: _leastLoadingTime,
         backType: _backType,

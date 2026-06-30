@@ -220,6 +220,58 @@ class GuideBubble extends StatelessWidget {
   }
 }
 
+class PopupDemoSurface extends StatelessWidget {
+  const PopupDemoSurface({
+    super.key,
+    required this.title,
+    required this.message,
+    required this.icon,
+  });
+
+  final String title;
+  final String message;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return OverlayCard(
+      width: 280,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: ShowcaseColors.info),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(message),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {
+                SuperOverlay.dismiss(status: DismissStatus.attach);
+              },
+              child: const Text('关闭'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class SmallOverlay extends StatelessWidget {
   const SmallOverlay({super.key, required this.title, required this.message});
 

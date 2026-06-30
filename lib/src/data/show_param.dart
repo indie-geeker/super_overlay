@@ -29,6 +29,7 @@ class ShowParamBase {
     required this.maskWidget,
     required this.onDismiss,
     required this.onMask,
+    required this.awaitCompletion,
   });
 
   final WidgetBuilder builder;
@@ -44,6 +45,7 @@ class ShowParamBase {
   final Widget? maskWidget;
   final VoidCallback? onDismiss;
   final VoidCallback? onMask;
+  final AwaitCompletion awaitCompletion;
 }
 
 class ShowCustomParam extends ShowParamBase {
@@ -61,6 +63,7 @@ class ShowCustomParam extends ShowParamBase {
     required super.maskWidget,
     required super.onDismiss,
     required super.onMask,
+    required super.awaitCompletion,
     required this.debounce,
     required this.debounceTime,
     required this.displayTime,
@@ -104,6 +107,7 @@ class ShowCustomParam extends ShowParamBase {
     Widget? maskWidget,
     VoidCallback? onDismiss,
     VoidCallback? onMask,
+    AwaitCompletion? awaitCompletion,
     bool? debounce,
     Duration? debounceTime,
     Duration? displayTime,
@@ -132,6 +136,7 @@ class ShowCustomParam extends ShowParamBase {
       maskWidget: maskWidget ?? this.maskWidget,
       onDismiss: onDismiss ?? this.onDismiss,
       onMask: onMask ?? this.onMask,
+      awaitCompletion: awaitCompletion ?? this.awaitCompletion,
       debounce: debounce ?? this.debounce,
       debounceTime: debounceTime ?? this.debounceTime,
       displayTime: displayTime ?? this.displayTime,
@@ -164,6 +169,7 @@ class ShowAttachParam extends ShowCustomParam {
     required super.maskWidget,
     required super.onDismiss,
     required super.onMask,
+    required super.awaitCompletion,
     required super.debounce,
     required super.debounceTime,
     required super.displayTime,
@@ -179,11 +185,23 @@ class ShowAttachParam extends ShowCustomParam {
     required super.onBack,
     required this.targetContext,
     required this.targetRectBuilder,
+    required this.targetPointBuilder,
+    required this.alignmentMode,
+    required this.replacementBuilder,
+    required this.adjustmentBuilder,
+    required this.scaleOriginBuilder,
+    required this.maskIgnoreArea,
     required this.highlight,
   });
 
   final BuildContext? targetContext;
   final PopupTargetRectBuilder? targetRectBuilder;
+  final PopupTargetPointBuilder? targetPointBuilder;
+  final PopupAlignmentMode alignmentMode;
+  final PopupReplacementBuilder? replacementBuilder;
+  final PopupAdjustmentBuilder? adjustmentBuilder;
+  final PopupScaleOriginBuilder? scaleOriginBuilder;
+  final Rect? maskIgnoreArea;
   final HighlightConfig? highlight;
 }
 
@@ -202,6 +220,7 @@ class ShowLoadingParam extends ShowParamBase {
     required super.maskWidget,
     required super.onDismiss,
     required super.onMask,
+    required super.awaitCompletion,
     required this.displayTime,
     required this.leastLoadingTime,
     required this.backType,
@@ -229,6 +248,7 @@ class ShowToastParam extends ShowParamBase {
     required super.maskWidget,
     required super.onDismiss,
     required super.onMask,
+    required super.awaitCompletion,
     required this.displayTime,
     required this.debounceTime,
     required this.debounce,
@@ -258,6 +278,7 @@ class ShowNotifyParam extends ShowParamBase {
     required super.maskWidget,
     required super.onDismiss,
     required super.onMask,
+    required super.awaitCompletion,
     required this.debounce,
     required this.debounceTime,
     required this.displayTime,

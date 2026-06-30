@@ -92,8 +92,8 @@ class OverlayManager {
     return notify.showNotify<T>(param: param);
   }
 
-  Future<void> showToast({required ShowToastParam param}) async {
-    ToastTool.instance.show(param);
+  Future<T?> showToast<T>({required ShowToastParam param}) {
+    return ToastTool.instance.show<T>(param);
   }
 
   CustomPushResult pushCustom(CustomOverlay overlay, ShowCustomParam param) {

@@ -15,6 +15,7 @@ class SuperNotifyOverlayBuilder {
   bool _keepSingle = false;
   BackType _backType = SuperOverlay.config.notify.backType;
   SuperOverlayOnBack? _onBack;
+  AwaitCompletion _awaitCompletion = SuperOverlay.config.notify.awaitCompletion;
 
   SuperNotifyOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -45,6 +46,11 @@ class SuperNotifyOverlayBuilder {
     return this;
   }
 
+  SuperNotifyOverlayBuilder withAwait(AwaitCompletion completion) {
+    _awaitCompletion = completion;
+    return this;
+  }
+
   Future<T?> fire<T>() {
     final notify = SuperOverlay.config.notify;
     return OverlayManager.instance.showNotify<T>(
@@ -62,6 +68,7 @@ class SuperNotifyOverlayBuilder {
         maskWidget: notify.maskWidget,
         onDismiss: null,
         onMask: null,
+        awaitCompletion: _awaitCompletion,
         debounce: notify.debounce,
         debounceTime: notify.debounceTime,
         displayTime: _displayTime,
@@ -74,6 +81,11 @@ class SuperNotifyOverlayBuilder {
   }
 
   Widget _defaultNotifyWidget() {
+    final styledWidget = SuperOverlay.config.notify.style?.build(type, message);
+    if (styledWidget != null) {
+      return styledWidget;
+    }
+
     return switch (type) {
       NotifyType.success => NotifySuccess(message: message),
       NotifyType.failure => NotifyFailure(message: message),

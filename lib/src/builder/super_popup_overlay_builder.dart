@@ -6,7 +6,7 @@ class SuperPopupOverlayBuilder {
     required WidgetBuilder builder,
   }) : _builder = builder;
 
-  final BuildContext targetContext;
+  final BuildContext? targetContext;
   WidgetBuilder _builder;
   Alignment _alignment = SuperOverlay.config.attach.alignment;
   Color? _maskColor = Colors.transparent;
@@ -15,8 +15,16 @@ class SuperPopupOverlayBuilder {
   String? _tag;
   HighlightConfig? _highlight;
   PopupTargetRectBuilder? _targetRectBuilder;
+  PopupTargetPointBuilder? _targetPointBuilder;
+  PopupAlignmentMode _alignmentMode = SuperOverlay.config.attach.alignmentMode;
+  PopupReplacementBuilder? _replacementBuilder;
+  PopupAdjustmentBuilder? _adjustmentBuilder;
+  PopupScaleOriginBuilder? _scaleOriginBuilder;
+  Rect? _maskIgnoreArea;
+  SuperOverlayController? _controller;
   BackType _backType = SuperOverlay.config.attach.backType;
   SuperOverlayOnBack? _onBack;
+  AwaitCompletion _awaitCompletion = SuperOverlay.config.attach.awaitCompletion;
 
   SuperPopupOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -63,6 +71,46 @@ class SuperPopupOverlayBuilder {
     return this;
   }
 
+  SuperPopupOverlayBuilder withTargetPoint(PopupTargetPointBuilder builder) {
+    _targetPointBuilder = builder;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withAlignmentMode(PopupAlignmentMode mode) {
+    _alignmentMode = mode;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withReplacement(PopupReplacementBuilder builder) {
+    _replacementBuilder = builder;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withAdjustment(PopupAdjustmentBuilder builder) {
+    _adjustmentBuilder = builder;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withScaleOrigin(PopupScaleOriginBuilder builder) {
+    _scaleOriginBuilder = builder;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withMaskIgnoreArea(Rect area) {
+    _maskIgnoreArea = area;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withController(SuperOverlayController controller) {
+    _controller = controller;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withAwait(AwaitCompletion completion) {
+    _awaitCompletion = completion;
+    return this;
+  }
+
   SuperPopupOverlayBuilder withBack({
     BackType type = BackType.normal,
     SuperOverlayOnBack? onBack,
@@ -89,6 +137,7 @@ class SuperPopupOverlayBuilder {
         maskWidget: _maskWidget ?? attach.maskWidget,
         onDismiss: null,
         onMask: null,
+        awaitCompletion: _awaitCompletion,
         debounce: attach.debounce,
         debounceTime: attach.debounceTime,
         displayTime: null,
@@ -99,11 +148,17 @@ class SuperPopupOverlayBuilder {
         bindWidget: targetContext,
         ignoreArea: null,
         maskTriggerType: attach.maskTriggerType,
-        controller: null,
+        controller: _controller,
         backType: _backType,
         onBack: _onBack,
         targetContext: targetContext,
         targetRectBuilder: _targetRectBuilder,
+        targetPointBuilder: _targetPointBuilder,
+        alignmentMode: _alignmentMode,
+        replacementBuilder: _replacementBuilder,
+        adjustmentBuilder: _adjustmentBuilder,
+        scaleOriginBuilder: _scaleOriginBuilder,
+        maskIgnoreArea: _maskIgnoreArea,
         highlight: _highlight,
       ),
     );

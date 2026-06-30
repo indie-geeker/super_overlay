@@ -27,7 +27,18 @@ enum AnimationType {
 
 enum MaskTriggerType { down, move, up }
 
-enum NonAnimationType { open, close, routeClose, maskClose, backClose }
+enum NonAnimationType {
+  open,
+  close,
+  routeClose,
+  maskClose,
+  backClose,
+  highlightMask,
+}
+
+enum PopupAlignmentMode { inside, center, outside }
+
+enum AwaitCompletion { dismiss, appear, none }
 
 enum BackType { normal, block, ignore }
 

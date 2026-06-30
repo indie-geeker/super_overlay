@@ -105,6 +105,7 @@ extension on ShowLoadingParam {
       maskWidget: maskWidget,
       onDismiss: onDismiss,
       onMask: onMask,
+      awaitCompletion: awaitCompletion,
       debounce: false,
       debounceTime: Duration.zero,
       displayTime: displayTime,

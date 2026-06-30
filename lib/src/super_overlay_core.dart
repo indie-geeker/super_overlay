@@ -42,7 +42,7 @@ class SuperOverlay {
   }
 
   static SuperPopupOverlayBuilder showPopup({
-    required BuildContext targetContext,
+    BuildContext? targetContext,
     required WidgetBuilder builder,
   }) {
     return SuperPopupOverlayBuilder(

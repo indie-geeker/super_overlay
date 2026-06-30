@@ -6,6 +6,42 @@ import 'package:super_overlay/super_overlay.dart';
 import '../lib/main.dart';
 
 void main() {
+  testWidgets('example exposes reference parity demo cases', (tester) async {
+    await tester.pumpWidget(const MyApp());
+
+    expect(find.text('SuperOverlay Showcase'), findsOneWidget);
+
+    for (final label in [
+      '定点 Popup',
+      '替换/调整 Popup',
+      '缩放原点 Popup',
+      '忽略遮罩区域',
+      '默认 Toast',
+      '默认 Loading',
+      '默认 Notify',
+      'Await 事件',
+    ]) {
+      expect(find.text(label), findsOneWidget);
+    }
+
+    await tester.ensureVisible(find.text('定点 Popup'));
+    await tester.tap(find.text('定点 Popup'));
+    await tester.pumpAndSettle();
+    expect(find.text('定点 Popup 内容'), findsOneWidget);
+
+    await SuperOverlay.dismiss(status: DismissStatus.allAttach, force: true);
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('默认 Toast'));
+    await tester.tap(find.text('默认 Toast'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('Init Toast Style'), findsOneWidget);
+    expect(find.text('Init 默认 Toast'), findsOneWidget);
+
+    await SuperOverlay.dismiss(status: DismissStatus.allToast, force: true);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('example demonstrates the SuperOverlay feature set', (
     tester,
   ) async {

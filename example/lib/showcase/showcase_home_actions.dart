@@ -85,6 +85,33 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
     }
   }
 
+  void _showDefaultToast() {
+    _log('Default: Toast 使用初始化样式');
+    SuperOverlay.showToast('Init 默认 Toast')
+        .withDisplayType(ToastDisplayType.last)
+        .withDisplayTime(const Duration(seconds: 2))
+        .fire<void>();
+  }
+
+  Future<void> _showDefaultLoading() async {
+    _log('Default: Loading 使用初始化样式');
+    SuperOverlay.showLoading(msg: 'Init 默认 Loading').fire<void>();
+    await Future<void>.delayed(const Duration(milliseconds: 650));
+    await SuperOverlay.dismiss(status: DismissStatus.loading);
+    if (!mounted) {
+      return;
+    }
+    _log('Default: Loading 已关闭');
+  }
+
+  void _showDefaultNotify() {
+    _log('Default: Notify 使用初始化样式');
+    SuperOverlay.showNotify(
+      msg: 'Init 默认 Notify',
+      type: NotifyType.success,
+    ).withDisplayTime(const Duration(seconds: 2)).fire<void>();
+  }
+
   void _showChoicePopup(BuildContext targetContext) {
     var selected = _popupSingle;
     final multi = Set<int>.from(_popupMulti);
@@ -120,6 +147,86 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
         .fire<void>();
   }
 
+  void _showPointPopup() {
+    _log('Popup: 定点显示');
+    SuperOverlay.showPopup(
+          builder: (_) => const PopupDemoSurface(
+            title: '定点 Popup',
+            message: '定点 Popup 内容',
+            icon: Icons.my_location_outlined,
+          ),
+        )
+        .withTag('point-popup')
+        .withTargetPoint((_, _) => const Offset(260, 260))
+        .withAlignment(Alignment.topLeft)
+        .withAlignmentMode(PopupAlignmentMode.inside)
+        .withMask(color: Colors.transparent, dismissible: true)
+        .fire<void>();
+  }
+
+  void _showAdjustedPopup(BuildContext targetContext) {
+    _log('Popup: 替换内容并调整位置');
+    SuperOverlay.showPopup(
+          targetContext: targetContext,
+          builder: (_) => const PopupDemoSurface(
+            title: '原始 Popup',
+            message: '这个内容会被 replacement 替换',
+            icon: Icons.flip_to_front_outlined,
+          ),
+        )
+        .withTag('adjusted-popup')
+        .withAlignment(Alignment.bottomCenter)
+        .withReplacement((info) {
+          final target =
+              '${info.targetSize.width.round()}x'
+              '${info.targetSize.height.round()}';
+          return PopupDemoSurface(
+            title: '替换/调整 Popup',
+            message: '替换/调整 Popup 内容，目标 $target',
+            icon: Icons.flip_to_front_outlined,
+          );
+        })
+        .withAdjustment((_) {
+          return const PopupAdjustment(alignment: Alignment.topRight);
+        })
+        .withMask(color: Colors.transparent, dismissible: true)
+        .fire<void>();
+  }
+
+  void _showScaleOriginPopup(BuildContext targetContext) {
+    _log('Popup: 自定义缩放原点');
+    SuperOverlay.showPopup(
+          targetContext: targetContext,
+          builder: (_) => const PopupDemoSurface(
+            title: '缩放原点 Popup',
+            message: '缩放原点 Popup 内容',
+            icon: Icons.open_with_outlined,
+          ),
+        )
+        .withTag('scale-origin-popup')
+        .withAlignment(Alignment.bottomRight)
+        .withScaleOrigin((popupSize) => Offset(popupSize.width, 0))
+        .withMask(color: Colors.transparent, dismissible: true)
+        .fire<void>();
+  }
+
+  void _showMaskIgnorePopup() {
+    _log('Popup: 遮罩忽略顶部区域');
+    SuperOverlay.showPopup(
+          builder: (_) => const PopupDemoSurface(
+            title: '忽略遮罩区域',
+            message: '忽略遮罩 Popup 内容',
+            icon: Icons.layers_clear_outlined,
+          ),
+        )
+        .withTag('mask-ignore-popup')
+        .withTargetPoint((_, _) => const Offset(280, 320))
+        .withAlignment(Alignment.topCenter)
+        .withMask(color: ShowcaseColors.scrim, dismissible: true)
+        .withMaskIgnoreArea(const Rect.fromLTRB(0, 0, 1000, 96))
+        .fire<void>();
+  }
+
   void _applyChoicePopup(int selected, Set<int> multi) {
     setState(() {
       _popupSingle = selected;
@@ -146,6 +253,26 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
       msg: 'Notify message',
       type: NotifyType.success,
     ).withDisplayTime(const Duration(seconds: 2)).fire<void>();
+  }
+
+  Future<void> _showAwaitDemo() async {
+    _log('Await: 等待 appear');
+    await SuperOverlay.show(
+      builder: (_) => const SmallOverlay(
+        title: 'Await Completion',
+        message: '等待打开动画完成后记录事件。',
+      ),
+    ).withTag('await-demo').withAwait(AwaitCompletion.appear).fire<void>();
+    if (!mounted) {
+      return;
+    }
+    _log('Await: appear 完成');
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+    await SuperOverlay.dismiss(tag: 'await-demo', force: true);
+    if (!mounted) {
+      return;
+    }
+    _log('Await: dismiss 完成');
   }
 
   Future<void> _startGuide() async {

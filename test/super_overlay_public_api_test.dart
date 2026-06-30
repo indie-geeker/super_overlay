@@ -32,6 +32,33 @@ void main() {
       const Duration(milliseconds: 2500),
     );
     expect(const ToastConfig().displayTime, const Duration(milliseconds: 2000));
+    expect(const CustomDialogConfig().awaitCompletion, AwaitCompletion.dismiss);
+    expect(const AttachDialogConfig().awaitCompletion, AwaitCompletion.dismiss);
+    expect(const LoadingConfig().awaitCompletion, AwaitCompletion.dismiss);
+    expect(const NotifyConfig().awaitCompletion, AwaitCompletion.dismiss);
+    expect(const ToastConfig().awaitCompletion, AwaitCompletion.none);
+  });
+
+  test('exports init default builder types from the package entrypoint', () {
+    SuperOverlayToastBuilder createToastBuilder() {
+      Widget builder(String message) => Text('Toast $message');
+      return builder;
+    }
+
+    SuperOverlayLoadingBuilder createLoadingBuilder() {
+      Widget builder(String message) => Text('Loading $message');
+      return builder;
+    }
+
+    final typedToastBuilder = createToastBuilder();
+    final typedLoadingBuilder = createLoadingBuilder();
+    final notifyStyle = NotifyStyle(
+      successBuilder: (message) => Text('Success $message'),
+    );
+
+    expect(typedToastBuilder('Saved'), isA<Text>());
+    expect(typedLoadingBuilder('Loading'), isA<Text>());
+    expect(notifyStyle.successBuilder?.call('Done'), isA<Text>());
   });
 
   testWidgets('custom debounce uses the configured debounce duration', (

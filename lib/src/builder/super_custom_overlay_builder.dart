@@ -24,6 +24,7 @@ class SuperCustomOverlayBuilder {
   SuperOverlayOnBack? _onBack;
   VoidCallback? _onDismiss;
   VoidCallback? _onMask;
+  AwaitCompletion _awaitCompletion = SuperOverlay.config.custom.awaitCompletion;
 
   SuperCustomOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -117,6 +118,11 @@ class SuperCustomOverlayBuilder {
     return this;
   }
 
+  SuperCustomOverlayBuilder withAwait(AwaitCompletion completion) {
+    _awaitCompletion = completion;
+    return this;
+  }
+
   Future<T?> fire<T>() {
     final custom = SuperOverlay.config.custom;
     return OverlayManager.instance.show<T>(
@@ -134,6 +140,7 @@ class SuperCustomOverlayBuilder {
         maskWidget: _maskWidget ?? custom.maskWidget,
         onDismiss: _onDismiss,
         onMask: _onMask,
+        awaitCompletion: _awaitCompletion,
         debounce: _debounce,
         debounceTime: custom.debounceTime,
         displayTime: _displayTime,

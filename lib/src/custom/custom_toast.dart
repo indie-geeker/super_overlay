@@ -1,7 +1,6 @@
 import '../config/enum_config.dart';
 import '../data/show_param.dart';
 import '../helper/overlay_manager.dart';
-import '../kit/debounce_utils.dart';
 import '../kit/super_overlay_entry.dart';
 import '../kit/view_utils.dart';
 import '../widget/helper/toast_helper.dart';
@@ -19,14 +18,6 @@ class CustomToast extends BaseOverlay {
   }
 
   void show(ShowToastParam param) {
-    if (DebounceUtils.instance.banContinue(
-      OverlayDebounceType.toast,
-      debounce: param.debounce,
-      duration: param.debounceTime,
-    )) {
-      return;
-    }
-
     final overlayContext = OverlayManager.instance.contextToast;
     if (overlayContext == null) {
       throw StateError(
@@ -79,6 +70,7 @@ extension on ShowToastParam {
       maskWidget: maskWidget,
       onDismiss: onDismiss,
       onMask: onMask,
+      awaitCompletion: awaitCompletion,
       debounce: debounce,
       debounceTime: debounceTime,
       displayTime: null,

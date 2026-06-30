@@ -62,6 +62,7 @@ extension on ShowNotifyParam {
       maskWidget: maskWidget,
       onDismiss: onDismiss,
       onMask: onMask,
+      awaitCompletion: awaitCompletion,
       debounce: debounce,
       debounceTime: debounceTime,
       displayTime: displayTime,

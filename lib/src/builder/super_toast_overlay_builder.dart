@@ -13,6 +13,7 @@ class SuperToastOverlayBuilder {
   Alignment _alignment = SuperOverlay.config.toast.alignment;
   bool _consumeEvent = SuperOverlay.config.toast.consumeEvent;
   bool _debounce = SuperOverlay.config.toast.debounce;
+  AwaitCompletion _awaitCompletion = SuperOverlay.config.toast.awaitCompletion;
 
   SuperToastOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -44,11 +45,19 @@ class SuperToastOverlayBuilder {
     return this;
   }
 
+  SuperToastOverlayBuilder withAwait(AwaitCompletion completion) {
+    _awaitCompletion = completion;
+    return this;
+  }
+
   Future<T?> fire<T>() {
     final toast = SuperOverlay.config.toast;
-    OverlayManager.instance.showToast(
+    return OverlayManager.instance.showToast<T>(
       param: ShowToastParam(
-        builder: _builder ?? (_) => ToastWidget(message: message),
+        builder:
+            _builder ??
+            (_) =>
+                toast.builder?.call(message) ?? ToastWidget(message: message),
         alignment: _alignment,
         clickMaskDismiss: toast.clickMaskDismiss,
         animationType: toast.animationType,
@@ -61,6 +70,7 @@ class SuperToastOverlayBuilder {
         maskWidget: toast.maskWidget,
         onDismiss: null,
         onMask: null,
+        awaitCompletion: _awaitCompletion,
         displayTime: _displayTime,
         debounceTime: toast.debounceTime,
         debounce: _debounce,
@@ -68,6 +78,5 @@ class SuperToastOverlayBuilder {
         consumeEvent: _consumeEvent,
       ),
     );
-    return Future<T?>.value();
   }
 }

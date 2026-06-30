@@ -21,6 +21,7 @@ class CustomDialogConfig {
       NonAnimationType.close,
     ],
     this.backType = BackType.normal,
+    this.awaitCompletion = AwaitCompletion.dismiss,
   });
 
   final Alignment alignment;
@@ -37,4 +38,5 @@ class CustomDialogConfig {
   final MaskTriggerType maskTriggerType;
   final List<NonAnimationType> nonAnimationTypes;
   final BackType backType;
+  final AwaitCompletion awaitCompletion;
 }

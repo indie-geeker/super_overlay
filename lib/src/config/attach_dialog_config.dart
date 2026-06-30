@@ -16,11 +16,13 @@ class AttachDialogConfig {
     this.debounceTime = const Duration(milliseconds: 300),
     this.bindPage = true,
     this.maskTriggerType = MaskTriggerType.up,
+    this.alignmentMode = PopupAlignmentMode.center,
     this.nonAnimationTypes = const [
       NonAnimationType.routeClose,
       NonAnimationType.close,
     ],
     this.backType = BackType.normal,
+    this.awaitCompletion = AwaitCompletion.dismiss,
   });
 
   final Alignment alignment;
@@ -35,6 +37,8 @@ class AttachDialogConfig {
   final Duration debounceTime;
   final bool bindPage;
   final MaskTriggerType maskTriggerType;
+  final PopupAlignmentMode alignmentMode;
   final List<NonAnimationType> nonAnimationTypes;
   final BackType backType;
+  final AwaitCompletion awaitCompletion;
 }
