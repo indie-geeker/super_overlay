@@ -103,11 +103,49 @@ class ToastTool {
     VoidCallback? onDismissed,
   }) {
     final toast = CustomToast.create();
-    toast.show(param);
+    toast.show(_stackedParam(param, _activeToasts.length));
     final active = _ActiveToast(toast: toast, onDismissed: onDismissed);
     active.timer = _autoDismissTimer(active, param.displayTime);
     _activeToasts.add(active);
     return active;
+  }
+
+  ShowToastParam _stackedParam(ShowToastParam param, int stackIndex) {
+    if (param.displayType != ToastDisplayType.multi || stackIndex == 0) {
+      return param;
+    }
+
+    final offset = _stackOffset(param.alignment, stackIndex);
+    return ShowToastParam(
+      builder: (context) =>
+          Transform.translate(offset: offset, child: param.builder(context)),
+      alignment: param.alignment,
+      clickMaskDismiss: param.clickMaskDismiss,
+      animationType: param.animationType,
+      nonAnimationTypes: param.nonAnimationTypes,
+      animationBuilder: param.animationBuilder,
+      usePenetrate: param.usePenetrate,
+      useAnimation: param.useAnimation,
+      animationTime: param.animationTime,
+      maskColor: param.maskColor,
+      maskWidget: param.maskWidget,
+      onDismiss: param.onDismiss,
+      onMask: param.onMask,
+      displayTime: param.displayTime,
+      debounceTime: param.debounceTime,
+      debounce: param.debounce,
+      displayType: param.displayType,
+      consumeEvent: param.consumeEvent,
+    );
+  }
+
+  Offset _stackOffset(Alignment alignment, int stackIndex) {
+    const gap = 56.0;
+    final distance = gap * stackIndex;
+    if (alignment.y > 0) {
+      return Offset(0, -distance);
+    }
+    return Offset(0, distance);
   }
 
   Timer _autoDismissTimer(_ActiveToast active, Duration displayTime) {

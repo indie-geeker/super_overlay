@@ -15,13 +15,11 @@ class AttachDialogConfig {
     this.debounce = false,
     this.debounceTime = const Duration(milliseconds: 300),
     this.bindPage = true,
-    this.awaitOverType = AwaitOverType.overlayDismiss,
     this.maskTriggerType = MaskTriggerType.up,
     this.nonAnimationTypes = const [
       NonAnimationType.routeClose,
-      NonAnimationType.highlightMask,
+      NonAnimationType.close,
     ],
-    this.attachAlignmentType = AttachAlignmentType.center,
     this.backType = BackType.normal,
   });
 
@@ -36,9 +34,7 @@ class AttachDialogConfig {
   final bool debounce;
   final Duration debounceTime;
   final bool bindPage;
-  final AwaitOverType awaitOverType;
   final MaskTriggerType maskTriggerType;
   final List<NonAnimationType> nonAnimationTypes;
-  final AttachAlignmentType attachAlignmentType;
   final BackType backType;
 }

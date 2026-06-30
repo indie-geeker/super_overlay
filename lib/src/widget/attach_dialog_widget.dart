@@ -42,11 +42,13 @@ class AttachDialogWidget extends StatelessWidget {
   }
 
   Widget _buildMask(Rect targetRect) {
-    final highlighted = param.highlightBuilder != null;
-    final mask = highlighted
+    final highlight = param.highlight;
+    final mask = highlight != null
         ? HighlightMask(
-            targetRect: param.maskIgnoreArea ?? targetRect,
+            targetRect: targetRect,
             maskColor: param.maskColor,
+            padding: highlight.padding,
+            borderRadius: highlight.borderRadius,
             onDismiss: onMask,
           )
         : (param.maskWidget ?? ColoredBox(color: param.maskColor));
@@ -71,12 +73,9 @@ class AttachDialogWidget extends StatelessWidget {
       return Rect.zero;
     }
 
-    var offset = renderObject.localToGlobal(Offset.zero);
+    final offset = renderObject.localToGlobal(Offset.zero);
     final size = renderObject.size;
-    final targetBuilder = param.targetBuilder;
-    if (targetBuilder != null) {
-      offset = targetBuilder(offset, size);
-    }
-    return offset & size;
+    final targetRect = offset & size;
+    return param.targetRectBuilder?.call(targetRect) ?? targetRect;
   }
 }

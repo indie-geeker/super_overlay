@@ -13,11 +13,10 @@ class LoadingConfig {
     this.maskWidget,
     this.clickMaskDismiss = false,
     this.leastLoadingTime = Duration.zero,
-    this.awaitOverType = AwaitOverType.overlayDismiss,
     this.maskTriggerType = MaskTriggerType.up,
     this.nonAnimationTypes = const [
       NonAnimationType.routeClose,
-      NonAnimationType.continueLoading,
+      NonAnimationType.close,
     ],
     this.backType = BackType.normal,
   });
@@ -31,7 +30,6 @@ class LoadingConfig {
   final Widget? maskWidget;
   final bool clickMaskDismiss;
   final Duration leastLoadingTime;
-  final AwaitOverType awaitOverType;
   final MaskTriggerType maskTriggerType;
   final List<NonAnimationType> nonAnimationTypes;
   final BackType backType;

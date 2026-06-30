@@ -106,6 +106,7 @@ extension on ShowLoadingParam {
       onDismiss: onDismiss,
       onMask: onMask,
       debounce: false,
+      debounceTime: Duration.zero,
       displayTime: displayTime,
       tag: null,
       keepSingle: false,

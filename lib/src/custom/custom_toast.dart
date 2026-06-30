@@ -22,7 +22,7 @@ class CustomToast extends BaseOverlay {
     if (DebounceUtils.instance.banContinue(
       OverlayDebounceType.toast,
       debounce: param.debounce,
-      duration: const Duration(milliseconds: 300),
+      duration: param.debounceTime,
     )) {
       return;
     }
@@ -80,6 +80,7 @@ extension on ShowToastParam {
       onDismiss: onDismiss,
       onMask: onMask,
       debounce: debounce,
+      debounceTime: debounceTime,
       displayTime: null,
       tag: null,
       keepSingle: false,

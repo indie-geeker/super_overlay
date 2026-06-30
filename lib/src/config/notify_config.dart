@@ -15,9 +15,8 @@ class NotifyConfig {
     this.debounce = false,
     this.debounceTime = const Duration(milliseconds: 300),
     this.displayTime = const Duration(milliseconds: 2500),
-    this.awaitOverType = AwaitOverType.overlayDismiss,
     this.maskTriggerType = MaskTriggerType.up,
-    this.nonAnimationTypes = const [],
+    this.nonAnimationTypes = const [NonAnimationType.close],
     this.backType = BackType.ignore,
   });
 
@@ -32,7 +31,6 @@ class NotifyConfig {
   final bool debounce;
   final Duration debounceTime;
   final Duration? displayTime;
-  final AwaitOverType awaitOverType;
   final MaskTriggerType maskTriggerType;
   final List<NonAnimationType> nonAnimationTypes;
   final BackType backType;

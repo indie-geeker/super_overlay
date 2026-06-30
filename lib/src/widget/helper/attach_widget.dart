@@ -26,12 +26,14 @@ class AttachPositionDelegate extends SingleChildLayoutDelegate {
       dy = targetRect.top + (targetRect.height - childSize.height) / 2;
     }
 
-    if (alignment == Alignment.topLeft ||
-        alignment == Alignment.centerLeft ||
+    if (alignment == Alignment.centerLeft) {
+      dx = targetRect.left - childSize.width;
+    } else if (alignment == Alignment.centerRight) {
+      dx = targetRect.right;
+    } else if (alignment == Alignment.topLeft ||
         alignment == Alignment.bottomLeft) {
       dx = targetRect.left;
     } else if (alignment == Alignment.topRight ||
-        alignment == Alignment.centerRight ||
         alignment == Alignment.bottomRight) {
       dx = targetRect.right - childSize.width;
     }

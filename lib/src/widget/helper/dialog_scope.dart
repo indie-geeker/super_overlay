@@ -3,46 +3,35 @@ import 'package:flutter/material.dart';
 import '../../kit/overlay_controller.dart';
 import '../../kit/view_utils.dart';
 
-abstract class DialogScopeAction {
-  void setController(SuperOverlayController? controller);
-
-  void replaceBuilder(Widget? child);
-}
-
-class DialogScopeInfo {
-  DialogScopeAction? action;
-}
-
 class DialogScope extends StatefulWidget {
-  DialogScope({super.key, required this.controller, required this.builder});
+  const DialogScope({
+    super.key,
+    required this.controller,
+    required this.builder,
+  });
 
   final SuperOverlayController? controller;
   final WidgetBuilder builder;
-  final DialogScopeInfo info = DialogScopeInfo();
 
   @override
   State<DialogScope> createState() => _DialogScopeState();
 }
 
-class _DialogScopeState extends State<DialogScope>
-    implements DialogScopeAction {
+class _DialogScopeState extends State<DialogScope> {
   VoidCallback? _callback;
-  Widget? _child;
 
   @override
   void initState() {
-    widget.info.action = this;
-    setController(widget.controller);
+    _setController(widget.controller);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    return _child ?? widget.builder(context);
+    return widget.builder(context);
   }
 
-  @override
-  void setController(SuperOverlayController? controller) {
+  void _setController(SuperOverlayController? controller) {
     controller?.setListener(
       _callback = () {
         ViewUtils.addSafeUse(() {
@@ -52,11 +41,6 @@ class _DialogScopeState extends State<DialogScope>
         });
       },
     );
-  }
-
-  @override
-  void replaceBuilder(Widget? child) {
-    _child = child;
   }
 
   @override

@@ -17,10 +17,8 @@ class ToastConfig {
     this.displayType = ToastDisplayType.normal,
     this.consumeEvent = false,
     this.displayTime = const Duration(milliseconds: 2000),
-    this.intervalTime = const Duration(milliseconds: 100),
-    this.awaitOverType = AwaitOverType.overlayDismiss,
     this.maskTriggerType = MaskTriggerType.up,
-    this.nonAnimationTypes = const [],
+    this.nonAnimationTypes = const [NonAnimationType.close],
   });
 
   final Alignment alignment;
@@ -36,8 +34,6 @@ class ToastConfig {
   final ToastDisplayType displayType;
   final bool consumeEvent;
   final Duration displayTime;
-  final Duration intervalTime;
-  final AwaitOverType awaitOverType;
   final MaskTriggerType maskTriggerType;
   final List<NonAnimationType> nonAnimationTypes;
 }

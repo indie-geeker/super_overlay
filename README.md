@@ -25,6 +25,29 @@ MaterialApp(
 );
 ```
 
+## Requirements
+
+SuperOverlay requires Dart `^3.11.4` and Flutter `>=3.41.0`.
+
+## Global Configuration
+
+Tune defaults before showing overlays. Per-call builder methods still override
+the global defaults.
+
+```dart
+SuperOverlay.config.custom = const CustomDialogConfig(
+  animationTime: Duration(milliseconds: 160),
+  debounce: true,
+  debounceTime: Duration(milliseconds: 500),
+  bindPage: true,
+);
+
+SuperOverlay.config.toast = const ToastConfig(
+  displayTime: Duration(seconds: 2),
+  debounce: true,
+);
+```
+
 ## Custom Overlay
 
 ```dart
@@ -46,7 +69,8 @@ await SuperOverlay.dismiss(
 ## Loading, Toast, Popup, And Notify
 
 ```dart
-await SuperOverlay.showLoading(msg: 'Loading...').fire();
+SuperOverlay.showLoading(msg: 'Loading...').fire();
+await SuperOverlay.dismiss(status: DismissStatus.loading);
 
 await SuperOverlay.showToast('Saved').fire();
 
@@ -59,6 +83,24 @@ await SuperOverlay.showNotify(
   msg: 'Done',
   type: NotifyType.success,
 ).fire();
+```
+
+## Network State And Empty Pages
+
+`super_overlay` keeps empty and error pages in the application layer. Use
+overlay loading for short blocking requests, toast or notify for lightweight
+feedback, and render empty/error states inside the page that owns the data.
+
+The example app includes a `Network State Demo` that follows this split:
+
+```dart
+SuperOverlay.showLoading(msg: 'Loading...').fire();
+try {
+  final items = await loadItems();
+  // Render list, empty page, or error page in your own widget tree.
+} finally {
+  await SuperOverlay.dismiss(status: DismissStatus.loading);
+}
 ```
 
 ## Route And Widget Binding
