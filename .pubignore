@@ -1,0 +1,13 @@
+pubspec.lock
+doc/api/
+.dart_tool/
+.flutter-plugins-dependencies
+build/
+coverage/
+doc/plans/
+docs/plans/
+*.iml
+.metadata
+.idea/
+example/.metadata
+example/.idea/

@@ -14,6 +14,9 @@
   including configuration types, public enums, `SuperOverlayController`,
   `AnimationParam`, popup geometry types, and default feedback builder types.
 * Added route binding, widget binding, and `BackType` handling.
+* Fixed permanent overlay dismiss semantics so all-dialog cleanup skips permanent
+  entries instead of hanging.
+* Excluded IDE metadata from the pub publish archive.
 * Removed the legacy navigator-key API and old `content:`/`msg:` call shapes.
 * Removed unused internal builder re-export files and legacy info data holders
   that were not part of the public API.

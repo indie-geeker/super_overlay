@@ -187,6 +187,58 @@ void registerCustomOverlayTests() {
     },
   );
 
+  testWidgets('allDialog normal dismiss skips permanent overlays and returns', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
+
+    SuperOverlay.show(
+      builder: (_) => const Text('Normal Dialog'),
+    ).withTag('normal-dialog').fire<void>();
+    await tester.pumpAndSettle();
+
+    SuperOverlay.show(
+      builder: (_) => const Text('Permanent Dialog'),
+    ).withTag('permanent-dialog').withPermanent().fire<void>();
+    await tester.pumpAndSettle();
+
+    await SuperOverlay.dismiss(
+      status: DismissStatus.allDialog,
+    ).timeout(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Normal Dialog'), findsNothing);
+    expect(find.text('Permanent Dialog'), findsOneWidget);
+
+    await SuperOverlay.dismiss(tag: 'permanent-dialog', force: true);
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('auto dismiss skips permanent overlays when no tag is supplied', (
+    tester,
+  ) async {
+    await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
+
+    SuperOverlay.show(
+      builder: (_) => const Text('Auto Normal Dialog'),
+    ).withTag('auto-normal-dialog').fire<void>();
+    await tester.pumpAndSettle();
+
+    SuperOverlay.show(
+      builder: (_) => const Text('Auto Permanent Dialog'),
+    ).withTag('auto-permanent-dialog').withPermanent().fire<void>();
+    await tester.pumpAndSettle();
+
+    await SuperOverlay.dismiss().timeout(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Auto Normal Dialog'), findsNothing);
+    expect(find.text('Auto Permanent Dialog'), findsOneWidget);
+
+    await SuperOverlay.dismiss(tag: 'auto-permanent-dialog', force: true);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('controller refresh rebuilds overlay content', (tester) async {
     final controller = SuperOverlayController();
     var count = 0;

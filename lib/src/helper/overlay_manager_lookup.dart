@@ -48,6 +48,9 @@ extension _OverlayManagerLookup on OverlayManager {
 
     for (var index = records.length - 1; index >= 0; index--) {
       final record = records[index];
+      if (!force && record.permanent) {
+        continue;
+      }
       if (type == null || record.type == type) {
         return record;
       }

@@ -70,6 +70,18 @@ await SuperOverlay.dismiss(
 );
 ```
 
+Permanent overlays are skipped by normal untagged dismiss calls and by
+`allDialog`/`allCustom` cleanup. Close them explicitly with their tag and
+`force: true` when the owning flow is finished.
+
+```dart
+SuperOverlay.show(
+  builder: (_) => const BlockingDialog(),
+).withTag('blocking-flow').withPermanent().fire<void>();
+
+await SuperOverlay.dismiss(tag: 'blocking-flow', force: true);
+```
+
 ## Loading, Toast, Popup, And Notify
 
 ```dart

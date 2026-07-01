@@ -93,11 +93,17 @@ extension _OverlayManagerDismiss on OverlayManager {
     required OverlayType? type,
     required OverlayCloseType closeType,
   }) async {
-    while (_dialogQueue.any((record) => type == null || record.type == type)) {
+    final records = _dialogQueue
+        .where((record) => type == null || record.type == type)
+        .where((record) => force || !record.permanent)
+        .toList(growable: false);
+
+    for (final record in records.reversed) {
       await _closeSingle<T>(
+        tag: record.tag,
         result: result,
         force: force,
-        type: type,
+        type: record.type,
         closeType: closeType,
       );
     }
