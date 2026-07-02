@@ -1,6 +1,6 @@
 name: super_overlay
 description: Self-managed OverlayEntry dialogs, toasts, popups, loading indicators, and notifications for Flutter.
-version: 0.1.0-dev.1
+version: 0.1.0
 homepage: https://github.com/wen/super_overlay
 
 environment:

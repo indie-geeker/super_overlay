@@ -1,4 +1,11 @@
-## 0.1.0-dev.1
+<!--
+ * @Author: wen indiegeeker@gmail.com
+ * @Date: 2026-06-30 23:15:10
+ * @LastEditors: wen indiegeeker@gmail.com
+ * @LastEditTime: 2026-07-02 00:36:46
+ * @Description: 
+-->
+## 0.1.0
 
 * Breaking rewrite from route-based dialogs to a self-managed `OverlayEntry`
   runtime.

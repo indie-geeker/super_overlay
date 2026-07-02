@@ -9,7 +9,7 @@ back-button handling without requiring a package-owned `Navigator` key.
 
 ```yaml
 dependencies:
-  super_overlay: ^0.1.0-dev.1
+  super_overlay: ^0.1.0
 ```
 
 ## Initialize
