@@ -5,6 +5,13 @@
  * @LastEditTime: 2026-07-02 00:36:46
  * @Description: 
 -->
+## 0.1.1
+
+* Corrected pub.dev metadata links to the `indie-geeker/super_overlay` GitHub
+  repository.
+* Removed internal `doc/` materials from the published package and tracked
+  repository contents.
+
 ## 0.1.0
 
 * Breaking rewrite from route-based dialogs to a self-managed `OverlayEntry`
