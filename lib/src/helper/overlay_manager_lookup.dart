@@ -12,6 +12,11 @@ extension _OverlayManagerLookup on OverlayManager {
           return records[index];
         }
       }
+      for (var index = records.length - 1; index >= 0; index--) {
+        if (records[index].businessTag == tag) {
+          return records[index];
+        }
+      }
       return null;
     }
     return records.last;
@@ -31,6 +36,13 @@ extension _OverlayManagerLookup on OverlayManager {
       for (var index = records.length - 1; index >= 0; index--) {
         final record = records[index];
         if (record.tag == tag && (type == null || record.type == type)) {
+          return record;
+        }
+      }
+      for (var index = records.length - 1; index >= 0; index--) {
+        final record = records[index];
+        if (record.businessTag == tag &&
+            (type == null || record.type == type)) {
           return record;
         }
       }

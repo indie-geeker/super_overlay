@@ -5,6 +5,7 @@ class _OverlayRecord {
     required this.overlay,
     required this.type,
     required this.tag,
+    required this.businessTag,
     required this.permanent,
     required this.route,
     required this.bindPage,
@@ -16,6 +17,7 @@ class _OverlayRecord {
   final CustomOverlay overlay;
   final OverlayType type;
   final String tag;
+  final String? businessTag;
   final Route<dynamic>? route;
   final bool bindPage;
   final BuildContext? bindWidget;
@@ -23,21 +25,27 @@ class _OverlayRecord {
   final SuperOverlayOnBack? onBack;
   bool permanent;
   Timer? displayTimer;
+
+  bool matchesTag(String value) => tag == value || businessTag == value;
 }
 
 class _NotifyRecord {
   _NotifyRecord({
     required this.overlay,
     required this.tag,
+    required this.businessTag,
     required this.backType,
     required this.onBack,
   });
 
   final CustomNotify overlay;
   final String tag;
+  final String? businessTag;
   final BackType backType;
   final SuperOverlayOnBack? onBack;
   Timer? displayTimer;
+
+  bool matchesTag(String value) => tag == value || businessTag == value;
 }
 
 class CustomPushResult {

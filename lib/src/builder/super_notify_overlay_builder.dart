@@ -10,8 +10,10 @@ class SuperNotifyOverlayBuilder {
   final String message;
   final NotifyType type;
   WidgetBuilder? _builder;
+  Alignment _alignment = SuperOverlay.config.notify.alignment;
   Duration? _displayTime = SuperOverlay.config.notify.displayTime;
   String? _tag;
+  String? _businessTag;
   bool _keepSingle = false;
   BackType _backType = SuperOverlay.config.notify.backType;
   SuperOverlayOnBack? _onBack;
@@ -22,6 +24,11 @@ class SuperNotifyOverlayBuilder {
     return this;
   }
 
+  SuperNotifyOverlayBuilder withAlignment(Alignment alignment) {
+    _alignment = alignment;
+    return this;
+  }
+
   SuperNotifyOverlayBuilder withDisplayTime(Duration displayTime) {
     _displayTime = displayTime;
     return this;
@@ -29,6 +36,11 @@ class SuperNotifyOverlayBuilder {
 
   SuperNotifyOverlayBuilder withTag(String tag) {
     _tag = tag;
+    return this;
+  }
+
+  SuperNotifyOverlayBuilder _withBusinessTag(String? tag) {
+    _businessTag = tag;
     return this;
   }
 
@@ -56,7 +68,7 @@ class SuperNotifyOverlayBuilder {
     return OverlayManager.instance.showNotify<T>(
       param: ShowNotifyParam(
         builder: _builder ?? (_) => _defaultNotifyWidget(),
-        alignment: notify.alignment,
+        alignment: _alignment,
         clickMaskDismiss: notify.clickMaskDismiss,
         animationType: notify.animationType,
         nonAnimationTypes: notify.nonAnimationTypes,
@@ -73,6 +85,7 @@ class SuperNotifyOverlayBuilder {
         debounceTime: notify.debounceTime,
         displayTime: _displayTime,
         tag: _tag,
+        businessTag: _businessTag,
         keepSingle: _keepSingle,
         backType: _backType,
         onBack: _onBack,

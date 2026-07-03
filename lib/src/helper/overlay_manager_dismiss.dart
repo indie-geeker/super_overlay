@@ -9,7 +9,8 @@ extension _OverlayManagerDismiss on OverlayManager {
     OverlayCloseType closeType = OverlayCloseType.normal,
   }) async {
     if (status == DismissStatus.auto) {
-      if (loadingOverlay.isVisible && (tag == null || _dialogQueue.isEmpty)) {
+      if (loadingOverlay.isVisible &&
+          (tag == null || loadingOverlay.matchesTag(tag))) {
         await loadingOverlay.dismiss(closeType: closeType);
         return;
       }
@@ -73,12 +74,14 @@ extension _OverlayManagerDismiss on OverlayManager {
     }
 
     if (status == DismissStatus.loading) {
-      await loadingOverlay.dismiss(closeType: closeType);
+      if (tag == null || loadingOverlay.matchesTag(tag)) {
+        await loadingOverlay.dismiss(closeType: closeType);
+      }
       return;
     }
 
     if (status == DismissStatus.toast) {
-      await ToastTool.instance.dismiss();
+      await ToastTool.instance.dismiss(tag: tag);
       return;
     }
 

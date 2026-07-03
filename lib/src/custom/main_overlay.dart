@@ -20,6 +20,7 @@ class MainOverlay {
   Widget _widget = const SizedBox.shrink();
   Completer<dynamic>? _completer;
   VoidCallback? _onDismiss;
+  VoidCallback? _refresh;
   OverlayDialogWidgetController? _dialogController;
 
   Future<T?> show<T>({
@@ -27,6 +28,7 @@ class MainOverlay {
     required VoidCallback onMask,
   }) {
     _onDismiss = param.onDismiss;
+    _refresh = param.controller?.refresh;
     _dialogController = OverlayDialogWidgetController();
     _widget = OverlayDialogWidget(
       controller: _dialogController!,
@@ -54,6 +56,7 @@ class MainOverlay {
     required VoidCallback onMask,
   }) {
     _onDismiss = param.onDismiss;
+    _refresh = param.controller?.refresh;
     _dialogController = null;
     _widget = AttachDialogWidget(param: param, onMask: onMask);
     overlayEntry.markNeedsBuild();
@@ -62,6 +65,12 @@ class MainOverlay {
   }
 
   Future<T?> _completionFuture<T>(ShowCustomParam param) {
+    final previousCompleter = _completer;
+    if (previousCompleter != null && !previousCompleter.isCompleted) {
+      previousCompleter.complete(null);
+    }
+    _completer = null;
+
     if (param.awaitCompletion == AwaitCompletion.appear) {
       return Future<T?>.delayed(_openDuration(param), () => null);
     }
@@ -81,6 +90,16 @@ class MainOverlay {
     return completer.future;
   }
 
+  VoidCallback? get currentRefresh => _refresh;
+
+  Future<T?>? currentClosedFuture<T>() {
+    final completer = _completer;
+    if (completer == null) {
+      return null;
+    }
+    return completer.future.then((value) => value as T?);
+  }
+
   Duration _openDuration(ShowCustomParam param) {
     if (!param.useAnimation ||
         param.nonAnimationTypes.contains(NonAnimationType.open)) {
@@ -97,6 +116,7 @@ class MainOverlay {
     _onDismiss = null;
     await _dialogController?.dismiss(closeType: closeType);
     _dialogController = null;
+    _refresh = null;
     _widget = const SizedBox.shrink();
     overlayEntry.markNeedsBuild();
 

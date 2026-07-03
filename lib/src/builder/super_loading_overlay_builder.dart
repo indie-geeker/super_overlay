@@ -13,6 +13,7 @@ class SuperLoadingOverlayBuilder {
   Color? _maskColor;
   Widget? _maskWidget;
   bool _clickMaskDismiss = SuperOverlay.config.loading.clickMaskDismiss;
+  String? _tag;
   BackType _backType = SuperOverlay.config.loading.backType;
   SuperOverlayOnBack? _onBack;
   AwaitCompletion _awaitCompletion =
@@ -41,6 +42,11 @@ class SuperLoadingOverlayBuilder {
     _maskColor = color;
     _maskWidget = widget;
     _clickMaskDismiss = dismissible;
+    return this;
+  }
+
+  SuperLoadingOverlayBuilder withTag(String tag) {
+    _tag = tag;
     return this;
   }
 
@@ -82,6 +88,7 @@ class SuperLoadingOverlayBuilder {
         awaitCompletion: _awaitCompletion,
         displayTime: _displayTime,
         leastLoadingTime: _leastLoadingTime,
+        tag: _tag,
         backType: _backType,
         onBack: _onBack,
       ),

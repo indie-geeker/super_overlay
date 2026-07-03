@@ -1,7 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import 'api/overlay_handle.dart';
+import 'api/overlay_options.dart';
+import 'api/overlay_policy.dart';
 import 'config/enum_config.dart';
 import 'config/overlay_config.dart';
+import 'custom/toast_tool.dart';
 import 'data/notify_style.dart';
 import 'data/show_param.dart';
 import 'helper/overlay_manager.dart';
@@ -21,9 +27,16 @@ part 'builder/super_loading_overlay_builder.dart';
 part 'builder/super_notify_overlay_builder.dart';
 part 'builder/super_popup_overlay_builder.dart';
 part 'builder/super_toast_overlay_builder.dart';
+part 'api/overlay_services.dart';
 
 class SuperOverlay {
   static final OverlayConfig config = OverlayConfig();
+  static const _toastService = _OverlayToastService();
+
+  static final OverlayLoadingService loading = OverlayLoadingService();
+  static final OverlayDialogService dialog = OverlayDialogService();
+  static final OverlayPopupService popup = OverlayPopupService();
+  static final OverlayNotifyService notify = OverlayNotifyService();
 
   static NavigatorObserver get observer => SuperOverlayInit.observer;
 
@@ -59,6 +72,13 @@ class SuperOverlay {
     WidgetBuilder? builder,
   }) {
     return SuperToastOverlayBuilder(message: message, builder: builder);
+  }
+
+  static OverlayHandle<void> toast(
+    String message, {
+    OverlayToastOptions options = const OverlayToastOptions(),
+  }) {
+    return _toastService.show(message, options: options);
   }
 
   static SuperPopupOverlayBuilder showPopup({

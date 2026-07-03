@@ -12,6 +12,7 @@ class SuperCustomOverlayBuilder {
   bool _debounce = SuperOverlay.config.custom.debounce;
   Duration? _displayTime;
   String? _tag;
+  String? _businessTag;
   bool _keepSingle = false;
   bool _permanent = false;
   bool _bindPage = SuperOverlay.config.custom.bindPage;
@@ -51,6 +52,11 @@ class SuperCustomOverlayBuilder {
 
   SuperCustomOverlayBuilder withTag(String tag) {
     _tag = tag;
+    return this;
+  }
+
+  SuperCustomOverlayBuilder _withBusinessTag(String? tag) {
+    _businessTag = tag;
     return this;
   }
 
@@ -145,6 +151,7 @@ class SuperCustomOverlayBuilder {
         debounceTime: custom.debounceTime,
         displayTime: _displayTime,
         tag: _tag,
+        businessTag: _businessTag,
         keepSingle: _keepSingle,
         permanent: _permanent,
         bindPage: _bindPage,

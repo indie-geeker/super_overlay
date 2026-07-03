@@ -101,6 +101,7 @@ class OverlayManager {
       overlay: overlay,
       type: OverlayType.custom,
       tag: param.tag,
+      businessTag: param.businessTag,
       keepSingle: param.keepSingle,
       permanent: param.permanent,
       displayTime: param.displayTime,
@@ -116,6 +117,7 @@ class OverlayManager {
       overlay: overlay,
       type: OverlayType.attach,
       tag: param.tag,
+      businessTag: param.businessTag,
       keepSingle: param.keepSingle,
       permanent: param.permanent,
       displayTime: param.displayTime,
@@ -154,6 +156,7 @@ class OverlayManager {
     final record = _NotifyRecord(
       overlay: notify,
       tag: tag,
+      businessTag: param.businessTag,
       backType: param.backType,
       onBack: param.onBack,
     );
@@ -171,6 +174,7 @@ class OverlayManager {
     required CustomOverlay overlay,
     required OverlayType type,
     required String? tag,
+    required String? businessTag,
     required bool keepSingle,
     required bool permanent,
     required Duration? displayTime,
@@ -211,6 +215,7 @@ class OverlayManager {
       overlay: overlay,
       type: type,
       tag: effectiveTag,
+      businessTag: businessTag,
       permanent: permanent,
       route: RouteRecord.instance.currentRoute,
       bindPage: bindPage,
@@ -240,8 +245,17 @@ class OverlayManager {
     },
   }) {
     if (tag != null) {
-      return _dialogQueue.any((record) => record.tag == tag) ||
-          _notifyQueue.any((record) => record.tag == tag);
+      final hasDialog = _dialogQueue.any(
+        (record) => types.contains(record.type) && record.matchesTag(tag),
+      );
+      final hasLoading =
+          types.contains(OverlayType.loading) && loadingOverlay.matchesTag(tag);
+      final hasNotify =
+          types.contains(OverlayType.notify) &&
+          _notifyQueue.any((record) => record.matchesTag(tag));
+      final hasToast =
+          types.contains(OverlayType.toast) && ToastTool.instance.hasTag(tag);
+      return hasDialog || hasLoading || hasNotify || hasToast;
     }
     if (_dialogQueue.any((record) => types.contains(record.type))) {
       return true;
@@ -256,6 +270,32 @@ class OverlayManager {
       return true;
     }
     return false;
+  }
+
+  Future<T?>? existingClosedFuture<T>({
+    required String tag,
+    required OverlayType type,
+  }) {
+    if (type == OverlayType.notify) {
+      return _findNotify(
+        tag: tag,
+      )?.overlay.mainOverlay.currentClosedFuture<T>();
+    }
+
+    final record = _findRecord(type: type, tag: tag, force: true);
+    return record?.overlay.mainOverlay.currentClosedFuture<T>();
+  }
+
+  VoidCallback? existingRefresh({
+    required String tag,
+    required OverlayType type,
+  }) {
+    if (type == OverlayType.notify) {
+      return _findNotify(tag: tag)?.overlay.mainOverlay.currentRefresh;
+    }
+
+    final record = _findRecord(type: type, tag: tag, force: true);
+    return record?.overlay.mainOverlay.currentRefresh;
   }
 
   bool get hasWidgetBoundOverlays {

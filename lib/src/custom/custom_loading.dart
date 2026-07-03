@@ -16,10 +16,12 @@ class CustomLoading extends BaseOverlay {
   bool _visible = false;
   bool _canDismiss = true;
   Future<void> Function()? _pendingDismiss;
+  String? _tag;
   BackType _backType = BackType.normal;
   SuperOverlayOnBack? _onBack;
 
   bool get isVisible => _visible;
+  bool matchesTag(String tag) => _visible && _tag == tag;
   BackType get backType => _backType;
   SuperOverlayOnBack? get onBack => _onBack;
 
@@ -27,6 +29,7 @@ class CustomLoading extends BaseOverlay {
     _visible = true;
     _canDismiss = param.leastLoadingTime == Duration.zero;
     _pendingDismiss = null;
+    _tag = param.tag;
     _backType = param.backType;
     _onBack = param.onBack;
     _leastTimer?.cancel();
@@ -64,6 +67,7 @@ class CustomLoading extends BaseOverlay {
         return;
       }
       _visible = false;
+      _tag = null;
       _displayTimer?.cancel();
       await mainOverlay.dismiss<void>(closeType: closeType);
     }
@@ -84,6 +88,7 @@ class CustomLoading extends BaseOverlay {
     _pendingDismiss = null;
     _visible = false;
     _canDismiss = true;
+    _tag = null;
     _backType = BackType.normal;
     _onBack = null;
   }

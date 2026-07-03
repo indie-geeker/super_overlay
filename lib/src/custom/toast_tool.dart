@@ -8,6 +8,18 @@ import '../data/show_param.dart';
 import '../kit/debounce_utils.dart';
 import 'custom_toast.dart';
 
+class ToastShowResult<T> {
+  const ToastShowResult({
+    required this.visible,
+    required this.closed,
+    this.dismissTag,
+  });
+
+  final Future<void> visible;
+  final Future<T?> closed;
+  final String? dismissTag;
+}
+
 class ToastTool {
   ToastTool._();
 
@@ -20,16 +32,78 @@ class ToastTool {
   _ActiveToast? _onlyRefreshToast;
 
   bool get isExist => _activeToasts.isNotEmpty || _normalQueue.isNotEmpty;
+  bool hasTag(String tag) {
+    return _normalQueue.any((request) => request.matchesTag(tag)) ||
+        _activeToasts.any((active) => active.matchesTag(tag));
+  }
+
+  bool isActiveTag(String tag) {
+    return _activeToasts.any((active) => active.matchesTag(tag));
+  }
 
   Future<T?> show<T>(ShowToastParam param) {
+    return showCommand<T>(param).closed;
+  }
+
+  ToastShowResult<T> showCommand<T>(ShowToastParam param) {
     if (DebounceUtils.instance.banContinue(
       OverlayDebounceType.toast,
       debounce: param.debounce,
       duration: param.debounceTime,
     )) {
-      return Future<T?>.value();
+      return ToastShowResult<T>(
+        visible: Future<void>.value(),
+        closed: Future<T?>.value(),
+      );
     }
 
+    final lookupTag = param.businessTag ?? param.tag;
+    if (lookupTag != null) {
+      if (param.replaceExisting) {
+        final visible = Completer<void>();
+        final closed = () async {
+          try {
+            await dismiss(tag: lookupTag);
+            final result = _show<T>(param);
+            unawaited(
+              result.visible.then(
+                (_) {
+                  if (!visible.isCompleted) {
+                    visible.complete();
+                  }
+                },
+                onError: (Object error, StackTrace stackTrace) {
+                  if (!visible.isCompleted) {
+                    visible.completeError(error, stackTrace);
+                  }
+                },
+              ),
+            );
+            return await result.closed;
+          } catch (error, stackTrace) {
+            if (!visible.isCompleted) {
+              visible.completeError(error, stackTrace);
+            }
+            rethrow;
+          }
+        }();
+        return ToastShowResult<T>(visible: visible.future, closed: closed);
+      } else if (param.keepSingle) {
+        final existing = _findTaggedRequest(lookupTag);
+        if (existing != null) {
+          return ToastShowResult<T>(
+            visible: existing.visible,
+            closed: existing.future<T>(),
+            dismissTag: existing.param.tag,
+          );
+        }
+      }
+    }
+
+    return _show<T>(param);
+  }
+
+  ToastShowResult<T> _show<T>(ShowToastParam param) {
     final request = _ToastRequest(param);
     switch (param.displayType) {
       case ToastDisplayType.normal:
@@ -49,12 +123,21 @@ class ToastTool {
         _showStandalone(request);
         break;
     }
-    return request.future<T>();
+    return ToastShowResult<T>(
+      visible: request.visible,
+      closed: request.future<T>(),
+      dismissTag: request.param.tag,
+    );
   }
 
-  Future<void> dismiss({bool closeAll = false}) async {
+  Future<void> dismiss({bool closeAll = false, String? tag}) async {
     if (closeAll) {
       reset();
+      return;
+    }
+
+    if (tag != null) {
+      await _dismissTagged(tag);
       return;
     }
 
@@ -81,6 +164,49 @@ class ToastTool {
     _normalQueue.clear();
     _normalShowing = false;
     _onlyRefreshToast = null;
+  }
+
+  Future<void> _dismissTagged(String tag) async {
+    final queued = _normalQueue
+        .where((request) => request.matchesTag(tag))
+        .toList(growable: false);
+    for (final request in queued) {
+      _normalQueue.remove(request);
+      request.completeDismiss();
+    }
+
+    final activeToasts = _activeToasts
+        .where((active) => active.matchesTag(tag))
+        .toList(growable: false);
+    for (final active in activeToasts) {
+      if (!_activeToasts.remove(active)) {
+        continue;
+      }
+      if (_onlyRefreshToast == active) {
+        _onlyRefreshToast = null;
+      }
+      active.timer.cancel();
+      await active.toast.dismiss();
+      active.completeDismiss();
+      active.onDismissed?.call();
+    }
+  }
+
+  _ToastRequest? _findTaggedRequest(String tag) {
+    for (final active in _activeToasts.reversed) {
+      final request = active.requestForTag(tag);
+      if (request != null) {
+        return request;
+      }
+    }
+    final queued = _normalQueue.toList(growable: false);
+    for (var index = queued.length - 1; index >= 0; index--) {
+      final request = queued[index];
+      if (request.matchesTag(tag)) {
+        return request;
+      }
+    }
+    return null;
   }
 
   void _showNextNormal() {
@@ -158,6 +284,10 @@ class ToastTool {
       debounce: param.debounce,
       displayType: param.displayType,
       consumeEvent: param.consumeEvent,
+      tag: param.tag,
+      businessTag: param.businessTag,
+      keepSingle: param.keepSingle,
+      replaceExisting: param.replaceExisting,
     );
   }
 
@@ -212,6 +342,19 @@ class _ActiveToast {
     }
     _requests.clear();
   }
+
+  bool matchesTag(String tag) {
+    return _requests.any((request) => request.matchesTag(tag));
+  }
+
+  _ToastRequest? requestForTag(String tag) {
+    for (final request in _requests.reversed) {
+      if (request.matchesTag(tag)) {
+        return request;
+      }
+    }
+    return null;
+  }
 }
 
 class _ToastRequest {
@@ -220,6 +363,9 @@ class _ToastRequest {
   final ShowToastParam param;
   final Completer<void> _appearCompleter = Completer<void>();
   final Completer<void> _dismissCompleter = Completer<void>();
+
+  bool matchesTag(String tag) => param.tag == tag || param.businessTag == tag;
+  Future<void> get visible => _appearCompleter.future;
 
   Future<T?> future<T>() {
     return switch (param.awaitCompletion) {

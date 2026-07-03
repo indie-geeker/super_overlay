@@ -13,6 +13,7 @@ class SuperPopupOverlayBuilder {
   Widget? _maskWidget;
   bool _clickMaskDismiss = SuperOverlay.config.attach.clickMaskDismiss;
   String? _tag;
+  String? _businessTag;
   HighlightConfig? _highlight;
   PopupTargetRectBuilder? _targetRectBuilder;
   PopupTargetPointBuilder? _targetPointBuilder;
@@ -22,6 +23,9 @@ class SuperPopupOverlayBuilder {
   PopupScaleOriginBuilder? _scaleOriginBuilder;
   Rect? _maskIgnoreArea;
   SuperOverlayController? _controller;
+  Duration? _displayTime;
+  bool _keepSingle = false;
+  bool _bindPage = SuperOverlay.config.attach.bindPage;
   BackType _backType = SuperOverlay.config.attach.backType;
   SuperOverlayOnBack? _onBack;
   AwaitCompletion _awaitCompletion = SuperOverlay.config.attach.awaitCompletion;
@@ -33,6 +37,11 @@ class SuperPopupOverlayBuilder {
 
   SuperPopupOverlayBuilder withAlignment(Alignment alignment) {
     _alignment = alignment;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withDisplayTime(Duration displayTime) {
+    _displayTime = displayTime;
     return this;
   }
 
@@ -49,6 +58,21 @@ class SuperPopupOverlayBuilder {
 
   SuperPopupOverlayBuilder withTag(String tag) {
     _tag = tag;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder _withBusinessTag(String? tag) {
+    _businessTag = tag;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder withKeepSingle([bool enabled = true]) {
+    _keepSingle = enabled;
+    return this;
+  }
+
+  SuperPopupOverlayBuilder bindPage([bool enabled = true]) {
+    _bindPage = enabled;
     return this;
   }
 
@@ -140,11 +164,12 @@ class SuperPopupOverlayBuilder {
         awaitCompletion: _awaitCompletion,
         debounce: attach.debounce,
         debounceTime: attach.debounceTime,
-        displayTime: null,
+        displayTime: _displayTime,
         tag: _tag,
-        keepSingle: false,
+        businessTag: _businessTag,
+        keepSingle: _keepSingle,
         permanent: false,
-        bindPage: attach.bindPage,
+        bindPage: _bindPage,
         bindWidget: targetContext,
         ignoreArea: null,
         maskTriggerType: attach.maskTriggerType,

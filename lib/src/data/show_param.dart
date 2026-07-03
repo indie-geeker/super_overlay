@@ -68,6 +68,7 @@ class ShowCustomParam extends ShowParamBase {
     required this.debounceTime,
     required this.displayTime,
     required this.tag,
+    this.businessTag,
     required this.keepSingle,
     required this.permanent,
     required this.bindPage,
@@ -83,6 +84,7 @@ class ShowCustomParam extends ShowParamBase {
   final Duration debounceTime;
   final Duration? displayTime;
   final String? tag;
+  final String? businessTag;
   final bool keepSingle;
   final bool permanent;
   final bool bindPage;
@@ -112,6 +114,7 @@ class ShowCustomParam extends ShowParamBase {
     Duration? debounceTime,
     Duration? displayTime,
     String? tag,
+    String? businessTag,
     bool? keepSingle,
     bool? permanent,
     bool? bindPage,
@@ -141,6 +144,7 @@ class ShowCustomParam extends ShowParamBase {
       debounceTime: debounceTime ?? this.debounceTime,
       displayTime: displayTime ?? this.displayTime,
       tag: tag ?? this.tag,
+      businessTag: businessTag ?? this.businessTag,
       keepSingle: keepSingle ?? this.keepSingle,
       permanent: permanent ?? this.permanent,
       bindPage: bindPage ?? this.bindPage,
@@ -174,6 +178,7 @@ class ShowAttachParam extends ShowCustomParam {
     required super.debounceTime,
     required super.displayTime,
     required super.tag,
+    super.businessTag,
     required super.keepSingle,
     required super.permanent,
     required super.bindPage,
@@ -223,12 +228,14 @@ class ShowLoadingParam extends ShowParamBase {
     required super.awaitCompletion,
     required this.displayTime,
     required this.leastLoadingTime,
+    required this.tag,
     required this.backType,
     required this.onBack,
   });
 
   final Duration? displayTime;
   final Duration leastLoadingTime;
+  final String? tag;
   final BackType backType;
   final SuperOverlayOnBack? onBack;
 }
@@ -254,6 +261,10 @@ class ShowToastParam extends ShowParamBase {
     required this.debounce,
     required this.displayType,
     required this.consumeEvent,
+    required this.tag,
+    this.businessTag,
+    required this.keepSingle,
+    required this.replaceExisting,
   });
 
   final Duration displayTime;
@@ -261,6 +272,10 @@ class ShowToastParam extends ShowParamBase {
   final bool debounce;
   final ToastDisplayType displayType;
   final bool consumeEvent;
+  final String? tag;
+  final String? businessTag;
+  final bool keepSingle;
+  final bool replaceExisting;
 }
 
 class ShowNotifyParam extends ShowParamBase {
@@ -283,6 +298,7 @@ class ShowNotifyParam extends ShowParamBase {
     required this.debounceTime,
     required this.displayTime,
     required this.tag,
+    this.businessTag,
     required this.keepSingle,
     required this.backType,
     required this.onBack,
@@ -292,6 +308,7 @@ class ShowNotifyParam extends ShowParamBase {
   final Duration debounceTime;
   final Duration? displayTime;
   final String? tag;
+  final String? businessTag;
   final bool keepSingle;
   final BackType backType;
   final SuperOverlayOnBack? onBack;
