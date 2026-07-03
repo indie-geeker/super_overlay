@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'config/enum_config.dart';
 import 'config/overlay_config.dart';
+import 'data/notify_style.dart';
 import 'data/show_param.dart';
 import 'helper/overlay_manager.dart';
+import 'init_overlay.dart';
 import 'kit/overlay_controller.dart';
 import 'kit/typedef.dart';
 import 'widget/default/loading_widget.dart';
@@ -22,6 +24,24 @@ part 'builder/super_toast_overlay_builder.dart';
 
 class SuperOverlay {
   static final OverlayConfig config = OverlayConfig();
+
+  static NavigatorObserver get observer => SuperOverlayInit.observer;
+
+  static TransitionBuilder init({
+    TransitionBuilder? builder,
+    SuperOverlayStyleBuilder? styleBuilder,
+    SuperOverlayToastBuilder? toastBuilder,
+    SuperOverlayLoadingBuilder? loadingBuilder,
+    NotifyStyle? notifyStyle,
+  }) {
+    return SuperOverlayInit.init(
+      builder: builder,
+      styleBuilder: styleBuilder,
+      toastBuilder: toastBuilder,
+      loadingBuilder: loadingBuilder,
+      notifyStyle: notifyStyle,
+    );
+  }
 
   static SuperCustomOverlayBuilder show({required WidgetBuilder builder}) {
     return SuperCustomOverlayBuilder(builder: builder);

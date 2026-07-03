@@ -1,3 +1,6 @@
+export 'src/api/overlay_handle.dart';
+export 'src/api/overlay_options.dart';
+export 'src/api/overlay_policy.dart';
 export 'src/config/attach_dialog_config.dart';
 export 'src/config/custom_dialog_config.dart';
 export 'src/config/enum_config.dart';
