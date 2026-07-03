@@ -2,9 +2,15 @@
  * @Author: wen indiegeeker@gmail.com
  * @Date: 2026-06-30 23:15:10
  * @LastEditors: wen indiegeeker@gmail.com
- * @LastEditTime: 2026-07-02 00:36:46
+ * @LastEditTime: 2026-07-02 19:26:07
  * @Description: 
 -->
+
+## 0.1.2
+* Relax Dart SDK constraint to >=3.7.0 <4.0.0.
+* Relax Flutter minimum version to >=3.29.0.
+* Align example and lint constraints with the lowered SDK floor.
+
 ## 0.1.1
 
 * Corrected pub.dev metadata links to the `indie-geeker/super_overlay` GitHub

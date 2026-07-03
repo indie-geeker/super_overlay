@@ -169,18 +169,18 @@ class _OverlayDialogWidgetState extends State<OverlayDialogWidget>
         widget.alignment == Alignment.center
             ? FadeAnimation(controller: _bodyController, child: child)
             : SlideAnimation(
-                controller: _bodyController,
-                alignment: widget.alignment,
-                child: child,
-              ),
+              controller: _bodyController,
+              alignment: widget.alignment,
+              child: child,
+            ),
       AnimationType.centerScaleOtherSlide =>
         widget.alignment == Alignment.center
             ? ScaleAnimation(controller: _bodyController, child: child)
             : SlideAnimation(
-                controller: _bodyController,
-                alignment: widget.alignment,
-                child: child,
-              ),
+              controller: _bodyController,
+              alignment: widget.alignment,
+              child: child,
+            ),
     };
   }
 

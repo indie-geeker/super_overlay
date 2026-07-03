@@ -34,11 +34,12 @@ void registerPopupDismissTests() {
                   onPressed: () {
                     SuperOverlay.showPopup(
                           targetContext: targetContext,
-                          builder: (_) => const SizedBox(
-                            width: 120,
-                            height: 40,
-                            child: Text('Shifted Popup'),
-                          ),
+                          builder:
+                              (_) => const SizedBox(
+                                width: 120,
+                                height: 40,
+                                child: Text('Shifted Popup'),
+                              ),
                         )
                         .withTargetRect(
                           (targetRect) => targetRect.shift(const Offset(0, 24)),

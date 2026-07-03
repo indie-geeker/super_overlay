@@ -30,9 +30,10 @@ void registerCustomOverlayTests() {
       buildCustomOverlayApp(
         ElevatedButton(
           onPressed: () async {
-            result = await SuperOverlay.show(
-              builder: (_) => const Text('Dialog Content'),
-            ).withTag('profile').withMask(dismissible: true).fire<String>();
+            result =
+                await SuperOverlay.show(
+                  builder: (_) => const Text('Dialog Content'),
+                ).withTag('profile').withMask(dismissible: true).fire<String>();
           },
           child: const Text('Show'),
         ),
@@ -305,9 +306,11 @@ void registerCustomOverlayTests() {
 
     await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
 
-    final future = SuperOverlay.show(
-      builder: (_) => const Text('Await Appear'),
-    ).withTag('await-appear').withAwait(AwaitCompletion.appear).fire<void>();
+    final future =
+        SuperOverlay.show(builder: (_) => const Text('Await Appear'))
+            .withTag('await-appear')
+            .withAwait(AwaitCompletion.appear)
+            .fire<void>();
     future.then((_) => completed = true);
 
     await tester.pump();
@@ -335,9 +338,10 @@ void registerCustomOverlayTests() {
 
     await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
 
-    final future = SuperOverlay.show(
-      builder: (_) => const Text('Await None'),
-    ).withTag('await-none').withAwait(AwaitCompletion.none).fire<void>();
+    final future =
+        SuperOverlay.show(
+          builder: (_) => const Text('Await None'),
+        ).withTag('await-none').withAwait(AwaitCompletion.none).fire<void>();
     future.then((_) => completed = true);
 
     await tester.pump();
@@ -367,10 +371,11 @@ void registerCustomOverlayTests() {
       );
 
       SuperOverlay.show(
-            builder: (_) => const Align(
-              alignment: Alignment.topCenter,
-              child: Text('Passive Overlay'),
-            ),
+            builder:
+                (_) => const Align(
+                  alignment: Alignment.topCenter,
+                  child: Text('Passive Overlay'),
+                ),
           )
           .withMask(color: Colors.transparent, dismissible: false)
           .withPenetrate()

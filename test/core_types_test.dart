@@ -63,10 +63,11 @@ void main() {
     tester,
   ) async {
     final entry = SuperOverlayEntry(
-      builder: (_) => const Directionality(
-        textDirection: TextDirection.ltr,
-        child: Text('entry'),
-      ),
+      builder:
+          (_) => const Directionality(
+            textDirection: TextDirection.ltr,
+            child: Text('entry'),
+          ),
     );
 
     await tester.pumpWidget(

@@ -60,8 +60,8 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
                     Builder(
                       builder: (targetContext) {
                         return FilledButton.icon(
-                          onPressed: () =>
-                              _showWidgetBoundOverlay(targetContext),
+                          onPressed:
+                              () => _showWidgetBoundOverlay(targetContext),
                           icon: const Icon(Icons.ads_click_outlined),
                           label: const Text('显示控件绑定弹窗'),
                         );
@@ -114,10 +114,11 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
 
   void _showRouteBoundOverlay() {
     SuperOverlay.show(
-          builder: (_) => const SmallOverlay(
-            title: '页面绑定弹窗',
-            message: '覆盖新路由时隐藏，返回这个页面时恢复。',
-          ),
+          builder:
+              (_) => const SmallOverlay(
+                title: '页面绑定弹窗',
+                message: '覆盖新路由时隐藏，返回这个页面时恢复。',
+              ),
         )
         .withTag('route-bound')
         .bindPage()
@@ -130,18 +131,22 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
   void _pushCoveringRoute() {
     Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => Scaffold(
-          appBar: AppBar(title: const Text('覆盖路由')),
-          body: const Center(child: Text('返回后页面绑定弹窗会重新出现')),
-        ),
+        builder:
+            (_) => Scaffold(
+              appBar: AppBar(title: const Text('覆盖路由')),
+              body: const Center(child: Text('返回后页面绑定弹窗会重新出现')),
+            ),
       ),
     );
   }
 
   void _showWidgetBoundOverlay(BuildContext targetContext) {
     SuperOverlay.show(
-          builder: (_) =>
-              const SmallOverlay(title: '控件绑定弹窗', message: '这个弹窗跟随目标控件生命周期。'),
+          builder:
+              (_) => const SmallOverlay(
+                title: '控件绑定弹窗',
+                message: '这个弹窗跟随目标控件生命周期。',
+              ),
         )
         .withTag('widget-bound')
         .bindWidget(targetContext)
@@ -153,14 +158,15 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
 
   void _showBackOverlay(BackType type) {
     SuperOverlay.show(
-          builder: (_) => SmallOverlay(
-            title: 'BackType.${type.name}',
-            message: switch (type) {
-              BackType.normal => '按返回键会先关闭 overlay。',
-              BackType.block => '按返回键会被 overlay 拦截。',
-              BackType.ignore => '按返回键交给页面继续处理。',
-            },
-          ),
+          builder:
+              (_) => SmallOverlay(
+                title: 'BackType.${type.name}',
+                message: switch (type) {
+                  BackType.normal => '按返回键会先关闭 overlay。',
+                  BackType.block => '按返回键会被 overlay 拦截。',
+                  BackType.ignore => '按返回键交给页面继续处理。',
+                },
+              ),
         )
         .withTag('back-${type.name}')
         .withBack(type: type)

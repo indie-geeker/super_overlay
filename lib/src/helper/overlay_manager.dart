@@ -134,9 +134,10 @@ class OverlayManager {
       );
     }
 
-    final tag = param.keepSingle
-        ? param.tag ?? '_super_overlay_notify_keep_single'
-        : param.tag ?? '_super_overlay_notify_${_nextTagId++}';
+    final tag =
+        param.keepSingle
+            ? param.tag ?? '_super_overlay_notify_keep_single'
+            : param.tag ?? '_super_overlay_notify_${_nextTagId++}';
 
     if (param.keepSingle) {
       final existing = _findNotify(tag: tag);
@@ -178,18 +179,20 @@ class OverlayManager {
     required BackType backType,
     required SuperOverlayOnBack? onBack,
   }) {
-    final overlayContext = type == OverlayType.attach
-        ? contextAttach ?? contextCustom
-        : contextCustom;
+    final overlayContext =
+        type == OverlayType.attach
+            ? contextAttach ?? contextCustom
+            : contextCustom;
     if (overlayContext == null) {
       throw StateError(
         'SuperOverlay is not initialized. Use SuperOverlayInit.init() in MaterialApp.builder.',
       );
     }
 
-    final effectiveTag = keepSingle
-        ? tag ?? '_super_overlay_keep_single'
-        : tag ?? '_super_overlay_${_nextTagId++}';
+    final effectiveTag =
+        keepSingle
+            ? tag ?? '_super_overlay_keep_single'
+            : tag ?? '_super_overlay_${_nextTagId++}';
 
     if (keepSingle) {
       final existing = _findRecord(type: type, tag: effectiveTag, force: true);

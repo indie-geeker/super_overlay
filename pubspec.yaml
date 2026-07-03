@@ -1,13 +1,13 @@
 name: super_overlay
 description: Self-managed OverlayEntry dialogs, toasts, popups, loading indicators, and notifications for Flutter.
-version: 0.1.1
+version: 0.1.2
 homepage: https://github.com/indie-geeker/super_overlay
 repository: https://github.com/indie-geeker/super_overlay
 issue_tracker: https://github.com/indie-geeker/super_overlay/issues
 
 environment:
-  sdk: ^3.11.4
-  flutter: ">=3.41.0"
+  sdk: ">=3.7.0 <4.0.0"
+  flutter: ">=3.29.0"
 
 dependencies:
   flutter:
@@ -16,7 +16,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^6.0.0
+  flutter_lints: ^5.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

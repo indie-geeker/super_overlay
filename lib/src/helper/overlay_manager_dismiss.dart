@@ -135,9 +135,10 @@ extension _OverlayManagerDismiss on OverlayManager {
     }
     record.displayTimer = Timer(displayTime, () {
       dismiss<void>(
-        status: record.type == OverlayType.attach
-            ? DismissStatus.attach
-            : DismissStatus.custom,
+        status:
+            record.type == OverlayType.attach
+                ? DismissStatus.attach
+                : DismissStatus.custom,
         tag: record.tag,
       );
     });

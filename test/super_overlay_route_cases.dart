@@ -22,8 +22,8 @@ void registerRouteOverlayTests() {
                               ElevatedButton(
                                 onPressed: () {
                                   SuperOverlay.show(
-                                    builder: (_) =>
-                                        const Text('Route Bound Dialog'),
+                                    builder:
+                                        (_) => const Text('Route Bound Dialog'),
                                   ).withTag('route-bound').fire<void>();
                                 },
                                 child: const Text('Show Route Dialog'),
@@ -88,9 +88,10 @@ void registerRouteOverlayTests() {
                     onPressed: () {
                       Navigator.of(homeContext).push<void>(
                         MaterialPageRoute<void>(
-                          builder: (_) => const Scaffold(
-                            body: Center(child: Text('Second Route')),
-                          ),
+                          builder:
+                              (_) => const Scaffold(
+                                body: Center(child: Text('Second Route')),
+                              ),
                         ),
                       );
                     },
@@ -110,8 +111,8 @@ void registerRouteOverlayTests() {
 
     Navigator.of(tester.element(find.text('Show Home Dialog'))).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            const Scaffold(body: Center(child: Text('Second Route'))),
+        builder:
+            (_) => const Scaffold(body: Center(child: Text('Second Route'))),
       ),
     );
     await tester.pumpAndSettle();

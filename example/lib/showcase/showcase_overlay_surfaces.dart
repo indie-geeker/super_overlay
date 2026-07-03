@@ -175,9 +175,10 @@ class GuideTarget extends StatelessWidget {
   Widget build(BuildContext context) {
     return FilledButton.tonalIcon(
       style: FilledButton.styleFrom(
-        backgroundColor: active
-            ? ShowcaseColors.danger.withValues(alpha: 0.18)
-            : ShowcaseColors.info.withValues(alpha: 0.14),
+        backgroundColor:
+            active
+                ? ShowcaseColors.danger.withValues(alpha: 0.18)
+                : ShowcaseColors.info.withValues(alpha: 0.14),
         foregroundColor: active ? ShowcaseColors.danger : ShowcaseColors.info,
       ),
       onPressed: onPressed,

@@ -63,9 +63,10 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
                       ),
                     ],
                     selected: {_mode},
-                    onSelectionChanged: _requesting
-                        ? null
-                        : (values) => setState(() => _mode = values.first),
+                    onSelectionChanged:
+                        _requesting
+                            ? null
+                            : (values) => setState(() => _mode = values.first),
                   ),
                   const SizedBox(height: 14),
                   FilledButton.icon(

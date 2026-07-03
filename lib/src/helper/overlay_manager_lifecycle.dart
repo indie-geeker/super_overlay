@@ -6,10 +6,11 @@ extension _OverlayManagerLifecycle on OverlayManager {
       final handled = await _handleBackConfig(
         backType: loadingOverlay.backType,
         onBack: loadingOverlay.onBack,
-        close: () => dismiss<void>(
-          status: DismissStatus.loading,
-          closeType: OverlayCloseType.back,
-        ),
+        close:
+            () => dismiss<void>(
+              status: DismissStatus.loading,
+              closeType: OverlayCloseType.back,
+            ),
       );
       if (handled != null) {
         return handled;
@@ -22,11 +23,12 @@ extension _OverlayManagerLifecycle on OverlayManager {
       final handled = await _handleBackConfig(
         backType: record.backType,
         onBack: record.onBack,
-        close: () => dismiss<void>(
-          status: DismissStatus.notify,
-          tag: record.tag,
-          closeType: OverlayCloseType.back,
-        ),
+        close:
+            () => dismiss<void>(
+              status: DismissStatus.notify,
+              tag: record.tag,
+              closeType: OverlayCloseType.back,
+            ),
       );
       if (handled != null) {
         return handled;
@@ -41,13 +43,15 @@ extension _OverlayManagerLifecycle on OverlayManager {
     final handled = await _handleBackConfig(
       backType: record.backType,
       onBack: record.onBack,
-      close: () => dismiss<void>(
-        status: record.type == OverlayType.attach
-            ? DismissStatus.attach
-            : DismissStatus.custom,
-        tag: record.tag,
-        closeType: OverlayCloseType.back,
-      ),
+      close:
+          () => dismiss<void>(
+            status:
+                record.type == OverlayType.attach
+                    ? DismissStatus.attach
+                    : DismissStatus.custom,
+            tag: record.tag,
+            closeType: OverlayCloseType.back,
+          ),
     );
     return handled ?? false;
   }

@@ -241,9 +241,10 @@ class _AsyncImageCardState extends State<AsyncImageCard> {
         return;
       }
       setState(() {
-        _state = widget.item.imageShouldFail
-            ? ImageLoadState.failed
-            : ImageLoadState.ready;
+        _state =
+            widget.item.imageShouldFail
+                ? ImageLoadState.failed
+                : ImageLoadState.ready;
       });
     });
   }

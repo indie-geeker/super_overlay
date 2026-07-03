@@ -38,11 +38,13 @@ class _MaskAnimationState extends State<MaskAnimation> {
 
   @override
   Widget build(BuildContext context) {
-    final child = widget.maskWidget != null && !widget.usePenetrate
-        ? widget.maskWidget!
-        : ColoredBox(
-            color: widget.usePenetrate ? Colors.transparent : widget.maskColor,
-          );
+    final child =
+        widget.maskWidget != null && !widget.usePenetrate
+            ? widget.maskWidget!
+            : ColoredBox(
+              color:
+                  widget.usePenetrate ? Colors.transparent : widget.maskColor,
+            );
 
     return FadeTransition(opacity: _curvedAnimation, child: child);
   }

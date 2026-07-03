@@ -77,9 +77,8 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
     return LayoutBuilder(
       builder: (context, constraints) {
         final isWide = constraints.maxWidth >= 920;
-        final width = isWide
-            ? (constraints.maxWidth - 16) / 2
-            : constraints.maxWidth;
+        final width =
+            isWide ? (constraints.maxWidth - 16) / 2 : constraints.maxWidth;
         return Wrap(
           spacing: 16,
           runSpacing: 16,

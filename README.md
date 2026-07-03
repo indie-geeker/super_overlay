@@ -9,7 +9,7 @@ back-button handling without requiring a package-owned `Navigator` key.
 
 ```yaml
 dependencies:
-  super_overlay: ^0.1.1
+  super_overlay: ^0.1.2
 ```
 
 ## Initialize
@@ -31,7 +31,7 @@ popup geometry extension types, and default feedback builder types.
 
 ## Requirements
 
-SuperOverlay requires Dart `^3.11.4` and Flutter `>=3.41.0`.
+SuperOverlay requires Dart `>=3.7.0 <4.0.0` and Flutter `>=3.29.0`.
 
 ## Global Configuration
 

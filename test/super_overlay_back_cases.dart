@@ -10,16 +10,17 @@ void registerBackOverlayTests() {
         navigatorObservers: [SuperOverlayInit.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
-          '/second': (_) => Scaffold(
-            body: ElevatedButton(
-              onPressed: () {
-                SuperOverlay.show(
-                  builder: (_) => const Text('Back Normal Dialog'),
-                ).withBack(type: BackType.normal).fire<void>();
-              },
-              child: const Text('Show Back Normal'),
-            ),
-          ),
+          '/second':
+              (_) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    SuperOverlay.show(
+                      builder: (_) => const Text('Back Normal Dialog'),
+                    ).withBack(type: BackType.normal).fire<void>();
+                  },
+                  child: const Text('Show Back Normal'),
+                ),
+              ),
         },
       ),
     );
@@ -45,16 +46,17 @@ void registerBackOverlayTests() {
         navigatorObservers: [SuperOverlayInit.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
-          '/second': (_) => Scaffold(
-            body: ElevatedButton(
-              onPressed: () {
-                SuperOverlay.show(
-                  builder: (_) => const Text('Back Block Dialog'),
-                ).withBack(type: BackType.block).fire<void>();
-              },
-              child: const Text('Show Back Block'),
-            ),
-          ),
+          '/second':
+              (_) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    SuperOverlay.show(
+                      builder: (_) => const Text('Back Block Dialog'),
+                    ).withBack(type: BackType.block).fire<void>();
+                  },
+                  child: const Text('Show Back Block'),
+                ),
+              ),
         },
       ),
     );
@@ -81,16 +83,17 @@ void registerBackOverlayTests() {
         navigatorObservers: [SuperOverlayInit.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
-          '/second': (_) => Scaffold(
-            body: ElevatedButton(
-              onPressed: () {
-                SuperOverlay.show(
-                  builder: (_) => const Text('Back Ignore Dialog'),
-                ).withBack(type: BackType.ignore).fire<void>();
-              },
-              child: const Text('Show Back Ignore'),
-            ),
-          ),
+          '/second':
+              (_) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    SuperOverlay.show(
+                      builder: (_) => const Text('Back Ignore Dialog'),
+                    ).withBack(type: BackType.ignore).fire<void>();
+                  },
+                  child: const Text('Show Back Ignore'),
+                ),
+              ),
         },
       ),
     );
@@ -116,24 +119,25 @@ void registerBackOverlayTests() {
         navigatorObservers: [SuperOverlayInit.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
-          '/second': (_) => Scaffold(
-            body: ElevatedButton(
-              onPressed: () {
-                SuperOverlay.show(
-                      builder: (_) => const Text('Back Callback Dialog'),
-                    )
-                    .withBack(
-                      type: BackType.normal,
-                      onBack: () {
-                        backCalls++;
-                        return true;
-                      },
-                    )
-                    .fire<void>();
-              },
-              child: const Text('Show Back Callback'),
-            ),
-          ),
+          '/second':
+              (_) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    SuperOverlay.show(
+                          builder: (_) => const Text('Back Callback Dialog'),
+                        )
+                        .withBack(
+                          type: BackType.normal,
+                          onBack: () {
+                            backCalls++;
+                            return true;
+                          },
+                        )
+                        .fire<void>();
+                  },
+                  child: const Text('Show Back Callback'),
+                ),
+              ),
         },
       ),
     );
@@ -163,16 +167,17 @@ void registerBackOverlayTests() {
         navigatorObservers: [SuperOverlayInit.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
-          '/second': (_) => Scaffold(
-            body: ElevatedButton(
-              onPressed: () {
-                SuperOverlay.showLoading(
-                  msg: 'Back Loading',
-                ).withBack(type: BackType.normal).fire<void>();
-              },
-              child: const Text('Show Back Loading'),
-            ),
-          ),
+          '/second':
+              (_) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    SuperOverlay.showLoading(
+                      msg: 'Back Loading',
+                    ).withBack(type: BackType.normal).fire<void>();
+                  },
+                  child: const Text('Show Back Loading'),
+                ),
+              ),
         },
       ),
     );
@@ -198,20 +203,21 @@ void registerBackOverlayTests() {
         navigatorObservers: [SuperOverlayInit.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
-          '/second': (_) => Scaffold(
-            body: ElevatedButton(
-              onPressed: () {
-                SuperOverlay.showNotify(
-                      msg: 'Back Notify',
-                      type: NotifyType.alert,
-                    )
-                    .withDisplayTime(const Duration(seconds: 1))
-                    .withBack(type: BackType.normal)
-                    .fire<void>();
-              },
-              child: const Text('Show Back Notify'),
-            ),
-          ),
+          '/second':
+              (_) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    SuperOverlay.showNotify(
+                          msg: 'Back Notify',
+                          type: NotifyType.alert,
+                        )
+                        .withDisplayTime(const Duration(seconds: 1))
+                        .withBack(type: BackType.normal)
+                        .fire<void>();
+                  },
+                  child: const Text('Show Back Notify'),
+                ),
+              ),
         },
       ),
     );

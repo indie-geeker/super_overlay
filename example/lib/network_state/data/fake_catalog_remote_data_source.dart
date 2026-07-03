@@ -30,9 +30,8 @@ class FakeCatalogRemoteDataSource {
         ),
       ],
       CatalogRequestMode.empty => const [],
-      CatalogRequestMode.failure => throw const CatalogLoadFailure(
-        '远程服务暂时不可用，请稍后重试。',
-      ),
+      CatalogRequestMode.failure =>
+        throw const CatalogLoadFailure('远程服务暂时不可用，请稍后重试。'),
     };
   }
 }

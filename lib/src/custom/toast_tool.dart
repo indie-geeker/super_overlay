@@ -135,8 +135,11 @@ class ToastTool {
 
     final offset = _stackOffset(param.alignment, stackIndex);
     return ShowToastParam(
-      builder: (context) =>
-          Transform.translate(offset: offset, child: param.builder(context)),
+      builder:
+          (context) => Transform.translate(
+            offset: offset,
+            child: param.builder(context),
+          ),
       alignment: param.alignment,
       clickMaskDismiss: param.clickMaskDismiss,
       animationType: param.animationType,

@@ -22,10 +22,11 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
     final maskColor = _dialogDimmed ? ShowcaseColors.scrim : Colors.transparent;
     _log('Dialog: dismissible=$_dialogDismissible, dimmed=$_dialogDimmed');
     SuperOverlay.show(
-          builder: (_) => DialogSurface(
-            dismissible: _dialogDismissible,
-            dimmed: _dialogDimmed,
-          ),
+          builder:
+              (_) => DialogSurface(
+                dismissible: _dialogDismissible,
+                dimmed: _dialogDimmed,
+              ),
         )
         .withTag('dialog-lab')
         .withMask(color: maskColor, dismissible: _dialogDismissible)
@@ -37,11 +38,12 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
     _log('Toast: 单个自定义内容');
     SuperOverlay.showToast(
           'single',
-          builder: (_) => const ToastSurface(
-            icon: Icons.verified_outlined,
-            text: '图标 + 文案',
-            accent: ShowcaseColors.primary,
-          ),
+          builder:
+              (_) => const ToastSurface(
+                icon: Icons.verified_outlined,
+                text: '图标 + 文案',
+                accent: ShowcaseColors.primary,
+              ),
         )
         .withDisplayType(ToastDisplayType.last)
         .withDisplayTime(const Duration(seconds: 2))
@@ -53,11 +55,12 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
     for (var index = 0; index < 3; index++) {
       SuperOverlay.showToast(
             'queue-$index',
-            builder: (_) => ToastSurface(
-              icon: Icons.timelapse_outlined,
-              text: '队列 Toast ${index + 1}',
-              accent: ShowcaseColors.warning,
-            ),
+            builder:
+                (_) => ToastSurface(
+                  icon: Icons.timelapse_outlined,
+                  text: '队列 Toast ${index + 1}',
+                  accent: ShowcaseColors.warning,
+                ),
           )
           .withDisplayType(ToastDisplayType.normal)
           .withDisplayTime(const Duration(milliseconds: 900))
@@ -75,8 +78,9 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
     for (final item in items) {
       SuperOverlay.showToast(
             item.$2,
-            builder: (_) =>
-                ToastSurface(icon: item.$1, text: item.$2, accent: item.$3),
+            builder:
+                (_) =>
+                    ToastSurface(icon: item.$1, text: item.$2, accent: item.$3),
           )
           .withDisplayType(ToastDisplayType.multi)
           .withAlignment(Alignment.topRight)
@@ -118,27 +122,28 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
     _log('Popup: 打开选择器');
     SuperOverlay.showPopup(
           targetContext: targetContext,
-          builder: (_) => StatefulBuilder(
-            builder: (context, setPopupState) {
-              return ChoicePopup(
-                selected: selected,
-                multi: multi,
-                onSelected: (value) {
-                  setPopupState(() => selected = value);
+          builder:
+              (_) => StatefulBuilder(
+                builder: (context, setPopupState) {
+                  return ChoicePopup(
+                    selected: selected,
+                    multi: multi,
+                    onSelected: (value) {
+                      setPopupState(() => selected = value);
+                    },
+                    onToggle: (value, enabled) {
+                      setPopupState(() {
+                        if (enabled) {
+                          multi.add(value);
+                        } else {
+                          multi.remove(value);
+                        }
+                      });
+                    },
+                    onApply: () => _applyChoicePopup(selected, multi),
+                  );
                 },
-                onToggle: (value, enabled) {
-                  setPopupState(() {
-                    if (enabled) {
-                      multi.add(value);
-                    } else {
-                      multi.remove(value);
-                    }
-                  });
-                },
-                onApply: () => _applyChoicePopup(selected, multi),
-              );
-            },
-          ),
+              ),
         )
         .withTag('choice-popup')
         .withAlignment(_popupAlignment)
@@ -150,11 +155,12 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
   void _showPointPopup() {
     _log('Popup: 定点显示');
     SuperOverlay.showPopup(
-          builder: (_) => const PopupDemoSurface(
-            title: '定点 Popup',
-            message: '定点 Popup 内容',
-            icon: Icons.my_location_outlined,
-          ),
+          builder:
+              (_) => const PopupDemoSurface(
+                title: '定点 Popup',
+                message: '定点 Popup 内容',
+                icon: Icons.my_location_outlined,
+              ),
         )
         .withTag('point-popup')
         .withTargetPoint((_, _) => const Offset(260, 260))
@@ -168,11 +174,12 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
     _log('Popup: 替换内容并调整位置');
     SuperOverlay.showPopup(
           targetContext: targetContext,
-          builder: (_) => const PopupDemoSurface(
-            title: '原始 Popup',
-            message: '这个内容会被 replacement 替换',
-            icon: Icons.flip_to_front_outlined,
-          ),
+          builder:
+              (_) => const PopupDemoSurface(
+                title: '原始 Popup',
+                message: '这个内容会被 replacement 替换',
+                icon: Icons.flip_to_front_outlined,
+              ),
         )
         .withTag('adjusted-popup')
         .withAlignment(Alignment.bottomCenter)
@@ -197,11 +204,12 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
     _log('Popup: 自定义缩放原点');
     SuperOverlay.showPopup(
           targetContext: targetContext,
-          builder: (_) => const PopupDemoSurface(
-            title: '缩放原点 Popup',
-            message: '缩放原点 Popup 内容',
-            icon: Icons.open_with_outlined,
-          ),
+          builder:
+              (_) => const PopupDemoSurface(
+                title: '缩放原点 Popup',
+                message: '缩放原点 Popup 内容',
+                icon: Icons.open_with_outlined,
+              ),
         )
         .withTag('scale-origin-popup')
         .withAlignment(Alignment.bottomRight)
@@ -213,11 +221,12 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
   void _showMaskIgnorePopup() {
     _log('Popup: 遮罩忽略顶部区域');
     SuperOverlay.showPopup(
-          builder: (_) => const PopupDemoSurface(
-            title: '忽略遮罩区域',
-            message: '忽略遮罩 Popup 内容',
-            icon: Icons.layers_clear_outlined,
-          ),
+          builder:
+              (_) => const PopupDemoSurface(
+                title: '忽略遮罩区域',
+                message: '忽略遮罩 Popup 内容',
+                icon: Icons.layers_clear_outlined,
+              ),
         )
         .withTag('mask-ignore-popup')
         .withTargetPoint((_, _) => const Offset(280, 320))
@@ -258,10 +267,11 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
   Future<void> _showAwaitDemo() async {
     _log('Await: 等待 appear');
     await SuperOverlay.show(
-      builder: (_) => const SmallOverlay(
-        title: 'Await Completion',
-        message: '等待打开动画完成后记录事件。',
-      ),
+      builder:
+          (_) => const SmallOverlay(
+            title: 'Await Completion',
+            message: '等待打开动画完成后记录事件。',
+          ),
     ).withTag('await-demo').withAwait(AwaitCompletion.appear).fire<void>();
     if (!mounted) {
       return;

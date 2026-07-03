@@ -155,9 +155,10 @@ void registerFeedbackOverlayTests() {
 
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    final future = SuperOverlay.showToast(
-      'Await Toast None',
-    ).withDisplayTime(const Duration(seconds: 1)).fire<void>();
+    final future =
+        SuperOverlay.showToast(
+          'Await Toast None',
+        ).withDisplayTime(const Duration(seconds: 1)).fire<void>();
     future.then((_) => completed = true);
 
     await tester.pump();
@@ -175,10 +176,11 @@ void registerFeedbackOverlayTests() {
 
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    final future = SuperOverlay.showToast('Await Toast Dismiss')
-        .withDisplayTime(const Duration(milliseconds: 300))
-        .withAwait(AwaitCompletion.dismiss)
-        .fire<void>();
+    final future =
+        SuperOverlay.showToast('Await Toast Dismiss')
+            .withDisplayTime(const Duration(milliseconds: 300))
+            .withAwait(AwaitCompletion.dismiss)
+            .fire<void>();
     future.then((_) => completed = true);
 
     await tester.pump();

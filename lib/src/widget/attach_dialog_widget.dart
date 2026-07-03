@@ -152,22 +152,22 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
         _effectiveAlignment == Alignment.center
             ? FadeAnimation(controller: _bodyController, child: child)
             : SlideAnimation(
-                controller: _bodyController,
-                alignment: _effectiveAlignment,
-                child: child,
-              ),
+              controller: _bodyController,
+              alignment: _effectiveAlignment,
+              child: child,
+            ),
       AnimationType.centerScaleOtherSlide =>
         _effectiveAlignment == Alignment.center
             ? ScaleAnimation(
-                controller: _bodyController,
-                alignment: _scaleAlignment,
-                child: child,
-              )
+              controller: _bodyController,
+              alignment: _scaleAlignment,
+              child: child,
+            )
             : SlideAnimation(
-                controller: _bodyController,
-                alignment: _effectiveAlignment,
-                child: child,
-              ),
+              controller: _bodyController,
+              alignment: _effectiveAlignment,
+              child: child,
+            ),
     };
   }
 
@@ -224,23 +224,24 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
 
   Widget _buildMask(Rect targetRect) {
     final highlight = param.highlight;
-    final mask = highlight != null
-        ? HighlightMaskAnimation(
-            controller: _bodyController,
-            animate:
-                param.useAnimation &&
-                !param.nonAnimationTypes.contains(
-                  NonAnimationType.highlightMask,
-                ),
-            child: HighlightMask(
-              targetRect: targetRect,
-              maskColor: param.maskColor,
-              padding: highlight.padding,
-              borderRadius: highlight.borderRadius,
-              onDismiss: widget.onMask,
-            ),
-          )
-        : (param.maskWidget ?? ColoredBox(color: param.maskColor));
+    final mask =
+        highlight != null
+            ? HighlightMaskAnimation(
+              controller: _bodyController,
+              animate:
+                  param.useAnimation &&
+                  !param.nonAnimationTypes.contains(
+                    NonAnimationType.highlightMask,
+                  ),
+              child: HighlightMask(
+                targetRect: targetRect,
+                maskColor: param.maskColor,
+                padding: highlight.padding,
+                borderRadius: highlight.borderRadius,
+                onDismiss: widget.onMask,
+              ),
+            )
+            : (param.maskWidget ?? ColoredBox(color: param.maskColor));
 
     if (param.usePenetrate) {
       return _applyMaskIgnoreArea(IgnorePointer(child: mask));

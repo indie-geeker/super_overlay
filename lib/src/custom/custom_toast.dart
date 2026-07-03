@@ -56,8 +56,9 @@ class CustomToast extends BaseOverlay {
 extension on ShowToastParam {
   ShowCustomParam asCustomParam() {
     return ShowCustomParam(
-      builder: (context) =>
-          ToastHelper(consumeEvent: consumeEvent, child: builder(context)),
+      builder:
+          (context) =>
+              ToastHelper(consumeEvent: consumeEvent, child: builder(context)),
       alignment: alignment,
       clickMaskDismiss: clickMaskDismiss,
       animationType: animationType,

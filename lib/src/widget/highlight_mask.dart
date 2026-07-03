@@ -39,8 +39,8 @@ class _HoleClipper extends CustomClipper<Path> {
 
   @override
   Path getClip(Size size) {
-    final fullScreenPath = Path()
-      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final fullScreenPath =
+        Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     final holePath = Path()..addRRect(borderRadius.toRRect(holeRect));
     return Path.combine(PathOperation.difference, fullScreenPath, holePath);
   }

@@ -31,11 +31,12 @@ void registerPopupGeometryTests() {
                   onPressed: () {
                     SuperOverlay.showPopup(
                       targetContext: targetContext,
-                      builder: (_) => const SizedBox(
-                        width: 120,
-                        height: 40,
-                        child: Text('Popup Content'),
-                      ),
+                      builder:
+                          (_) => const SizedBox(
+                            width: 120,
+                            height: 40,
+                            child: Text('Popup Content'),
+                          ),
                     ).withTag('popup').fire<void>();
                   },
                   child: const Text('Target'),
@@ -95,12 +96,13 @@ void registerPopupGeometryTests() {
 
     SuperOverlay.showPopup(
           targetContext: targetContext,
-          builder: (_) => const SizedBox(
-            key: popupKey,
-            width: 80,
-            height: 20,
-            child: Text('Point Popup'),
-          ),
+          builder:
+              (_) => const SizedBox(
+                key: popupKey,
+                width: 80,
+                height: 20,
+                child: Text('Point Popup'),
+              ),
         )
         .withTargetPoint((targetOffset, targetSize) {
           observedTargetOffset = targetOffset;
@@ -135,12 +137,13 @@ void registerPopupGeometryTests() {
     await tester.pumpWidget(buildPopupGeometryApp(const SizedBox.shrink()));
 
     SuperOverlay.showPopup(
-          builder: (_) => const SizedBox(
-            key: popupKey,
-            width: 100,
-            height: 24,
-            child: Text('Targetless Popup'),
-          ),
+          builder:
+              (_) => const SizedBox(
+                key: popupKey,
+                width: 100,
+                height: 24,
+                child: Text('Targetless Popup'),
+              ),
         )
         .withTargetPoint((targetOffset, targetSize) {
           observedTargetOffset = targetOffset;
@@ -168,11 +171,12 @@ void registerPopupGeometryTests() {
     await tester.pumpWidget(buildPopupGeometryApp(const SizedBox.shrink()));
 
     SuperOverlay.showPopup(
-          builder: (_) => const SizedBox(
-            width: 80,
-            height: 20,
-            child: Text('Invalid Point Popup'),
-          ),
+          builder:
+              (_) => const SizedBox(
+                width: 80,
+                height: 20,
+                child: Text('Invalid Point Popup'),
+              ),
         )
         .withTargetPoint((_, _) => const Offset(double.nan, 10))
         .withTag('invalid-point-popup')
@@ -224,12 +228,13 @@ void registerPopupGeometryTests() {
 
     SuperOverlay.showPopup(
       targetContext: targetContext,
-      builder: (_) => const SizedBox(
-        key: rightPopupKey,
-        width: 60,
-        height: 30,
-        child: Text('Right Popup'),
-      ),
+      builder:
+          (_) => const SizedBox(
+            key: rightPopupKey,
+            width: 60,
+            height: 30,
+            child: Text('Right Popup'),
+          ),
     ).withAlignment(Alignment.centerRight).withTag('right-popup').fire<void>();
     await tester.pumpAndSettle();
 
@@ -246,12 +251,13 @@ void registerPopupGeometryTests() {
 
     SuperOverlay.showPopup(
       targetContext: targetContext,
-      builder: (_) => const SizedBox(
-        key: leftPopupKey,
-        width: 60,
-        height: 30,
-        child: Text('Left Popup'),
-      ),
+      builder:
+          (_) => const SizedBox(
+            key: leftPopupKey,
+            width: 60,
+            height: 30,
+            child: Text('Left Popup'),
+          ),
     ).withAlignment(Alignment.centerLeft).withTag('left-popup').fire<void>();
     await tester.pumpAndSettle();
 
@@ -277,11 +283,12 @@ void registerPopupGeometryTests() {
                   onPressed: () {
                     SuperOverlay.showPopup(
                       targetContext: targetContext,
-                      builder: (_) => const SizedBox(
-                        width: 320,
-                        height: 160,
-                        child: Text('Clamped Popup'),
-                      ),
+                      builder:
+                          (_) => const SizedBox(
+                            width: 320,
+                            height: 160,
+                            child: Text('Clamped Popup'),
+                          ),
                     ).fire<void>();
                   },
                   child: const Text('Edge'),
@@ -340,12 +347,13 @@ void registerPopupGeometryTests() {
 
     SuperOverlay.showPopup(
           targetContext: targetContext,
-          builder: (_) => const SizedBox(
-            key: popupKey,
-            width: 120,
-            height: 24,
-            child: Text('Left Edge Popup'),
-          ),
+          builder:
+              (_) => const SizedBox(
+                key: popupKey,
+                width: 120,
+                height: 24,
+                child: Text('Left Edge Popup'),
+              ),
         )
         .withAlignment(Alignment.bottomLeft)
         .withAlignmentMode(PopupAlignmentMode.center)
@@ -394,12 +402,13 @@ void registerPopupGeometryTests() {
 
     SuperOverlay.showPopup(
           targetContext: targetContext,
-          builder: (_) => const SizedBox(
-            key: popupKey,
-            width: 100,
-            height: 80,
-            child: Text('Bottom Edge Popup'),
-          ),
+          builder:
+              (_) => const SizedBox(
+                key: popupKey,
+                width: 100,
+                height: 80,
+                child: Text('Bottom Edge Popup'),
+              ),
         )
         .withAlignment(Alignment.bottomCenter)
         .withAlignmentMode(PopupAlignmentMode.center)
@@ -452,12 +461,13 @@ void registerPopupGeometryTests() {
       final popupKey = Key('$tag-popup');
       SuperOverlay.showPopup(
             targetContext: targetContext,
-            builder: (_) => SizedBox(
-              key: popupKey,
-              width: 60,
-              height: 24,
-              child: Text('$tag Popup'),
-            ),
+            builder:
+                (_) => SizedBox(
+                  key: popupKey,
+                  width: 60,
+                  height: 24,
+                  child: Text('$tag Popup'),
+                ),
           )
           .withAlignment(Alignment.bottomLeft)
           .withAlignmentMode(mode)
@@ -517,11 +527,12 @@ void registerPopupGeometryTests() {
 
     SuperOverlay.showPopup(
           targetContext: targetContext,
-          builder: (_) => const SizedBox(
-            width: 60,
-            height: 20,
-            child: Text('Original Popup'),
-          ),
+          builder:
+              (_) => const SizedBox(
+                width: 60,
+                height: 20,
+                child: Text('Original Popup'),
+              ),
         )
         .withReplacement((info) {
           observedInfo = info;
@@ -584,11 +595,12 @@ void registerPopupGeometryTests() {
 
     SuperOverlay.showPopup(
           targetContext: targetContext,
-          builder: (_) => const SizedBox(
-            width: 50,
-            height: 20,
-            child: Text('Unadjusted Popup'),
-          ),
+          builder:
+              (_) => const SizedBox(
+                width: 50,
+                height: 20,
+                child: Text('Unadjusted Popup'),
+              ),
         )
         .withAdjustment(
           (_) => const PopupAdjustment(
@@ -626,11 +638,12 @@ void registerPopupGeometryTests() {
     await tester.pumpWidget(buildPopupGeometryApp(const SizedBox.shrink()));
 
     SuperOverlay.showPopup(
-          builder: (_) => const SizedBox(
-            width: 80,
-            height: 40,
-            child: Text('Scaled Popup'),
-          ),
+          builder:
+              (_) => const SizedBox(
+                width: 80,
+                height: 40,
+                child: Text('Scaled Popup'),
+              ),
         )
         .withTargetPoint((_, _) => const Offset(200, 120))
         .withScaleOrigin(
@@ -662,11 +675,12 @@ void registerPopupGeometryTests() {
     await tester.pumpWidget(buildPopupGeometryApp(const SizedBox.shrink()));
 
     SuperOverlay.showPopup(
-          builder: (_) => const SizedBox(
-            width: 80,
-            height: 20,
-            child: Text('Base Replacement Popup'),
-          ),
+          builder:
+              (_) => const SizedBox(
+                width: 80,
+                height: 20,
+                child: Text('Base Replacement Popup'),
+              ),
         )
         .withTargetPoint((_, _) => const Offset(220, 140))
         .withReplacement(
