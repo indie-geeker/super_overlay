@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../config/enum_config.dart';
+import '../kit/typedef.dart';
 import 'overlay_policy.dart';
 
 /// Shared options for overlays that support route and dismissal policy.
@@ -76,15 +78,51 @@ class OverlayPopupOptions extends OverlaySurfaceOptions {
     super.backBehavior,
     super.displayDuration,
     this.alignment = Alignment.bottomCenter,
+    this.targetRectBuilder,
+    this.targetPointBuilder,
+    this.alignmentMode,
+    this.replacementBuilder,
+    this.adjustmentBuilder,
+    this.scaleOriginBuilder,
     this.highlightTarget = false,
+    this.highlightMaskColor,
+    this.highlightPadding = EdgeInsets.zero,
+    this.highlightBorderRadius = BorderRadius.zero,
     this.maskIgnoreArea,
   });
 
   /// Popup alignment relative to its target.
   final Alignment alignment;
 
+  /// Optional transform for the target widget rectangle before positioning.
+  final PopupTargetRectBuilder? targetRectBuilder;
+
+  /// Optional target point override.
+  final PopupTargetPointBuilder? targetPointBuilder;
+
+  /// Optional placement mode for aligning the popup to a target edge or corner.
+  final PopupAlignmentMode? alignmentMode;
+
+  /// Optional replacement builder that receives measured target and popup geometry.
+  final PopupReplacementBuilder? replacementBuilder;
+
+  /// Optional geometry-aware adjustment for the popup content or alignment.
+  final PopupAdjustmentBuilder? adjustmentBuilder;
+
+  /// Optional scale animation origin derived from the popup size.
+  final PopupScaleOriginBuilder? scaleOriginBuilder;
+
   /// Whether the target should be highlighted while the popup is visible.
   final bool highlightTarget;
+
+  /// Optional mask color used when [highlightTarget] is enabled.
+  final Color? highlightMaskColor;
+
+  /// Extra padding around the highlighted target.
+  final EdgeInsets highlightPadding;
+
+  /// Border radius applied to the highlighted target cutout.
+  final BorderRadius highlightBorderRadius;
 
   /// Optional area where the popup mask should not intercept input.
   final Rect? maskIgnoreArea;

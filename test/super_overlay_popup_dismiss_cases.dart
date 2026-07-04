@@ -4,10 +4,22 @@ import 'package:super_overlay/super_overlay.dart';
 
 Widget buildPopupDismissApp(Widget child) {
   return MaterialApp(
-    builder: SuperOverlayInit.init(),
-    navigatorObservers: [SuperOverlayInit.observer],
+    builder: SuperOverlay.init(),
+    navigatorObservers: [SuperOverlay.observer],
     home: Scaffold(body: child),
   );
+}
+
+Future<void> _closePopupHandle(
+  WidgetTester tester,
+  OverlayHandle<void> handle,
+) async {
+  expect(handle.isVisible, isTrue);
+  final close = handle.close();
+  await tester.pumpAndSettle();
+  await close;
+  await handle.closed;
+  expect(handle.isVisible, isFalse);
 }
 
 void main() {
@@ -19,6 +31,7 @@ void registerPopupDismissTests() {
     tester,
   ) async {
     const targetKey = Key('popup-target-box');
+    late OverlayHandle<void> handle;
 
     await tester.pumpWidget(
       buildPopupDismissApp(
@@ -32,20 +45,21 @@ void registerPopupDismissTests() {
                 height: 48,
                 child: ElevatedButton(
                   onPressed: () {
-                    SuperOverlay.showPopup(
-                          targetContext: targetContext,
-                          builder:
-                              (_) => const SizedBox(
-                                width: 120,
-                                height: 40,
-                                child: Text('Shifted Popup'),
-                              ),
-                        )
-                        .withTargetRect(
-                          (targetRect) => targetRect.shift(const Offset(0, 24)),
-                        )
-                        .withTag('shifted-popup')
-                        .fire<void>();
+                    handle = SuperOverlay.popup.show<void>(
+                      targetContext: targetContext,
+                      builder:
+                          (_) => const SizedBox(
+                            width: 120,
+                            height: 40,
+                            child: Text('Shifted Popup'),
+                          ),
+                      options: OverlayPopupOptions(
+                        tag: 'shifted-popup',
+                        targetRectBuilder:
+                            (targetRect) =>
+                                targetRect.shift(const Offset(0, 24)),
+                      ),
+                    );
                   },
                   child: const Text('Shift Target'),
                 ),
@@ -63,11 +77,7 @@ void registerPopupDismissTests() {
     final popupTop = tester.getTopLeft(find.text('Shifted Popup')).dy;
     expect(popupTop, greaterThanOrEqualTo(targetBottom + 24));
 
-    await SuperOverlay.dismiss(
-      status: DismissStatus.attach,
-      tag: 'shifted-popup',
-    );
-    await tester.pumpAndSettle();
+    await _closePopupHandle(tester, handle);
   });
 
   testWidgets('popup mask click dismisses only when enabled', (tester) async {
@@ -83,28 +93,35 @@ void registerPopupDismissTests() {
       ),
     );
 
-    SuperOverlay.showPopup(
+    final lockedHandle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder: (_) => const Text('Locked Popup'),
-    ).withMask(dismissible: false).withTag('locked').fire<void>();
+      options: const OverlayPopupOptions(
+        tag: 'locked',
+        dismissOnMaskTap: false,
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tapAt(const Offset(790, 590));
     await tester.pumpAndSettle();
     expect(find.text('Locked Popup'), findsOneWidget);
+    expect(lockedHandle.isVisible, isTrue);
 
-    await SuperOverlay.dismiss(status: DismissStatus.attach, tag: 'locked');
-    await tester.pumpAndSettle();
+    await _closePopupHandle(tester, lockedHandle);
 
-    SuperOverlay.showPopup(
+    final dismissibleHandle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder: (_) => const Text('Dismissible Popup'),
-    ).withMask(dismissible: true).fire<void>();
+      options: const OverlayPopupOptions(dismissOnMaskTap: true),
+    );
     await tester.pumpAndSettle();
 
     await tester.tapAt(const Offset(790, 590));
     await tester.pumpAndSettle();
+    await dismissibleHandle.closed;
     expect(find.text('Dismissible Popup'), findsNothing);
+    expect(dismissibleHandle.isVisible, isFalse);
   });
 
   testWidgets('popup mask ignore area lets uncovered taps pass through', (
@@ -146,14 +163,15 @@ void registerPopupDismissTests() {
       ),
     );
 
-    SuperOverlay.showPopup(
-          targetContext: targetContext,
-          builder: (_) => const Text('Ignore Area Popup'),
-        )
-        .withMask(dismissible: true)
-        .withMaskIgnoreArea(const Rect.fromLTRB(0, 0, 0, 100))
-        .withTag('ignore-area-popup')
-        .fire<void>();
+    final handle = SuperOverlay.popup.show<void>(
+      targetContext: targetContext,
+      builder: (_) => const Text('Ignore Area Popup'),
+      options: const OverlayPopupOptions(
+        tag: 'ignore-area-popup',
+        dismissOnMaskTap: true,
+        maskIgnoreArea: Rect.fromLTRB(0, 0, 0, 100),
+      ),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Bottom Action'));
@@ -161,11 +179,14 @@ void registerPopupDismissTests() {
 
     expect(bottomTaps, 1);
     expect(find.text('Ignore Area Popup'), findsOneWidget);
+    expect(handle.isVisible, isTrue);
 
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
+    await handle.closed;
 
     expect(find.text('Ignore Area Popup'), findsNothing);
+    expect(handle.isVisible, isFalse);
   });
 
   testWidgets(
@@ -183,31 +204,43 @@ void registerPopupDismissTests() {
         ),
       );
 
-      SuperOverlay.showPopup(
+      final attachOne = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
         builder: (_) => const Text('Attach One'),
-      ).withTag('attach-one').fire<void>();
+        options: const OverlayPopupOptions(tag: 'attach-one'),
+      );
       await tester.pumpAndSettle();
+      expect(attachOne.isVisible, isTrue);
 
       await SuperOverlay.dismiss(
         status: DismissStatus.attach,
         tag: 'attach-one',
       );
       await tester.pumpAndSettle();
+      await attachOne.closed;
       expect(find.text('Attach One'), findsNothing);
+      expect(attachOne.isVisible, isFalse);
 
-      SuperOverlay.showPopup(
+      final attachTwo = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
         builder: (_) => const Text('Attach Two'),
-      ).fire<void>();
-      SuperOverlay.show(builder: (_) => const Text('Custom Two')).fire<void>();
+      );
+      final customTwo = SuperOverlay.dialog.show<void>(
+        builder: (_) => const Text('Custom Two'),
+      );
       await tester.pumpAndSettle();
+      expect(attachTwo.isVisible, isTrue);
+      expect(customTwo.isVisible, isTrue);
 
       await SuperOverlay.dismiss(status: DismissStatus.allDialog);
       await tester.pumpAndSettle();
+      await attachTwo.closed;
+      await customTwo.closed;
 
       expect(find.text('Attach Two'), findsNothing);
       expect(find.text('Custom Two'), findsNothing);
+      expect(attachTwo.isVisible, isFalse);
+      expect(customTwo.isVisible, isFalse);
     },
   );
 }

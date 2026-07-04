@@ -141,6 +141,31 @@ class OverlayPopupService {
         .withBack(type: _backTypeFor(options.backBehavior))
         .withAwait(AwaitCompletion.dismiss);
 
+    final targetRectBuilder = options.targetRectBuilder;
+    if (targetRectBuilder != null) {
+      command.withTargetRect(targetRectBuilder);
+    }
+    final targetPointBuilder = options.targetPointBuilder;
+    if (targetPointBuilder != null) {
+      command.withTargetPoint(targetPointBuilder);
+    }
+    final alignmentMode = options.alignmentMode;
+    if (alignmentMode != null) {
+      command.withAlignmentMode(alignmentMode);
+    }
+    final replacementBuilder = options.replacementBuilder;
+    if (replacementBuilder != null) {
+      command.withReplacement(replacementBuilder);
+    }
+    final adjustmentBuilder = options.adjustmentBuilder;
+    if (adjustmentBuilder != null) {
+      command.withAdjustment(adjustmentBuilder);
+    }
+    final scaleOriginBuilder = options.scaleOriginBuilder;
+    if (scaleOriginBuilder != null) {
+      command.withScaleOrigin(scaleOriginBuilder);
+    }
+
     final tag = options.tag;
     final identityTag = _commandTag('popup');
     command.withTag(identityTag)._withBusinessTag(tag);
@@ -160,7 +185,11 @@ class OverlayPopupService {
       command.withDisplayTime(displayDuration);
     }
     if (options.highlightTarget) {
-      command.withHighlight();
+      command.withHighlight(
+        maskColor: options.highlightMaskColor,
+        padding: options.highlightPadding,
+        borderRadius: options.highlightBorderRadius,
+      );
     }
     final maskIgnoreArea = options.maskIgnoreArea;
     if (maskIgnoreArea != null) {
