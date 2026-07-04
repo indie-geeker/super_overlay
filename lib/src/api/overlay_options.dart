@@ -48,6 +48,7 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
     super.displayDuration,
     this.alignment = Alignment.center,
     this.barrierColor,
+    this.bindToWidget,
   });
 
   /// Where the dialog should be aligned inside the overlay host.
@@ -55,6 +56,13 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
 
   /// Optional barrier color for the dialog mask.
   final Color? barrierColor;
+
+  /// Optional widget context that owns the dialog lifecycle.
+  ///
+  /// When provided, the dialog is bound to the widget represented by this
+  /// context and closes automatically when that widget unmounts. Use this for
+  /// dialogs whose lifetime should not outlive a button, field, or local view.
+  final BuildContext? bindToWidget;
 }
 
 /// Options for command-style popup overlays.

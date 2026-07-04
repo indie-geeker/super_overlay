@@ -8,11 +8,11 @@ Widget buildFeedbackOverlayApp(
   SuperOverlayLoadingBuilder? loadingBuilder,
 }) {
   return MaterialApp(
-    builder: SuperOverlayInit.init(
+    builder: SuperOverlay.init(
       toastBuilder: toastBuilder,
       loadingBuilder: loadingBuilder,
     ),
-    navigatorObservers: [SuperOverlayInit.observer],
+    navigatorObservers: [SuperOverlay.observer],
     home: Scaffold(body: child),
   );
 }
@@ -22,57 +22,72 @@ void main() {
 }
 
 void registerFeedbackOverlayTests() {
-  testWidgets('loading shows and dismisses by loading status', (tester) async {
+  setUp(() {
+    SuperOverlay.config.loading = const LoadingConfig();
+    SuperOverlay.config.toast = const ToastConfig();
+  });
+
+  testWidgets('loading command shows and closes by handle', (tester) async {
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showLoading(msg: 'Loading...').fire<void>();
+    final handle = SuperOverlay.loading.show(message: 'Loading...');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
     expect(find.text('Loading...'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.loading);
+    final close = handle.close();
     await tester.pumpAndSettle();
+    await close;
+    await handle.closed;
 
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 
-  testWidgets('loading waits for leastLoadingTime before closing', (
+  testWidgets('loading waits for minimumVisibleDuration before closing', (
     tester,
   ) async {
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showLoading(
-      msg: 'Hold',
-    ).withLeastLoadingTime(const Duration(milliseconds: 500)).fire<void>();
+    final handle = SuperOverlay.loading.show(
+      message: 'Hold',
+      options: const OverlayLoadingOptions(
+        minimumVisibleDuration: Duration(milliseconds: 500),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
-    await SuperOverlay.dismiss(status: DismissStatus.loading);
+    final close = handle.close();
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Hold'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pumpAndSettle();
+    await close;
     expect(find.text('Hold'), findsNothing);
   });
 
-  testWidgets('repeated loading refreshes the singleton entry', (tester) async {
+  testWidgets('repeated loading commands refresh the singleton entry', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showLoading(msg: 'First Loading').fire<void>();
+    final first = SuperOverlay.loading.show(message: 'First Loading');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
-    SuperOverlay.showLoading(msg: 'Second Loading').fire<void>();
+    final second = SuperOverlay.loading.show(message: 'Second Loading');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
 
     expect(find.text('First Loading'), findsNothing);
     expect(find.text('Second Loading'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(first.isVisible, isFalse);
+    expect(second.isVisible, isTrue);
 
-    await SuperOverlay.dismiss(status: DismissStatus.loading);
+    await second.close();
     await tester.pumpAndSettle();
   });
 
@@ -89,14 +104,14 @@ void registerFeedbackOverlayTests() {
       ),
     );
 
-    SuperOverlay.showLoading(msg: 'Init Load').fire<void>();
+    final handle = SuperOverlay.loading.show(message: 'Init Load');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Default Loading Init Load'), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
 
-    await SuperOverlay.dismiss(status: DismissStatus.loading);
+    await handle.close();
     await tester.pumpAndSettle();
   });
 
@@ -111,15 +126,16 @@ void registerFeedbackOverlayTests() {
       ),
     );
 
-    SuperOverlay.showToast(
+    final handle = SuperOverlay.toast(
       'Init Saved',
-    ).withDisplayTime(const Duration(seconds: 1)).fire<void>();
+      options: const OverlayToastOptions(displayDuration: Duration(seconds: 1)),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Default Toast Init Saved'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
+    await handle.close();
     await tester.pumpAndSettle();
   });
 
@@ -136,70 +152,76 @@ void registerFeedbackOverlayTests() {
       ),
     );
 
-    SuperOverlay.showToast(
+    final handle = SuperOverlay.toast(
       'Override',
       builder: (_) => const Text('Per Call Toast'),
-    ).withDisplayTime(const Duration(seconds: 1)).fire<void>();
+      options: const OverlayToastOptions(displayDuration: Duration(seconds: 1)),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Per Call Toast'), findsOneWidget);
     expect(find.text('Default Toast Override'), findsNothing);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
+    await handle.close();
     await tester.pumpAndSettle();
   });
 
-  testWidgets('toast fire defaults to scheduling completion', (tester) async {
-    var completed = false;
-
+  testWidgets('toast command visible future completes while displayed', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    final future =
-        SuperOverlay.showToast(
-          'Await Toast None',
-        ).withDisplayTime(const Duration(seconds: 1)).fire<void>();
-    future.then((_) => completed = true);
+    final handle = SuperOverlay.toast(
+      'Await Toast Visible',
+      options: const OverlayToastOptions(displayDuration: Duration(seconds: 1)),
+    );
 
     await tester.pump();
-    await future;
+    await handle.visible;
 
-    expect(completed, isTrue);
-    expect(find.text('Await Toast None'), findsOneWidget);
+    expect(find.text('Await Toast Visible'), findsOneWidget);
+    expect(handle.isVisible, isTrue);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
+    await handle.close();
     await tester.pumpAndSettle();
   });
 
-  testWidgets('toast can await dismissal when configured', (tester) async {
+  testWidgets('toast closed future completes after auto-dismiss', (
+    tester,
+  ) async {
     var completed = false;
 
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    final future =
-        SuperOverlay.showToast('Await Toast Dismiss')
-            .withDisplayTime(const Duration(milliseconds: 300))
-            .withAwait(AwaitCompletion.dismiss)
-            .fire<void>();
-    future.then((_) => completed = true);
+    final handle = SuperOverlay.toast(
+      'Await Toast Dismiss',
+      options: const OverlayToastOptions(
+        displayDuration: Duration(milliseconds: 300),
+      ),
+    );
+    handle.closed.then((_) => completed = true);
 
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
     expect(completed, isFalse);
 
     await tester.pump(const Duration(milliseconds: 350));
-    await future;
+    await handle.closed;
 
     expect(completed, isTrue);
     expect(find.text('Await Toast Dismiss'), findsNothing);
   });
 
-  testWidgets('toast auto-dismisses', (tester) async {
+  testWidgets('toast auto-dismisses after displayDuration', (tester) async {
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showToast(
+    final handle = SuperOverlay.toast(
       'Saved',
-    ).withDisplayTime(const Duration(milliseconds: 300)).fire<void>();
+      options: const OverlayToastOptions(
+        displayDuration: Duration(milliseconds: 300),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -207,42 +229,57 @@ void registerFeedbackOverlayTests() {
 
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
+    await handle.closed;
 
     expect(find.text('Saved'), findsNothing);
   });
 
-  testWidgets('last toast replaces the previous toast', (tester) async {
+  testWidgets('replaceLatest toast replaces the previous toast', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showToast('First Last')
-        .withDisplayType(ToastDisplayType.last)
-        .withDisplayTime(const Duration(seconds: 1))
-        .fire<void>();
+    SuperOverlay.toast(
+      'First Last',
+      options: const OverlayToastOptions(
+        displayPolicy: OverlayToastDisplayPolicy.replaceLatest,
+        displayDuration: Duration(seconds: 1),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    SuperOverlay.showToast('Second Last')
-        .withDisplayType(ToastDisplayType.last)
-        .withDisplayTime(const Duration(seconds: 1))
-        .fire<void>();
+    final second = SuperOverlay.toast(
+      'Second Last',
+      options: const OverlayToastOptions(
+        displayPolicy: OverlayToastDisplayPolicy.replaceLatest,
+        displayDuration: Duration(seconds: 1),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('First Last'), findsNothing);
     expect(find.text('Second Last'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
+    await second.close();
     await tester.pumpAndSettle();
   });
 
-  testWidgets('normal toast queues toasts', (tester) async {
+  testWidgets('queue toast displays messages in order', (tester) async {
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showToast(
+    SuperOverlay.toast(
       'First Normal',
-    ).withDisplayTime(const Duration(milliseconds: 300)).fire<void>();
-    SuperOverlay.showToast(
+      options: const OverlayToastOptions(
+        displayDuration: Duration(milliseconds: 300),
+      ),
+    );
+    final second = SuperOverlay.toast(
       'Second Normal',
-    ).withDisplayTime(const Duration(milliseconds: 300)).fire<void>();
+      options: const OverlayToastOptions(
+        displayDuration: Duration(milliseconds: 300),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -255,74 +292,98 @@ void registerFeedbackOverlayTests() {
     expect(find.text('First Normal'), findsNothing);
     expect(find.text('Second Normal'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
+    await second.close();
     await tester.pumpAndSettle();
   });
 
-  testWidgets('onlyRefresh updates existing toast content', (tester) async {
+  testWidgets('refreshActive toast updates existing toast content', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showToast('First Refresh')
-        .withDisplayType(ToastDisplayType.onlyRefresh)
-        .withDisplayTime(const Duration(seconds: 1))
-        .fire<void>();
+    SuperOverlay.toast(
+      'First Refresh',
+      options: const OverlayToastOptions(
+        displayPolicy: OverlayToastDisplayPolicy.refreshActive,
+        displayDuration: Duration(seconds: 1),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
-    SuperOverlay.showToast('Second Refresh')
-        .withDisplayType(ToastDisplayType.onlyRefresh)
-        .withDisplayTime(const Duration(seconds: 1))
-        .fire<void>();
+    final second = SuperOverlay.toast(
+      'Second Refresh',
+      options: const OverlayToastOptions(
+        displayPolicy: OverlayToastDisplayPolicy.refreshActive,
+        displayDuration: Duration(seconds: 1),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('First Refresh'), findsNothing);
     expect(find.text('Second Refresh'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
+    await second.close();
     await tester.pumpAndSettle();
   });
 
-  testWidgets('multi toast shows multiple entries', (tester) async {
+  testWidgets('stack toast shows multiple entries', (tester) async {
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showToast('First Multi')
-        .withDisplayType(ToastDisplayType.multi)
-        .withDisplayTime(const Duration(seconds: 1))
-        .fire<void>();
-    SuperOverlay.showToast('Second Multi')
-        .withDisplayType(ToastDisplayType.multi)
-        .withDisplayTime(const Duration(seconds: 1))
-        .fire<void>();
+    final first = SuperOverlay.toast(
+      'First Multi',
+      options: const OverlayToastOptions(
+        displayPolicy: OverlayToastDisplayPolicy.stack,
+        displayDuration: Duration(seconds: 1),
+      ),
+    );
+    final second = SuperOverlay.toast(
+      'Second Multi',
+      options: const OverlayToastOptions(
+        displayPolicy: OverlayToastDisplayPolicy.stack,
+        displayDuration: Duration(seconds: 1),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('First Multi'), findsOneWidget);
     expect(find.text('Second Multi'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
+    await first.close();
+    await second.close();
     await tester.pumpAndSettle();
   });
 
-  testWidgets('multi toast stacks entries without visual overlap', (
-    tester,
-  ) async {
+  testWidgets('stack toast entries do not visually overlap', (tester) async {
     await tester.pumpWidget(buildFeedbackOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showToast('Stack One')
-        .withDisplayType(ToastDisplayType.multi)
-        .withAlignment(Alignment.topRight)
-        .withDisplayTime(const Duration(seconds: 1))
-        .fire<void>();
-    SuperOverlay.showToast('Stack Two')
-        .withDisplayType(ToastDisplayType.multi)
-        .withAlignment(Alignment.topRight)
-        .withDisplayTime(const Duration(seconds: 1))
-        .fire<void>();
-    SuperOverlay.showToast('Stack Three')
-        .withDisplayType(ToastDisplayType.multi)
-        .withAlignment(Alignment.topRight)
-        .withDisplayTime(const Duration(seconds: 1))
-        .fire<void>();
+    final handles = [
+      SuperOverlay.toast(
+        'Stack One',
+        options: const OverlayToastOptions(
+          displayPolicy: OverlayToastDisplayPolicy.stack,
+          alignment: Alignment.topRight,
+          displayDuration: Duration(seconds: 1),
+        ),
+      ),
+      SuperOverlay.toast(
+        'Stack Two',
+        options: const OverlayToastOptions(
+          displayPolicy: OverlayToastDisplayPolicy.stack,
+          alignment: Alignment.topRight,
+          displayDuration: Duration(seconds: 1),
+        ),
+      ),
+      SuperOverlay.toast(
+        'Stack Three',
+        options: const OverlayToastOptions(
+          displayPolicy: OverlayToastDisplayPolicy.stack,
+          alignment: Alignment.topRight,
+          displayDuration: Duration(seconds: 1),
+        ),
+      ),
+    ];
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -333,7 +394,9 @@ void registerFeedbackOverlayTests() {
     expect(secondTop, greaterThan(firstTop));
     expect(thirdTop, greaterThan(secondTop));
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
+    for (final handle in handles) {
+      await handle.close();
+    }
     await tester.pumpAndSettle();
   });
 }

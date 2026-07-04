@@ -4,8 +4,8 @@ import 'package:super_overlay/super_overlay.dart';
 
 Widget _buildApp(Widget child) {
   return MaterialApp(
-    builder: SuperOverlayInit.init(),
-    navigatorObservers: [SuperOverlayInit.observer],
+    builder: SuperOverlay.init(),
+    navigatorObservers: [SuperOverlay.observer],
     home: Scaffold(body: child),
   );
 }
@@ -72,19 +72,28 @@ void main() {
 
     await tester.pumpWidget(_buildApp(const SizedBox.shrink()));
 
-    SuperOverlay.show(
+    final first = SuperOverlay.dialog.show<void>(
       builder: (_) => const Text('First'),
-    ).withTag('first').fire<void>();
-    SuperOverlay.show(
+      options: const OverlayDialogOptions(tag: 'first'),
+    );
+    final second = SuperOverlay.dialog.show<void>(
       builder: (_) => const Text('Second'),
-    ).withTag('second').fire<void>();
+      options: const OverlayDialogOptions(tag: 'second'),
+    );
     await tester.pump();
 
     expect(find.text('First'), findsOneWidget);
     expect(find.text('Second'), findsOneWidget);
+    expect(first.isVisible, isTrue);
+    expect(second.isVisible, isTrue);
+    expect(SuperOverlay.checkExist(tag: 'first'), isTrue);
+    expect(SuperOverlay.checkExist(tag: 'second'), isTrue);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allDialog, force: true);
-    await tester.pump();
+    await first.close();
+    await second.close();
+    await tester.pumpAndSettle();
+    await first.closed;
+    await second.closed;
   });
 
   testWidgets('dismiss waits for the configured close animation', (
@@ -97,15 +106,16 @@ void main() {
 
     await tester.pumpWidget(_buildApp(const SizedBox.shrink()));
 
-    SuperOverlay.show(
+    final handle = SuperOverlay.dialog.show<void>(
       builder: (_) => const Text('Animated'),
-    ).withTag('animated').fire<void>();
+      options: const OverlayDialogOptions(tag: 'animated'),
+    );
     await tester.pumpAndSettle();
 
+    expect(handle.isVisible, isTrue);
+
     var completed = false;
-    final dismiss = SuperOverlay.dismiss(
-      tag: 'animated',
-    ).then((_) => completed = true);
+    final close = handle.close().then((_) => completed = true);
 
     await tester.pump();
     expect(completed, isFalse);
@@ -115,9 +125,11 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 100));
     await tester.pump();
-    await dismiss;
+    await close;
+    await handle.closed;
 
     expect(completed, isTrue);
     expect(find.text('Animated'), findsNothing);
+    expect(handle.isVisible, isFalse);
   });
 }

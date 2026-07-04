@@ -70,6 +70,11 @@ class OverlayDialogService {
         .withBack(type: _backTypeFor(options.backBehavior))
         .withAwait(AwaitCompletion.dismiss);
 
+    final bindToWidget = options.bindToWidget;
+    if (bindToWidget != null) {
+      command.bindWidget(bindToWidget);
+    }
+
     final tag = options.tag;
     final identityTag = _commandTag('dialog');
     command.withTag(identityTag)._withBusinessTag(tag);

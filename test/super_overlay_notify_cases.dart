@@ -4,8 +4,8 @@ import 'package:super_overlay/super_overlay.dart';
 
 Widget buildNotifyOverlayApp(Widget child, {NotifyStyle? notifyStyle}) {
   return MaterialApp(
-    builder: SuperOverlayInit.init(notifyStyle: notifyStyle),
-    navigatorObservers: [SuperOverlayInit.observer],
+    builder: SuperOverlay.init(notifyStyle: notifyStyle),
+    navigatorObservers: [SuperOverlay.observer],
     home: Scaffold(body: child),
   );
 }
@@ -15,29 +15,43 @@ void main() {
 }
 
 void registerNotifyOverlayTests() {
-  testWidgets('each notify type renders its default builder', (tester) async {
+  setUp(() {
+    SuperOverlay.config.notify = const NotifyConfig();
+  });
+
+  testWidgets('each notify command renders its default builder', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildNotifyOverlayApp(const SizedBox.shrink()));
 
-    for (final type in NotifyType.values) {
-      final message = 'notify-${type.name}';
-      SuperOverlay.showNotify(msg: message, type: type).fire<void>();
+    final handles = [
+      SuperOverlay.notify.success('notify-success'),
+      SuperOverlay.notify.failure('notify-failure'),
+      SuperOverlay.notify.warning('notify-warning'),
+      SuperOverlay.notify.error('notify-error'),
+      SuperOverlay.notify.alert('notify-alert'),
+    ];
+
+    for (var i = 0; i < handles.length; i++) {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text(message), findsOneWidget);
+      expect(find.text('notify-${NotifyType.values[i].name}'), findsOneWidget);
 
-      await SuperOverlay.dismiss(status: DismissStatus.allNotify);
+      await handles[i].close();
       await tester.pumpAndSettle();
     }
   });
 
-  testWidgets('notify auto-dismisses after display time', (tester) async {
+  testWidgets('notify auto-dismisses after displayDuration', (tester) async {
     await tester.pumpWidget(buildNotifyOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showNotify(
-      msg: 'Auto Notify',
-      type: NotifyType.success,
-    ).withDisplayTime(const Duration(milliseconds: 300)).fire<void>();
+    final handle = SuperOverlay.notify.success(
+      'Auto Notify',
+      options: const OverlayNotifyOptions(
+        displayDuration: Duration(milliseconds: 300),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -45,6 +59,7 @@ void registerNotifyOverlayTests() {
 
     await tester.pump(const Duration(milliseconds: 250));
     await tester.pumpAndSettle();
+    await handle.closed;
     expect(find.text('Auto Notify'), findsNothing);
   });
 
@@ -63,17 +78,14 @@ void registerNotifyOverlayTests() {
       ),
     );
 
-    SuperOverlay.showNotify(
-      msg: 'Init Notify',
-      type: NotifyType.success,
-    ).fire<void>();
+    final handle = SuperOverlay.notify.success('Init Notify');
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Styled Success Init Notify'), findsOneWidget);
     expect(find.text('Init Notify'), findsNothing);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allNotify);
+    await handle.close();
     await tester.pumpAndSettle();
   });
 
@@ -82,18 +94,18 @@ void registerNotifyOverlayTests() {
   ) async {
     await tester.pumpWidget(buildNotifyOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.showNotify(
-      msg: 'Notify One',
-      type: NotifyType.success,
-    ).withTag('notify-one').fire<void>();
-    SuperOverlay.showNotify(
-      msg: 'Notify Two',
-      type: NotifyType.warning,
-    ).withTag('notify-two').fire<void>();
+    final one = SuperOverlay.notify.success(
+      'Notify One',
+      options: const OverlayNotifyOptions(tag: 'notify-one'),
+    );
+    final two = SuperOverlay.notify.warning(
+      'Notify Two',
+      options: const OverlayNotifyOptions(tag: 'notify-two'),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    await SuperOverlay.dismiss(status: DismissStatus.notify, tag: 'notify-one');
+    await one.close();
     await tester.pumpAndSettle();
 
     expect(find.text('Notify One'), findsNothing);
@@ -101,6 +113,7 @@ void registerNotifyOverlayTests() {
 
     await SuperOverlay.dismiss(status: DismissStatus.allNotify);
     await tester.pumpAndSettle();
+    await two.closed;
     expect(find.text('Notify Two'), findsNothing);
   });
 
@@ -109,21 +122,21 @@ void registerNotifyOverlayTests() {
     (tester) async {
       await tester.pumpWidget(buildNotifyOverlayApp(const SizedBox.shrink()));
 
-      SuperOverlay.show(builder: (_) => const Text('Auto Custom')).fire<void>();
-      SuperOverlay.showNotify(
-        msg: 'Auto Notify',
-        type: NotifyType.alert,
-      ).fire<void>();
+      final dialog = SuperOverlay.dialog.show<void>(
+        builder: (_) => const Text('Auto Custom'),
+      );
+      final notify = SuperOverlay.notify.alert('Auto Notify');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
       await SuperOverlay.dismiss(status: DismissStatus.auto);
       await tester.pumpAndSettle();
+      await notify.closed;
 
       expect(find.text('Auto Notify'), findsNothing);
       expect(find.text('Auto Custom'), findsOneWidget);
 
-      await SuperOverlay.dismiss(status: DismissStatus.allDialog);
+      await dialog.close();
       await tester.pumpAndSettle();
     },
   );

@@ -74,11 +74,17 @@ class SuperOverlay {
     return SuperToastOverlayBuilder(message: message, builder: builder);
   }
 
+  /// Shows a toast message through the command API.
+  ///
+  /// When [builder] is provided, it renders this toast only and takes
+  /// precedence over the default builder configured with
+  /// `SuperOverlay.init(toastBuilder: ...)`.
   static OverlayHandle<void> toast(
     String message, {
+    WidgetBuilder? builder,
     OverlayToastOptions options = const OverlayToastOptions(),
   }) {
-    return _toastService.show(message, options: options);
+    return _toastService.show(message, builder: builder, options: options);
   }
 
   static SuperPopupOverlayBuilder showPopup({

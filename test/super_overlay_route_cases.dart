@@ -1,13 +1,15 @@
 part of 'super_overlay_test.dart';
 
 void registerRouteOverlayTests() {
-  testWidgets('popping a route removes bindPage dialogs from that route', (
+  testWidgets('popping a route removes route-bound dialogs from that route', (
     tester,
   ) async {
+    late OverlayHandle<void> routeHandle;
+
     await tester.pumpWidget(
       MaterialApp(
-        builder: SuperOverlayInit.init(),
-        navigatorObservers: [SuperOverlayInit.observer],
+        builder: SuperOverlay.init(),
+        navigatorObservers: [SuperOverlay.observer],
         home: Scaffold(
           body: Builder(
             builder: (homeContext) {
@@ -21,10 +23,14 @@ void registerRouteOverlayTests() {
                             children: [
                               ElevatedButton(
                                 onPressed: () {
-                                  SuperOverlay.show(
+                                  routeHandle = SuperOverlay.dialog.show<void>(
                                     builder:
                                         (_) => const Text('Route Bound Dialog'),
-                                  ).withTag('route-bound').fire<void>();
+                                    options: const OverlayDialogOptions(
+                                      tag: 'route-bound',
+                                      bindToRoute: true,
+                                    ),
+                                  );
                                 },
                                 child: const Text('Show Route Dialog'),
                               ),
@@ -59,18 +65,21 @@ void registerRouteOverlayTests() {
 
     Navigator.of(tester.element(find.text('Show Route Dialog'))).pop();
     await tester.pumpAndSettle();
+    await routeHandle.closed;
 
     expect(find.text('Route Bound Dialog'), findsNothing);
     expect(SuperOverlay.checkExist(tag: 'route-bound'), isFalse);
   });
 
-  testWidgets('pushing a new route hides bound dialogs and pop shows them', (
+  testWidgets('pushing a new route hides bound dialogs and pop restores them', (
     tester,
   ) async {
+    late OverlayHandle<void> homeHandle;
+
     await tester.pumpWidget(
       MaterialApp(
-        builder: SuperOverlayInit.init(),
-        navigatorObservers: [SuperOverlayInit.observer],
+        builder: SuperOverlay.init(),
+        navigatorObservers: [SuperOverlay.observer],
         home: Scaffold(
           body: Builder(
             builder: (homeContext) {
@@ -78,9 +87,13 @@ void registerRouteOverlayTests() {
                 children: [
                   ElevatedButton(
                     onPressed: () {
-                      SuperOverlay.show(
+                      homeHandle = SuperOverlay.dialog.show<void>(
                         builder: (_) => const Text('Home Bound Dialog'),
-                      ).withTag('home-bound').fire<void>();
+                        options: const OverlayDialogOptions(
+                          tag: 'home-bound',
+                          bindToRoute: true,
+                        ),
+                      );
                     },
                     child: const Text('Show Home Dialog'),
                   ),
@@ -125,7 +138,7 @@ void registerRouteOverlayTests() {
     await tester.pumpAndSettle();
 
     expect(find.text('Home Bound Dialog'), findsOneWidget);
-    await SuperOverlay.dismiss(tag: 'home-bound');
+    await homeHandle.close();
     await tester.pumpAndSettle();
   });
 }

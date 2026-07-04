@@ -4,8 +4,8 @@ import 'package:super_overlay/super_overlay.dart';
 
 Widget buildCustomOverlayApp(Widget child) {
   return MaterialApp(
-    builder: SuperOverlayInit.init(),
-    navigatorObservers: [SuperOverlayInit.observer],
+    builder: SuperOverlay.init(),
+    navigatorObservers: [SuperOverlay.observer],
     home: Scaffold(body: child),
   );
 }
@@ -15,25 +15,33 @@ void main() {
 }
 
 void registerCustomOverlayTests() {
-  testWidgets('initializes with SuperOverlayInit builder', (tester) async {
+  setUp(() {
+    SuperOverlay.config.custom = const CustomDialogConfig();
+    SuperOverlay.config.attach = const AttachDialogConfig();
+    SuperOverlay.config.loading = const LoadingConfig();
+    SuperOverlay.config.notify = const NotifyConfig();
+    SuperOverlay.config.toast = const ToastConfig();
+  });
+
+  testWidgets('initializes with SuperOverlay command host', (tester) async {
     await tester.pumpWidget(buildCustomOverlayApp(const Text('home')));
 
     expect(find.text('home'), findsOneWidget);
   });
 
-  testWidgets('custom overlay new API renders and dismisses by tag', (
+  testWidgets('dialog command renders and closes with a result', (
     tester,
   ) async {
-    Object? result;
+    late OverlayHandle<String> handle;
 
     await tester.pumpWidget(
       buildCustomOverlayApp(
         ElevatedButton(
-          onPressed: () async {
-            result =
-                await SuperOverlay.show(
-                  builder: (_) => const Text('Dialog Content'),
-                ).withTag('profile').withMask(dismissible: true).fire<String>();
+          onPressed: () {
+            handle = SuperOverlay.dialog.show<String>(
+              builder: (_) => const Text('Dialog Content'),
+              options: const OverlayDialogOptions(tag: 'profile'),
+            );
           },
           child: const Text('Show'),
         ),
@@ -43,31 +51,35 @@ void registerCustomOverlayTests() {
     expect(find.text('Dialog Content'), findsNothing);
 
     await tester.tap(find.text('Show'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await handle.visible;
 
     expect(find.text('Dialog Content'), findsOneWidget);
     expect(SuperOverlay.checkExist(tag: 'profile'), isTrue);
 
-    await SuperOverlay.dismiss(
-      status: DismissStatus.auto,
-      tag: 'profile',
-      result: 'closed',
-    );
+    final closed = expectLater(handle.closed, completion('closed'));
+    final close = handle.close('closed');
     await tester.pumpAndSettle();
+    await close;
+    await closed;
 
     expect(find.text('Dialog Content'), findsNothing);
     expect(SuperOverlay.checkExist(tag: 'profile'), isFalse);
-    expect(result, 'closed');
   });
 
-  testWidgets('mask click dismisses when enabled', (tester) async {
+  testWidgets('mask tap dismisses a dialog command when enabled', (
+    tester,
+  ) async {
+    late OverlayHandle<void> handle;
+
     await tester.pumpWidget(
       buildCustomOverlayApp(
         ElevatedButton(
           onPressed: () {
-            SuperOverlay.show(
+            handle = SuperOverlay.dialog.show<void>(
               builder: (_) => const Text('Mask Dialog'),
-            ).withMask(dismissible: true).fire<void>();
+              options: const OverlayDialogOptions(dismissOnMaskTap: true),
+            );
           },
           child: const Text('Show'),
         ),
@@ -81,11 +93,13 @@ void registerCustomOverlayTests() {
 
     await tester.tapAt(const Offset(790, 590));
     await tester.pumpAndSettle();
+    await handle.closed;
 
     expect(find.text('Mask Dialog'), findsNothing);
+    expect(handle.isVisible, isFalse);
   });
 
-  testWidgets('loading, toast, popup, and notify call sites use new API', (
+  testWidgets('command surfaces cover loading toast popup and notify', (
     tester,
   ) async {
     late BuildContext targetContext;
@@ -101,321 +115,211 @@ void registerCustomOverlayTests() {
       ),
     );
 
-    SuperOverlay.showLoading(msg: 'Loading...').fire<void>();
-    SuperOverlay.showToast('Saved').fire<void>();
-    SuperOverlay.showPopup(
+    final loading = SuperOverlay.loading.show(message: 'Loading...');
+    final toast = SuperOverlay.toast('Saved');
+    final popup = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder: (_) => const Text('Popup Menu'),
-    ).fire<void>();
-    SuperOverlay.showNotify(msg: 'Done', type: NotifyType.success).fire<void>();
+    );
+    final notify = SuperOverlay.notify.success('Done');
 
     await tester.pump();
-    await SuperOverlay.dismiss(status: DismissStatus.loading);
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
-    await SuperOverlay.dismiss(status: DismissStatus.allNotify);
-    await tester.pump();
+
+    expect(find.text('Loading...'), findsOneWidget);
+    expect(find.text('Saved'), findsOneWidget);
+    expect(find.text('Popup Menu'), findsOneWidget);
+    expect(find.text('Done'), findsOneWidget);
+
+    await loading.close();
+    await toast.close();
+    await popup.close();
+    await notify.close();
+    await tester.pumpAndSettle();
   });
 
-  testWidgets('displayTime auto dismisses and calls onDismiss', (tester) async {
-    var dismissed = false;
+  testWidgets('dialog displayDuration auto closes and settles once', (
+    tester,
+  ) async {
+    var closedCount = 0;
 
-    await tester.pumpWidget(
-      buildCustomOverlayApp(
-        ElevatedButton(
-          onPressed: () {
-            SuperOverlay.show(builder: (_) => const Text('Auto Dialog'))
-                .withTag('auto')
-                .withDisplayTime(const Duration(milliseconds: 300))
-                .onDismiss(() => dismissed = true)
-                .fire<void>();
-          },
-          child: const Text('Show Auto'),
-        ),
+    await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
+
+    final handle = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Text('Auto Dialog'),
+      options: const OverlayDialogOptions(
+        tag: 'auto',
+        displayDuration: Duration(milliseconds: 300),
       ),
     );
+    handle.closed.then((_) => closedCount++);
 
-    await tester.tap(find.text('Show Auto'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Auto Dialog'), findsOneWidget);
+    expect(closedCount, 0);
 
     await tester.pump(const Duration(milliseconds: 350));
     await tester.pumpAndSettle();
+    await handle.closed;
 
     expect(find.text('Auto Dialog'), findsNothing);
-    expect(dismissed, isTrue);
+    expect(closedCount, 1);
+
+    await handle.close();
+    await tester.pump();
+    expect(closedCount, 1);
   });
 
-  testWidgets('keepSingle reuses an existing tagged overlay', (tester) async {
+  testWidgets('replaceExisting strategy replaces a tagged dialog', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.show(
+    final first = SuperOverlay.dialog.show<void>(
       builder: (_) => const Text('First Single'),
-    ).withTag('single').withKeepSingle().fire<void>();
+      options: const OverlayDialogOptions(tag: 'single'),
+    );
     await tester.pumpAndSettle();
 
-    SuperOverlay.show(
+    final second = SuperOverlay.dialog.show<void>(
       builder: (_) => const Text('Second Single'),
-    ).withTag('single').withKeepSingle().fire<void>();
+      options: const OverlayDialogOptions(
+        tag: 'single',
+        strategy: OverlayStrategy.replaceExisting,
+      ),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('First Single'), findsNothing);
     expect(find.text('Second Single'), findsOneWidget);
+    expect(first.isVisible, isFalse);
+    expect(second.isVisible, isTrue);
     expect(SuperOverlay.checkExist(tag: 'single'), isTrue);
 
-    await SuperOverlay.dismiss(tag: 'single');
+    await second.close();
     await tester.pumpAndSettle();
   });
 
-  testWidgets(
-    'permanent overlay ignores normal dismiss and closes with force',
-    (tester) async {
-      await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
-
-      SuperOverlay.show(
-        builder: (_) => const Text('Permanent Dialog'),
-      ).withTag('permanent').withPermanent().fire<void>();
-      await tester.pumpAndSettle();
-
-      await SuperOverlay.dismiss(tag: 'permanent');
-      await tester.pumpAndSettle();
-      expect(find.text('Permanent Dialog'), findsOneWidget);
-
-      await SuperOverlay.dismiss(tag: 'permanent', force: true);
-      await tester.pumpAndSettle();
-      expect(find.text('Permanent Dialog'), findsNothing);
-    },
-  );
-
-  testWidgets('allDialog normal dismiss skips permanent overlays and returns', (
+  testWidgets('keepExisting strategy reuses and refreshes a tagged dialog', (
     tester,
   ) async {
     await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.show(
-      builder: (_) => const Text('Normal Dialog'),
-    ).withTag('normal-dialog').fire<void>();
+    var count = 0;
+    final first = SuperOverlay.dialog.show<String>(
+      builder: (_) => Text('Kept Dialog $count'),
+      options: const OverlayDialogOptions(tag: 'keep-existing'),
+    );
+    await tester.pumpAndSettle();
+    await first.visible;
+
+    final second = SuperOverlay.dialog.show<String>(
+      builder: (_) => const Text('Ignored Keep Existing Dialog'),
+      options: const OverlayDialogOptions(
+        tag: 'keep-existing',
+        strategy: OverlayStrategy.keepExisting,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await second.visible;
+
+    expect(find.text('Kept Dialog 0'), findsOneWidget);
+    expect(find.text('Ignored Keep Existing Dialog'), findsNothing);
+    expect(first.isVisible, isTrue);
+    expect(second.isVisible, isTrue);
+
+    count = 1;
+    second.refresh();
     await tester.pumpAndSettle();
 
-    SuperOverlay.show(
-      builder: (_) => const Text('Permanent Dialog'),
-    ).withTag('permanent-dialog').withPermanent().fire<void>();
-    await tester.pumpAndSettle();
+    expect(find.text('Kept Dialog 0'), findsNothing);
+    expect(find.text('Kept Dialog 1'), findsOneWidget);
+    expect(find.text('Ignored Keep Existing Dialog'), findsNothing);
 
-    await SuperOverlay.dismiss(
-      status: DismissStatus.allDialog,
-    ).timeout(const Duration(seconds: 1));
+    final firstClosed = expectLater(first.closed, completion('closed'));
+    final secondClosed = expectLater(second.closed, completion('closed'));
+    final close = second.close('closed');
     await tester.pumpAndSettle();
+    await close;
+    await firstClosed;
+    await secondClosed;
 
-    expect(find.text('Normal Dialog'), findsNothing);
-    expect(find.text('Permanent Dialog'), findsOneWidget);
-
-    await SuperOverlay.dismiss(tag: 'permanent-dialog', force: true);
-    await tester.pumpAndSettle();
+    expect(find.text('Kept Dialog 1'), findsNothing);
+    expect(first.isVisible, isFalse);
+    expect(second.isVisible, isFalse);
   });
 
-  testWidgets('auto dismiss skips permanent overlays when no tag is supplied', (
+  testWidgets('close is idempotent and preserves the first result', (
     tester,
   ) async {
     await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.show(
-      builder: (_) => const Text('Auto Normal Dialog'),
-    ).withTag('auto-normal-dialog').fire<void>();
-    await tester.pumpAndSettle();
+    final handle = SuperOverlay.dialog.show<String>(
+      builder: (_) => const Text('Idempotent Dialog'),
+      options: const OverlayDialogOptions(tag: 'idempotent'),
+    );
 
-    SuperOverlay.show(
-      builder: (_) => const Text('Auto Permanent Dialog'),
-    ).withTag('auto-permanent-dialog').withPermanent().fire<void>();
     await tester.pumpAndSettle();
+    expect(find.text('Idempotent Dialog'), findsOneWidget);
 
-    await SuperOverlay.dismiss().timeout(const Duration(seconds: 1));
+    final closed = expectLater(handle.closed, completion('first'));
+    final firstClose = handle.close('first');
+    final secondClose = handle.close('second');
     await tester.pumpAndSettle();
+    await firstClose;
+    await secondClose;
+    await closed;
 
-    expect(find.text('Auto Normal Dialog'), findsNothing);
-    expect(find.text('Auto Permanent Dialog'), findsOneWidget);
-
-    await SuperOverlay.dismiss(tag: 'auto-permanent-dialog', force: true);
-    await tester.pumpAndSettle();
+    expect(find.text('Idempotent Dialog'), findsNothing);
+    expect(handle.isVisible, isFalse);
   });
 
-  testWidgets('controller refresh rebuilds overlay content', (tester) async {
-    final controller = SuperOverlayController();
+  testWidgets('visible completes before closed', (tester) async {
+    await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
+
+    final events = <String>[];
+    final handle = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Text('Lifecycle Dialog'),
+    );
+    handle.visible.then((_) => events.add('visible'));
+    handle.closed.then((_) => events.add('closed'));
+
+    await tester.pump();
+    await handle.visible;
+
+    expect(events, ['visible']);
+    expect(find.text('Lifecycle Dialog'), findsOneWidget);
+
+    final close = handle.close();
+    await tester.pumpAndSettle();
+    await close;
+    await handle.closed;
+
+    expect(events, ['visible', 'closed']);
+  });
+
+  testWidgets('refresh rebuilds command dialog content', (tester) async {
     var count = 0;
 
     await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
 
-    SuperOverlay.show(
+    final handle = SuperOverlay.dialog.show<void>(
       builder: (_) => Text('Count $count'),
-    ).withTag('refresh').withController(controller).fire<void>();
+      options: const OverlayDialogOptions(tag: 'refresh'),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('Count 0'), findsOneWidget);
 
     count = 1;
-    controller.refresh();
+    handle.refresh();
     await tester.pumpAndSettle();
 
     expect(find.text('Count 0'), findsNothing);
     expect(find.text('Count 1'), findsOneWidget);
 
-    await SuperOverlay.dismiss(tag: 'refresh');
-    await tester.pumpAndSettle();
-  });
-
-  testWidgets('withAwait dismiss completes with dismiss result', (
-    tester,
-  ) async {
-    Object? result;
-    var completed = false;
-
-    await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
-
-    final future =
-        SuperOverlay.show(builder: (_) => const Text('Await Dismiss'))
-            .withTag('await-dismiss')
-            .withAwait(AwaitCompletion.dismiss)
-            .fire<String>();
-    future.then((value) {
-      result = value;
-      completed = true;
-    });
-
-    await tester.pumpAndSettle();
-    expect(completed, isFalse);
-
-    await SuperOverlay.dismiss(tag: 'await-dismiss', result: 'closed');
-    await tester.pumpAndSettle();
-    await future;
-
-    expect(completed, isTrue);
-    expect(result, 'closed');
-  });
-
-  testWidgets('withAwait appear completes after open animation', (
-    tester,
-  ) async {
-    final originalCustom = SuperOverlay.config.custom;
-    addTearDown(() => SuperOverlay.config.custom = originalCustom);
-    SuperOverlay.config.custom = const CustomDialogConfig(
-      animationTime: Duration(milliseconds: 200),
-      nonAnimationTypes: [],
-    );
-    var completed = false;
-
-    await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
-
-    final future =
-        SuperOverlay.show(builder: (_) => const Text('Await Appear'))
-            .withTag('await-appear')
-            .withAwait(AwaitCompletion.appear)
-            .fire<void>();
-    future.then((_) => completed = true);
-
-    await tester.pump();
-    expect(completed, isFalse);
-
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(completed, isFalse);
-
-    await tester.pump(const Duration(milliseconds: 101));
-    await tester.pump();
-    await future;
-    expect(completed, isTrue);
-    expect(find.text('Await Appear'), findsOneWidget);
-
-    final dismiss = SuperOverlay.dismiss(tag: 'await-appear', force: true);
-    await tester.pump(const Duration(milliseconds: 200));
-    await tester.pump();
-    await dismiss;
-  });
-
-  testWidgets('withAwait none completes after scheduling insertion', (
-    tester,
-  ) async {
-    var completed = false;
-
-    await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
-
-    final future =
-        SuperOverlay.show(
-          builder: (_) => const Text('Await None'),
-        ).withTag('await-none').withAwait(AwaitCompletion.none).fire<void>();
-    future.then((_) => completed = true);
-
-    await tester.pump();
-    await future;
-
-    expect(completed, isTrue);
-    expect(find.text('Await None'), findsOneWidget);
-
-    await SuperOverlay.dismiss(tag: 'await-none', force: true);
-    await tester.pumpAndSettle();
-  });
-
-  testWidgets(
-    'penetrating custom overlay lets underlying widgets receive taps',
-    (tester) async {
-      var taps = 0;
-
-      await tester.pumpWidget(
-        buildCustomOverlayApp(
-          Center(
-            child: ElevatedButton(
-              onPressed: () => taps++,
-              child: const Text('Underlying Action'),
-            ),
-          ),
-        ),
-      );
-
-      SuperOverlay.show(
-            builder:
-                (_) => const Align(
-                  alignment: Alignment.topCenter,
-                  child: Text('Passive Overlay'),
-                ),
-          )
-          .withMask(color: Colors.transparent, dismissible: false)
-          .withPenetrate()
-          .withTag('passive')
-          .fire<void>();
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Underlying Action'));
-      await tester.pumpAndSettle();
-
-      expect(taps, 1);
-      expect(find.text('Passive Overlay'), findsOneWidget);
-
-      await SuperOverlay.dismiss(tag: 'passive', force: true);
-      await tester.pumpAndSettle();
-    },
-  );
-
-  testWidgets('mask trigger fires at configured pointer phase', (tester) async {
-    var maskCount = 0;
-
-    await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
-
-    SuperOverlay.show(builder: (_) => const Text('Pointer Dialog'))
-        .withMask(dismissible: false, triggerType: MaskTriggerType.down)
-        .onMask(() => maskCount++)
-        .fire<void>();
-    await tester.pumpAndSettle();
-
-    final gesture = await tester.startGesture(const Offset(10, 10));
-    await tester.pump();
-
-    expect(maskCount, 1);
-
-    await gesture.up();
-    await tester.pump();
-
-    expect(maskCount, 1);
-
-    await SuperOverlay.dismiss(force: true);
+    await handle.close();
     await tester.pumpAndSettle();
   });
 }

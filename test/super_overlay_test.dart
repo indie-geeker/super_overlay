@@ -14,8 +14,8 @@ part 'super_overlay_widget_binding_cases.dart';
 
 Widget buildApp(Widget child) {
   return MaterialApp(
-    builder: SuperOverlayInit.init(),
-    navigatorObservers: [SuperOverlayInit.observer],
+    builder: SuperOverlay.init(),
+    navigatorObservers: [SuperOverlay.observer],
     home: Scaffold(body: child),
   );
 }

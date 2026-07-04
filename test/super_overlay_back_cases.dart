@@ -1,22 +1,25 @@
 part of 'super_overlay_test.dart';
 
 void registerBackOverlayTests() {
-  testWidgets('BackType.normal dismisses overlay and blocks page pop', (
+  testWidgets('dismiss back behavior closes overlay and blocks page pop', (
     tester,
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        builder: SuperOverlayInit.init(),
-        navigatorObservers: [SuperOverlayInit.observer],
+        builder: SuperOverlay.init(),
+        navigatorObservers: [SuperOverlay.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
           '/second':
               (_) => Scaffold(
                 body: ElevatedButton(
                   onPressed: () {
-                    SuperOverlay.show(
+                    SuperOverlay.dialog.show<void>(
                       builder: (_) => const Text('Back Normal Dialog'),
-                    ).withBack(type: BackType.normal).fire<void>();
+                      options: const OverlayDialogOptions(
+                        backBehavior: OverlayBackBehavior.dismiss,
+                      ),
+                    );
                   },
                   child: const Text('Show Back Normal'),
                 ),
@@ -37,22 +40,26 @@ void registerBackOverlayTests() {
     expect(find.text('Show Back Normal'), findsOneWidget);
   });
 
-  testWidgets('BackType.block blocks overlay dismiss and page pop', (
+  testWidgets('block back behavior keeps overlay and blocks page pop', (
     tester,
   ) async {
+    late OverlayHandle<void> handle;
     await tester.pumpWidget(
       MaterialApp(
-        builder: SuperOverlayInit.init(),
-        navigatorObservers: [SuperOverlayInit.observer],
+        builder: SuperOverlay.init(),
+        navigatorObservers: [SuperOverlay.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
           '/second':
               (_) => Scaffold(
                 body: ElevatedButton(
                   onPressed: () {
-                    SuperOverlay.show(
+                    handle = SuperOverlay.dialog.show<void>(
                       builder: (_) => const Text('Back Block Dialog'),
-                    ).withBack(type: BackType.block).fire<void>();
+                      options: const OverlayDialogOptions(
+                        backBehavior: OverlayBackBehavior.block,
+                      ),
+                    );
                   },
                   child: const Text('Show Back Block'),
                 ),
@@ -72,24 +79,29 @@ void registerBackOverlayTests() {
     expect(find.text('Back Block Dialog'), findsOneWidget);
     expect(find.text('Show Back Block'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allDialog, force: true);
+    await handle.close();
     await tester.pumpAndSettle();
   });
 
-  testWidgets('BackType.ignore lets page pop proceed', (tester) async {
+  testWidgets('passThrough back behavior lets page pop proceed', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
-        builder: SuperOverlayInit.init(),
-        navigatorObservers: [SuperOverlayInit.observer],
+        builder: SuperOverlay.init(),
+        navigatorObservers: [SuperOverlay.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
           '/second':
               (_) => Scaffold(
                 body: ElevatedButton(
                   onPressed: () {
-                    SuperOverlay.show(
+                    SuperOverlay.dialog.show<void>(
                       builder: (_) => const Text('Back Ignore Dialog'),
-                    ).withBack(type: BackType.ignore).fire<void>();
+                      options: const OverlayDialogOptions(
+                        backBehavior: OverlayBackBehavior.passThrough,
+                      ),
+                    );
                   },
                   child: const Text('Show Back Ignore'),
                 ),
@@ -110,70 +122,25 @@ void registerBackOverlayTests() {
     expect(find.text('Back Ignore Dialog'), findsNothing);
   });
 
-  testWidgets('onBack returning true intercepts the event', (tester) async {
-    var backCalls = 0;
-
-    await tester.pumpWidget(
-      MaterialApp(
-        builder: SuperOverlayInit.init(),
-        navigatorObservers: [SuperOverlayInit.observer],
-        home: const Scaffold(body: Text('First Page')),
-        routes: {
-          '/second':
-              (_) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () {
-                    SuperOverlay.show(
-                          builder: (_) => const Text('Back Callback Dialog'),
-                        )
-                        .withBack(
-                          type: BackType.normal,
-                          onBack: () {
-                            backCalls++;
-                            return true;
-                          },
-                        )
-                        .fire<void>();
-                  },
-                  child: const Text('Show Back Callback'),
-                ),
-              ),
-        },
-      ),
-    );
-
-    Navigator.of(tester.element(find.text('First Page'))).pushNamed('/second');
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Show Back Callback'));
-    await tester.pumpAndSettle();
-
-    final handled = await dispatchSystemBack(tester);
-
-    expect(handled, isTrue);
-    expect(backCalls, 1);
-    expect(find.text('Back Callback Dialog'), findsOneWidget);
-    expect(find.text('Show Back Callback'), findsOneWidget);
-
-    await SuperOverlay.dismiss(status: DismissStatus.allDialog, force: true);
-    await tester.pumpAndSettle();
-  });
-
-  testWidgets('loading back handling dismisses loading before page pop', (
+  testWidgets('loading back handling has priority before page pop', (
     tester,
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        builder: SuperOverlayInit.init(),
-        navigatorObservers: [SuperOverlayInit.observer],
+        builder: SuperOverlay.init(),
+        navigatorObservers: [SuperOverlay.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
           '/second':
               (_) => Scaffold(
                 body: ElevatedButton(
                   onPressed: () {
-                    SuperOverlay.showLoading(
-                      msg: 'Back Loading',
-                    ).withBack(type: BackType.normal).fire<void>();
+                    SuperOverlay.loading.show(
+                      message: 'Back Loading',
+                      options: const OverlayLoadingOptions(
+                        backBehavior: OverlayBackBehavior.dismiss,
+                      ),
+                    );
                   },
                   child: const Text('Show Back Loading'),
                 ),
@@ -199,21 +166,21 @@ void registerBackOverlayTests() {
   ) async {
     await tester.pumpWidget(
       MaterialApp(
-        builder: SuperOverlayInit.init(),
-        navigatorObservers: [SuperOverlayInit.observer],
+        builder: SuperOverlay.init(),
+        navigatorObservers: [SuperOverlay.observer],
         home: const Scaffold(body: Text('First Page')),
         routes: {
           '/second':
               (_) => Scaffold(
                 body: ElevatedButton(
                   onPressed: () {
-                    SuperOverlay.showNotify(
-                          msg: 'Back Notify',
-                          type: NotifyType.alert,
-                        )
-                        .withDisplayTime(const Duration(seconds: 1))
-                        .withBack(type: BackType.normal)
-                        .fire<void>();
+                    SuperOverlay.notify.alert(
+                      'Back Notify',
+                      options: const OverlayNotifyOptions(
+                        displayDuration: Duration(seconds: 1),
+                        backBehavior: OverlayBackBehavior.dismiss,
+                      ),
+                    );
                   },
                   child: const Text('Show Back Notify'),
                 ),
