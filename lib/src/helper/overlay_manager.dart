@@ -132,7 +132,7 @@ class OverlayManager {
     final overlayContext = contextNotify ?? contextCustom;
     if (overlayContext == null) {
       throw StateError(
-        'SuperOverlay is not initialized. Use SuperOverlayInit.init() in MaterialApp.builder.',
+        'SuperOverlay is not initialized. Use SuperOverlay.init() in MaterialApp.builder.',
       );
     }
 
@@ -189,7 +189,7 @@ class OverlayManager {
             : contextCustom;
     if (overlayContext == null) {
       throw StateError(
-        'SuperOverlay is not initialized. Use SuperOverlayInit.init() in MaterialApp.builder.',
+        'SuperOverlay is not initialized. Use SuperOverlay.init() in MaterialApp.builder.',
       );
     }
 

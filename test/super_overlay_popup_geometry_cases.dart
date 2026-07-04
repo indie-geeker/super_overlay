@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_overlay/super_overlay.dart';
+
+import 'overlay_test_support.dart';
 import 'package:super_overlay/src/widget/animation/highlight_mask_animation.dart';
 import 'package:super_overlay/src/widget/highlight_mask.dart';
 
@@ -403,7 +405,7 @@ void registerPopupGeometryTests() {
       options: const OverlayPopupOptions(
         tag: 'left-edge-popup',
         alignment: Alignment.bottomLeft,
-        alignmentMode: PopupAlignmentMode.center,
+        alignmentMode: OverlayPopupAlignmentMode.center,
       ),
     );
     await tester.pumpAndSettle();
@@ -455,7 +457,7 @@ void registerPopupGeometryTests() {
       options: const OverlayPopupOptions(
         tag: 'bottom-edge-popup',
         alignment: Alignment.bottomCenter,
-        alignmentMode: PopupAlignmentMode.center,
+        alignmentMode: OverlayPopupAlignmentMode.center,
       ),
     );
     await tester.pumpAndSettle();
@@ -497,7 +499,10 @@ void registerPopupGeometryTests() {
       ),
     );
 
-    Future<Rect> showWithMode(PopupAlignmentMode mode, String tag) async {
+    Future<Rect> showWithMode(
+      OverlayPopupAlignmentMode mode,
+      String tag,
+    ) async {
       final popupKey = Key('$tag-popup');
       final handle = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
@@ -521,10 +526,16 @@ void registerPopupGeometryTests() {
     }
 
     final targetRect = tester.getRect(find.byKey(targetKey));
-    final insideRect = await showWithMode(PopupAlignmentMode.inside, 'inside');
-    final centerRect = await showWithMode(PopupAlignmentMode.center, 'center');
+    final insideRect = await showWithMode(
+      OverlayPopupAlignmentMode.inside,
+      'inside',
+    );
+    final centerRect = await showWithMode(
+      OverlayPopupAlignmentMode.center,
+      'center',
+    );
     final outsideRect = await showWithMode(
-      PopupAlignmentMode.outside,
+      OverlayPopupAlignmentMode.outside,
       'outside',
     );
 
@@ -657,9 +668,9 @@ void registerPopupGeometryTests() {
   testWidgets('popup scale origin can be derived from popup size', (
     tester,
   ) async {
-    final originalAttach = SuperOverlay.config.attach;
-    addTearDown(() => SuperOverlay.config.attach = originalAttach);
-    SuperOverlay.config.attach = const AttachDialogConfig(
+    final originalAttach = overlayConfig.attach;
+    addTearDown(() => overlayConfig.attach = originalAttach);
+    overlayConfig.attach = const AttachDialogConfig(
       animationType: AnimationType.scale,
       nonAnimationTypes: [],
     );
@@ -815,9 +826,9 @@ void registerPopupGeometryTests() {
   });
 
   testWidgets('popup highlight mask can skip fade animation', (tester) async {
-    final originalAttach = SuperOverlay.config.attach;
-    addTearDown(() => SuperOverlay.config.attach = originalAttach);
-    SuperOverlay.config.attach = const AttachDialogConfig(
+    final originalAttach = overlayConfig.attach;
+    addTearDown(() => overlayConfig.attach = originalAttach);
+    overlayConfig.attach = const AttachDialogConfig(
       nonAnimationTypes: [NonAnimationType.highlightMask],
     );
 

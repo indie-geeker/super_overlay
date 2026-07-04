@@ -30,7 +30,6 @@ part 'builder/super_toast_overlay_builder.dart';
 part 'api/overlay_services.dart';
 
 class SuperOverlay {
-  static final OverlayConfig config = OverlayConfig();
   static const _toastService = _OverlayToastService();
 
   static final OverlayLoadingService loading = OverlayLoadingService();
@@ -56,22 +55,22 @@ class SuperOverlay {
     );
   }
 
-  static SuperCustomOverlayBuilder show({required WidgetBuilder builder}) {
-    return SuperCustomOverlayBuilder(builder: builder);
+  static _SuperCustomOverlayBuilder _custom({required WidgetBuilder builder}) {
+    return _SuperCustomOverlayBuilder(builder: builder);
   }
 
-  static SuperLoadingOverlayBuilder showLoading({
-    String msg = '',
+  static _SuperLoadingOverlayBuilder _loading({
+    String message = '',
     WidgetBuilder? builder,
   }) {
-    return SuperLoadingOverlayBuilder(message: msg, builder: builder);
+    return _SuperLoadingOverlayBuilder(message: message, builder: builder);
   }
 
-  static SuperToastOverlayBuilder showToast(
+  static _SuperToastOverlayBuilder _toastCommand(
     String message, {
     WidgetBuilder? builder,
   }) {
-    return SuperToastOverlayBuilder(message: message, builder: builder);
+    return _SuperToastOverlayBuilder(message: message, builder: builder);
   }
 
   /// Shows a toast message through the command API.
@@ -87,29 +86,99 @@ class SuperOverlay {
     return _toastService.show(message, builder: builder, options: options);
   }
 
-  static SuperPopupOverlayBuilder showPopup({
+  static _SuperPopupOverlayBuilder _popup({
     BuildContext? targetContext,
     required WidgetBuilder builder,
   }) {
-    return SuperPopupOverlayBuilder(
+    return _SuperPopupOverlayBuilder(
       targetContext: targetContext,
       builder: builder,
     );
   }
 
-  static SuperNotifyOverlayBuilder showNotify({
-    required String msg,
+  static _SuperNotifyOverlayBuilder _notification({
+    required String message,
     required NotifyType type,
     WidgetBuilder? builder,
   }) {
-    return SuperNotifyOverlayBuilder(
-      message: msg,
+    return _SuperNotifyOverlayBuilder(
+      message: message,
       type: type,
       builder: builder,
     );
   }
 
-  static Future<void> dismiss<T>({
+  /// Closes overlays outside of a specific [OverlayHandle].
+  ///
+  /// Prefer `handle.close()` when the caller owns the overlay. Use this method
+  /// for global commands such as clearing all toasts, closing a tagged dialog
+  /// from inside its content, or cleaning up an overlay family in tests.
+  static Future<void> close<T>({
+    OverlayCloseTarget target = OverlayCloseTarget.topMost,
+    String? tag,
+    T? result,
+    bool force = false,
+  }) async {
+    if (target == OverlayCloseTarget.all) {
+      await _dismiss<T>(
+        status: DismissStatus.loading,
+        tag: tag,
+        result: result,
+        force: force,
+      );
+      await _dismiss<T>(
+        status: DismissStatus.allNotify,
+        tag: tag,
+        result: result,
+        force: force,
+      );
+      await _dismiss<T>(
+        status: DismissStatus.allAttach,
+        tag: tag,
+        result: result,
+        force: force,
+      );
+      await _dismiss<T>(
+        status: DismissStatus.allCustom,
+        tag: tag,
+        result: result,
+        force: force,
+      );
+      await _dismiss<T>(
+        status: DismissStatus.allToast,
+        tag: tag,
+        result: result,
+        force: force,
+      );
+      return;
+    }
+
+    return _dismiss<T>(
+      status: _dismissStatusFor(target),
+      tag: tag,
+      result: result,
+      force: force,
+    );
+  }
+
+  /// Returns whether a matching overlay currently exists.
+  static bool exists({
+    String? tag,
+    Set<OverlaySurface> surfaces = const {
+      OverlaySurface.dialog,
+      OverlaySurface.popup,
+      OverlaySurface.loading,
+      OverlaySurface.notification,
+      OverlaySurface.toast,
+    },
+  }) {
+    return _checkExistByTypes(
+      tag: tag,
+      types: surfaces.map(_overlayTypeFor).toSet(),
+    );
+  }
+
+  static Future<void> _dismiss<T>({
     DismissStatus status = DismissStatus.auto,
     String? tag,
     T? result,
@@ -123,14 +192,42 @@ class SuperOverlay {
     );
   }
 
-  static bool checkExist({
+  static bool _checkExistByTypes({
     String? tag,
-    Set<OverlayType> dialogTypes = const {
+    Set<OverlayType> types = const {
       OverlayType.custom,
       OverlayType.attach,
       OverlayType.loading,
+      OverlayType.notify,
+      OverlayType.toast,
     },
   }) {
-    return OverlayManager.instance.checkExist(tag: tag, types: dialogTypes);
+    return OverlayManager.instance.checkExist(tag: tag, types: types);
   }
+}
+
+DismissStatus _dismissStatusFor(OverlayCloseTarget target) {
+  return switch (target) {
+    OverlayCloseTarget.topMost => DismissStatus.auto,
+    OverlayCloseTarget.dialog => DismissStatus.custom,
+    OverlayCloseTarget.allDialogs => DismissStatus.allCustom,
+    OverlayCloseTarget.popup => DismissStatus.attach,
+    OverlayCloseTarget.allPopups => DismissStatus.allAttach,
+    OverlayCloseTarget.notification => DismissStatus.notify,
+    OverlayCloseTarget.allNotifications => DismissStatus.allNotify,
+    OverlayCloseTarget.loading => DismissStatus.loading,
+    OverlayCloseTarget.toast => DismissStatus.toast,
+    OverlayCloseTarget.allToasts => DismissStatus.allToast,
+    OverlayCloseTarget.all => DismissStatus.auto,
+  };
+}
+
+OverlayType _overlayTypeFor(OverlaySurface surface) {
+  return switch (surface) {
+    OverlaySurface.dialog => OverlayType.custom,
+    OverlaySurface.popup => OverlayType.attach,
+    OverlaySurface.notification => OverlayType.notify,
+    OverlaySurface.loading => OverlayType.loading,
+    OverlaySurface.toast => OverlayType.toast,
+  };
 }

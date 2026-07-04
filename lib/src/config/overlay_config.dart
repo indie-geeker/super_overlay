@@ -4,6 +4,8 @@ import 'loading_config.dart';
 import 'notify_config.dart';
 import 'toast_config.dart';
 
+final OverlayConfig overlayConfig = OverlayConfig();
+
 class OverlayConfig {
   OverlayConfig({
     CustomDialogConfig? custom,

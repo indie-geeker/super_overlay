@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../config/enum_config.dart';
 import '../kit/typedef.dart';
 import 'overlay_policy.dart';
 
@@ -51,6 +50,7 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
     this.alignment = Alignment.center,
     this.barrierColor,
     this.bindToWidget,
+    this.consumeEvents = true,
   });
 
   /// Where the dialog should be aligned inside the overlay host.
@@ -65,6 +65,12 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
   /// context and closes automatically when that widget unmounts. Use this for
   /// dialogs whose lifetime should not outlive a button, field, or local view.
   final BuildContext? bindToWidget;
+
+  /// Whether the dialog mask should consume pointer events.
+  ///
+  /// Set this to false for non-modal route-bound overlays that should allow
+  /// users to keep interacting with the underlying page.
+  final bool consumeEvents;
 }
 
 /// Options for command-style popup overlays.
@@ -101,7 +107,7 @@ class OverlayPopupOptions extends OverlaySurfaceOptions {
   final PopupTargetPointBuilder? targetPointBuilder;
 
   /// Optional placement mode for aligning the popup to a target edge or corner.
-  final PopupAlignmentMode? alignmentMode;
+  final OverlayPopupAlignmentMode? alignmentMode;
 
   /// Optional replacement builder that receives measured target and popup geometry.
   final PopupReplacementBuilder? replacementBuilder;

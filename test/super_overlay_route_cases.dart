@@ -61,14 +61,14 @@ void registerRouteOverlayTests() {
     await tester.pumpAndSettle();
 
     expect(find.text('Route Bound Dialog'), findsOneWidget);
-    expect(SuperOverlay.checkExist(tag: 'route-bound'), isTrue);
+    expect(SuperOverlay.exists(tag: 'route-bound'), isTrue);
 
     Navigator.of(tester.element(find.text('Show Route Dialog'))).pop();
     await tester.pumpAndSettle();
     await routeHandle.closed;
 
     expect(find.text('Route Bound Dialog'), findsNothing);
-    expect(SuperOverlay.checkExist(tag: 'route-bound'), isFalse);
+    expect(SuperOverlay.exists(tag: 'route-bound'), isFalse);
   });
 
   testWidgets('pushing a new route hides bound dialogs and pop restores them', (
@@ -132,7 +132,7 @@ void registerRouteOverlayTests() {
 
     expect(find.text('Second Route'), findsOneWidget);
     expect(find.text('Home Bound Dialog'), findsNothing);
-    expect(SuperOverlay.checkExist(tag: 'home-bound'), isTrue);
+    expect(SuperOverlay.exists(tag: 'home-bound'), isTrue);
 
     Navigator.of(tester.element(find.text('Second Route'))).pop();
     await tester.pumpAndSettle();
@@ -195,7 +195,7 @@ void registerRouteOverlayTests() {
     await tester.pumpAndSettle();
 
     expect(find.text('Replacement Bound Dialog'), findsOneWidget);
-    expect(SuperOverlay.checkExist(tag: 'replacement-bound'), isTrue);
+    expect(SuperOverlay.exists(tag: 'replacement-bound'), isTrue);
 
     Navigator.of(routeContext).pushReplacement<void, void>(
       MaterialPageRoute<void>(
@@ -210,7 +210,7 @@ void registerRouteOverlayTests() {
 
     expect(find.text('Route Replacement Target'), findsOneWidget);
     expect(find.text('Replacement Bound Dialog'), findsNothing);
-    expect(SuperOverlay.checkExist(tag: 'replacement-bound'), isFalse);
+    expect(SuperOverlay.exists(tag: 'replacement-bound'), isFalse);
     expect(routeHandle.isVisible, isFalse);
   });
 
@@ -265,14 +265,14 @@ void registerRouteOverlayTests() {
     await tester.pumpAndSettle();
 
     expect(find.text('Removed Bound Dialog'), findsOneWidget);
-    expect(SuperOverlay.checkExist(tag: 'removed-bound'), isTrue);
+    expect(SuperOverlay.exists(tag: 'removed-bound'), isTrue);
 
     navigatorKey.currentState!.removeRoute(removableRoute);
     await tester.pumpAndSettle();
     await routeHandle.closed;
 
     expect(find.text('Removed Bound Dialog'), findsNothing);
-    expect(SuperOverlay.checkExist(tag: 'removed-bound'), isFalse);
+    expect(SuperOverlay.exists(tag: 'removed-bound'), isFalse);
     expect(routeHandle.isVisible, isFalse);
   });
 
@@ -329,7 +329,7 @@ void registerRouteOverlayTests() {
 
       expect(find.text('Nested Second Route'), findsOneWidget);
       expect(find.text('Nested Root Bound Dialog'), findsOneWidget);
-      expect(SuperOverlay.checkExist(tag: 'nested-root-bound'), isTrue);
+      expect(SuperOverlay.exists(tag: 'nested-root-bound'), isTrue);
 
       await nestedHandle.close();
       await tester.pumpAndSettle();

@@ -21,7 +21,7 @@ class CustomToast extends BaseOverlay {
     final overlayContext = OverlayManager.instance.contextToast;
     if (overlayContext == null) {
       throw StateError(
-        'SuperOverlay is not initialized. Use SuperOverlayInit.init() in MaterialApp.builder.',
+        'SuperOverlay is not initialized. Use SuperOverlay.init() in MaterialApp.builder.',
       );
     }
 

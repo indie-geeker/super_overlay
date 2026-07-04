@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_overlay/super_overlay.dart';
 
+import 'overlay_test_support.dart';
+
 Widget _buildApp(Widget child) {
   return MaterialApp(
     builder: SuperOverlay.init(),
@@ -14,29 +16,19 @@ void main() {
   late CustomDialogConfig originalCustomConfig;
 
   setUp(() {
-    originalCustomConfig = SuperOverlay.config.custom;
+    originalCustomConfig = overlayConfig.custom;
   });
 
   tearDown(() {
-    SuperOverlay.config.custom = originalCustomConfig;
+    overlayConfig.custom = originalCustomConfig;
   });
 
-  test('exports public configuration types from the package entrypoint', () {
-    SuperOverlay.config.custom = const CustomDialogConfig(useAnimation: false);
-
-    expect(SuperOverlay.config.custom.useAnimation, isFalse);
-    expect(const AttachDialogConfig().bindPage, isTrue);
-    expect(const LoadingConfig().leastLoadingTime, Duration.zero);
-    expect(
-      const NotifyConfig().displayTime,
-      const Duration(milliseconds: 2500),
-    );
-    expect(const ToastConfig().displayTime, const Duration(milliseconds: 2000));
-    expect(const CustomDialogConfig().awaitCompletion, AwaitCompletion.dismiss);
-    expect(const AttachDialogConfig().awaitCompletion, AwaitCompletion.dismiss);
-    expect(const LoadingConfig().awaitCompletion, AwaitCompletion.dismiss);
-    expect(const NotifyConfig().awaitCompletion, AwaitCompletion.dismiss);
-    expect(const ToastConfig().awaitCompletion, AwaitCompletion.none);
+  test('exports command policies from the package entrypoint', () {
+    expect(OverlayCloseTarget.topMost, isA<OverlayCloseTarget>());
+    expect(OverlaySurface.dialog, isA<OverlaySurface>());
+    expect(OverlayPopupAlignmentMode.center, isA<OverlayPopupAlignmentMode>());
+    expect(OverlayNotificationType.success, isA<OverlayNotificationType>());
+    expect(SuperOverlay.close, isA<Function>());
   });
 
   test('exports init default builder types from the package entrypoint', () {
@@ -64,7 +56,7 @@ void main() {
   testWidgets('custom debounce uses the configured debounce duration', (
     tester,
   ) async {
-    SuperOverlay.config.custom = const CustomDialogConfig(
+    overlayConfig.custom = const CustomDialogConfig(
       debounce: true,
       debounceTime: Duration.zero,
       useAnimation: false,
@@ -86,8 +78,8 @@ void main() {
     expect(find.text('Second'), findsOneWidget);
     expect(first.isVisible, isTrue);
     expect(second.isVisible, isTrue);
-    expect(SuperOverlay.checkExist(tag: 'first'), isTrue);
-    expect(SuperOverlay.checkExist(tag: 'second'), isTrue);
+    expect(SuperOverlay.exists(tag: 'first'), isTrue);
+    expect(SuperOverlay.exists(tag: 'second'), isTrue);
 
     await first.close();
     await second.close();
@@ -99,7 +91,7 @@ void main() {
   testWidgets('dismiss waits for the configured close animation', (
     tester,
   ) async {
-    SuperOverlay.config.custom = const CustomDialogConfig(
+    overlayConfig.custom = const CustomDialogConfig(
       animationTime: Duration(milliseconds: 200),
       nonAnimationTypes: [],
     );

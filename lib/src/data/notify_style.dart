@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import '../config/enum_config.dart';
+import '../api/overlay_policy.dart';
 
 class NotifyStyle {
   const NotifyStyle({
@@ -17,13 +17,13 @@ class NotifyStyle {
   final Widget Function(String message)? errorBuilder;
   final Widget Function(String message)? alertBuilder;
 
-  Widget? build(NotifyType type, String message) {
+  Widget? build(OverlayNotificationType type, String message) {
     return switch (type) {
-      NotifyType.success => successBuilder?.call(message),
-      NotifyType.failure => failureBuilder?.call(message),
-      NotifyType.warning => warningBuilder?.call(message),
-      NotifyType.error => errorBuilder?.call(message),
-      NotifyType.alert => alertBuilder?.call(message),
+      OverlayNotificationType.success => successBuilder?.call(message),
+      OverlayNotificationType.failure => failureBuilder?.call(message),
+      OverlayNotificationType.warning => warningBuilder?.call(message),
+      OverlayNotificationType.error => errorBuilder?.call(message),
+      OverlayNotificationType.alert => alertBuilder?.call(message),
     };
   }
 }

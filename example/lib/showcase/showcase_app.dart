@@ -12,12 +12,12 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SuperOverlay Showcase',
       debugShowCheckedModeBanner: false,
-      builder: SuperOverlayInit.init(
+      builder: SuperOverlay.init(
         toastBuilder: _toastBuilder,
         loadingBuilder: _loadingBuilder,
         notifyStyle: NotifyStyle(successBuilder: _successNotifyBuilder),
       ),
-      navigatorObservers: [SuperOverlayInit.observer],
+      navigatorObservers: [SuperOverlay.observer],
       theme: ShowcaseTheme.light(),
       home: const ShowcaseHomePage(),
     );

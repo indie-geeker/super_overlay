@@ -41,6 +41,8 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
   PopupPlacement _popupPlacement = PopupPlacement.bottom;
   @override
   int? _guideStep;
+  @override
+  OverlayHandle<void>? _guideHandle;
 
   @override
   Widget build(BuildContext context) {

@@ -29,7 +29,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('定点 Popup 内容'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allAttach, force: true);
+    await SuperOverlay.close(target: OverlayCloseTarget.allPopups, force: true);
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('默认 Toast'));
@@ -38,7 +38,7 @@ void main() {
     expect(find.text('Init Toast Style'), findsOneWidget);
     expect(find.text('Init 默认 Toast'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast, force: true);
+    await SuperOverlay.close(target: OverlayCloseTarget.allToasts, force: true);
     await tester.pumpAndSettle();
   });
 
@@ -71,7 +71,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
     expect(find.text('图标 + 文案'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
+    await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('多个 Toast'));
@@ -89,7 +89,7 @@ void main() {
       greaterThan(tester.getTopLeft(find.text('权限通过')).dy),
     );
 
-    await SuperOverlay.dismiss(status: DismissStatus.allToast);
+    await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('打开选择器'));
@@ -110,7 +110,7 @@ void main() {
       lessThan(tester.getTopLeft(find.text('打开选择器')).dy),
     );
 
-    await SuperOverlay.dismiss(status: DismissStatus.allAttach);
+    await SuperOverlay.close(target: OverlayCloseTarget.allPopups);
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('高亮入口'));
@@ -123,7 +123,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('第 2 步'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allAttach, force: true);
+    await SuperOverlay.close(target: OverlayCloseTarget.allPopups, force: true);
     await tester.pumpAndSettle();
 
     await tester.ensureVisible(find.text('打开生命周期案例'));
@@ -144,7 +144,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('页面绑定弹窗'), findsOneWidget);
 
-    await SuperOverlay.dismiss(tag: 'route-bound', force: true);
+    await SuperOverlay.close(
+      target: OverlayCloseTarget.dialog,
+      tag: 'route-bound',
+      force: true,
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('显示控件绑定弹窗'));
@@ -183,7 +187,7 @@ void main() {
       expect(find.text('图片加载完成'), findsWidgets);
       expect(find.text('图片加载失败'), findsOneWidget);
 
-      await SuperOverlay.dismiss(status: DismissStatus.allToast);
+      await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('空数据'));
@@ -193,7 +197,7 @@ void main() {
       expect(find.text('暂无数据'), findsOneWidget);
       expect(find.text('当前筛选条件没有返回内容'), findsOneWidget);
 
-      await SuperOverlay.dismiss(status: DismissStatus.allToast);
+      await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('失败'));
@@ -204,7 +208,7 @@ void main() {
       expect(find.text('远程服务暂时不可用，请稍后重试。'), findsOneWidget);
       expect(find.text('重新加载'), findsOneWidget);
 
-      await SuperOverlay.dismiss(status: DismissStatus.allToast);
+      await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
       await tester.pumpAndSettle();
     },
   );

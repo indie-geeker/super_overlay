@@ -8,6 +8,7 @@ on:
 
 jobs:
   flutter:
+    name: Flutter stable release gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,6 +16,7 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
+          cache: true
 
       - name: Install package dependencies
         run: flutter pub get
@@ -25,8 +27,12 @@ jobs:
       - name: Analyze package
         run: flutter analyze
 
-      - name: Test package
-        run: flutter test
+      - name: Test package with coverage
+        run: flutter test --coverage
+
+      - name: Enforce coverage threshold
+        run: |
+          awk -F: '/^LH:/{hit+=$2} /^LF:/{found+=$2} END{if (found == 0) { print "coverage=missing"; exit 2 } coverage=hit*100/found; printf "hit=%d found=%d coverage=%.3f%%\n", hit, found, coverage; exit coverage < 90}' coverage/lcov.info
 
       - name: Check API docs
         run: dart doc --dry-run
@@ -40,4 +46,29 @@ jobs:
 
       - name: Test example
         working-directory: example
+        run: flutter test
+
+      - name: Build example web
+        working-directory: example
+        run: flutter build web
+
+  flutter-minimum:
+    name: Flutter 3.29 compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.29.0"
+          cache: true
+
+      - name: Install package dependencies
+        run: flutter pub get
+
+      - name: Analyze package
+        run: flutter analyze
+
+      - name: Test package
         run: flutter test

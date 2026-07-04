@@ -1,38 +1,38 @@
 part of '../super_overlay_core.dart';
 
-class SuperCustomOverlayBuilder {
-  SuperCustomOverlayBuilder({required WidgetBuilder builder})
+class _SuperCustomOverlayBuilder {
+  _SuperCustomOverlayBuilder({required WidgetBuilder builder})
     : _builder = builder;
 
   WidgetBuilder _builder;
   Color? _maskColor;
   Widget? _maskWidget;
-  bool _clickMaskDismiss = SuperOverlay.config.custom.clickMaskDismiss;
-  Alignment _alignment = SuperOverlay.config.custom.alignment;
-  bool _debounce = SuperOverlay.config.custom.debounce;
+  bool _clickMaskDismiss = overlayConfig.custom.clickMaskDismiss;
+  Alignment _alignment = overlayConfig.custom.alignment;
+  bool _debounce = overlayConfig.custom.debounce;
   Duration? _displayTime;
   String? _tag;
   String? _businessTag;
   bool _keepSingle = false;
   bool _permanent = false;
-  bool _bindPage = SuperOverlay.config.custom.bindPage;
+  bool _bindPage = overlayConfig.custom.bindPage;
   BuildContext? _bindWidget;
   Rect? _ignoreArea;
-  MaskTriggerType _maskTriggerType = SuperOverlay.config.custom.maskTriggerType;
+  MaskTriggerType _maskTriggerType = overlayConfig.custom.maskTriggerType;
   SuperOverlayController? _controller;
-  BackType _backType = SuperOverlay.config.custom.backType;
-  bool _usePenetrate = SuperOverlay.config.custom.usePenetrate;
+  BackType _backType = overlayConfig.custom.backType;
+  bool _usePenetrate = overlayConfig.custom.usePenetrate;
   SuperOverlayOnBack? _onBack;
   VoidCallback? _onDismiss;
   VoidCallback? _onMask;
-  AwaitCompletion _awaitCompletion = SuperOverlay.config.custom.awaitCompletion;
+  AwaitCompletion _awaitCompletion = overlayConfig.custom.awaitCompletion;
 
-  SuperCustomOverlayBuilder withBuilder(WidgetBuilder builder) {
+  _SuperCustomOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
     return this;
   }
 
-  SuperCustomOverlayBuilder withMask({
+  _SuperCustomOverlayBuilder withMask({
     Color? color,
     Widget? widget,
     bool dismissible = true,
@@ -45,67 +45,67 @@ class SuperCustomOverlayBuilder {
     return this;
   }
 
-  SuperCustomOverlayBuilder withAlignment(Alignment alignment) {
+  _SuperCustomOverlayBuilder withAlignment(Alignment alignment) {
     _alignment = alignment;
     return this;
   }
 
-  SuperCustomOverlayBuilder withTag(String tag) {
+  _SuperCustomOverlayBuilder withTag(String tag) {
     _tag = tag;
     return this;
   }
 
-  SuperCustomOverlayBuilder _withBusinessTag(String? tag) {
+  _SuperCustomOverlayBuilder _withBusinessTag(String? tag) {
     _businessTag = tag;
     return this;
   }
 
-  SuperCustomOverlayBuilder withDebounce(bool enabled) {
+  _SuperCustomOverlayBuilder withDebounce(bool enabled) {
     _debounce = enabled;
     return this;
   }
 
-  SuperCustomOverlayBuilder withDisplayTime(Duration displayTime) {
+  _SuperCustomOverlayBuilder withDisplayTime(Duration displayTime) {
     _displayTime = displayTime;
     return this;
   }
 
-  SuperCustomOverlayBuilder withKeepSingle([bool enabled = true]) {
+  _SuperCustomOverlayBuilder withKeepSingle([bool enabled = true]) {
     _keepSingle = enabled;
     return this;
   }
 
-  SuperCustomOverlayBuilder withPermanent([bool enabled = true]) {
+  _SuperCustomOverlayBuilder withPermanent([bool enabled = true]) {
     _permanent = enabled;
     return this;
   }
 
-  SuperCustomOverlayBuilder bindPage([bool enabled = true]) {
+  _SuperCustomOverlayBuilder bindPage([bool enabled = true]) {
     _bindPage = enabled;
     return this;
   }
 
-  SuperCustomOverlayBuilder bindWidget(BuildContext context) {
+  _SuperCustomOverlayBuilder bindWidget(BuildContext context) {
     _bindWidget = context;
     return this;
   }
 
-  SuperCustomOverlayBuilder withIgnoreArea(Rect area) {
+  _SuperCustomOverlayBuilder withIgnoreArea(Rect area) {
     _ignoreArea = area;
     return this;
   }
 
-  SuperCustomOverlayBuilder withController(SuperOverlayController controller) {
+  _SuperCustomOverlayBuilder withController(SuperOverlayController controller) {
     _controller = controller;
     return this;
   }
 
-  SuperCustomOverlayBuilder withPenetrate([bool enabled = true]) {
+  _SuperCustomOverlayBuilder withPenetrate([bool enabled = true]) {
     _usePenetrate = enabled;
     return this;
   }
 
-  SuperCustomOverlayBuilder withBack({
+  _SuperCustomOverlayBuilder withBack({
     BackType type = BackType.normal,
     SuperOverlayOnBack? onBack,
   }) {
@@ -114,23 +114,23 @@ class SuperCustomOverlayBuilder {
     return this;
   }
 
-  SuperCustomOverlayBuilder onDismiss(VoidCallback callback) {
+  _SuperCustomOverlayBuilder onDismiss(VoidCallback callback) {
     _onDismiss = callback;
     return this;
   }
 
-  SuperCustomOverlayBuilder onMask(VoidCallback callback) {
+  _SuperCustomOverlayBuilder onMask(VoidCallback callback) {
     _onMask = callback;
     return this;
   }
 
-  SuperCustomOverlayBuilder withAwait(AwaitCompletion completion) {
+  _SuperCustomOverlayBuilder withAwait(AwaitCompletion completion) {
     _awaitCompletion = completion;
     return this;
   }
 
   Future<T?> fire<T>() {
-    final custom = SuperOverlay.config.custom;
+    final custom = overlayConfig.custom;
     return OverlayManager.instance.show<T>(
       param: ShowCustomParam(
         builder: _builder,

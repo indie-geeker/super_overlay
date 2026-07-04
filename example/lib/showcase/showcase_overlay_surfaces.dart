@@ -40,7 +40,11 @@ class DialogSurface extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: FilledButton(
-              onPressed: () => SuperOverlay.dismiss(tag: 'dialog-lab'),
+              onPressed:
+                  () => SuperOverlay.close(
+                    target: OverlayCloseTarget.dialog,
+                    tag: 'dialog-lab',
+                  ),
               child: const Text('关闭弹窗'),
             ),
           ),
@@ -262,7 +266,7 @@ class PopupDemoSurface extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: () {
-                SuperOverlay.dismiss(status: DismissStatus.attach);
+                SuperOverlay.close(target: OverlayCloseTarget.popup);
               },
               child: const Text('关闭'),
             ),
@@ -299,7 +303,8 @@ class SmallOverlay extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () => SuperOverlay.dismiss(),
+              onPressed:
+                  () => SuperOverlay.close(target: OverlayCloseTarget.dialog),
               child: const Text('关闭'),
             ),
           ),

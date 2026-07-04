@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_overlay/super_overlay.dart';
 
+import 'overlay_test_support.dart';
+
 Widget buildFeedbackOverlayApp(
   Widget child, {
   SuperOverlayToastBuilder? toastBuilder,
@@ -23,8 +25,8 @@ void main() {
 
 void registerFeedbackOverlayTests() {
   setUp(() {
-    SuperOverlay.config.loading = const LoadingConfig();
-    SuperOverlay.config.toast = const ToastConfig();
+    overlayConfig.loading = const LoadingConfig();
+    overlayConfig.toast = const ToastConfig();
   });
 
   testWidgets('loading command shows and closes by handle', (tester) async {
@@ -94,8 +96,8 @@ void registerFeedbackOverlayTests() {
   testWidgets('init loadingBuilder changes default loading widget', (
     tester,
   ) async {
-    final originalLoading = SuperOverlay.config.loading;
-    addTearDown(() => SuperOverlay.config.loading = originalLoading);
+    final originalLoading = overlayConfig.loading;
+    addTearDown(() => overlayConfig.loading = originalLoading);
 
     await tester.pumpWidget(
       buildFeedbackOverlayApp(
@@ -116,8 +118,8 @@ void registerFeedbackOverlayTests() {
   });
 
   testWidgets('init toastBuilder changes default toast widget', (tester) async {
-    final originalToast = SuperOverlay.config.toast;
-    addTearDown(() => SuperOverlay.config.toast = originalToast);
+    final originalToast = overlayConfig.toast;
+    addTearDown(() => overlayConfig.toast = originalToast);
 
     await tester.pumpWidget(
       buildFeedbackOverlayApp(
@@ -142,8 +144,8 @@ void registerFeedbackOverlayTests() {
   testWidgets('per-call toast builder overrides init default builder', (
     tester,
   ) async {
-    final originalToast = SuperOverlay.config.toast;
-    addTearDown(() => SuperOverlay.config.toast = originalToast);
+    final originalToast = overlayConfig.toast;
+    addTearDown(() => overlayConfig.toast = originalToast);
 
     await tester.pumpWidget(
       buildFeedbackOverlayApp(

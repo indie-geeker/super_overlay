@@ -14,17 +14,34 @@ extension _OverlayManagerDismiss on OverlayManager {
         await loadingOverlay.dismiss(closeType: closeType);
         return;
       }
-      if (_notifyQueue.isNotEmpty) {
+
+      final hasMatchingNotify = _notifyQueue.any(
+        (record) => tag == null || record.matchesTag(tag),
+      );
+      if (hasMatchingNotify) {
         await _closeNotify<T>(tag: tag, result: result, closeType: closeType);
         return;
       }
-      await _closeSingle<T>(
-        tag: tag,
-        result: result,
-        force: force,
-        type: null,
-        closeType: closeType,
+
+      final hasMatchingDialog = _dialogQueue.any(
+        (record) =>
+            (tag == null || record.matchesTag(tag)) &&
+            (force || !record.permanent),
       );
+      if (hasMatchingDialog) {
+        await _closeSingle<T>(
+          tag: tag,
+          result: result,
+          force: force,
+          type: null,
+          closeType: closeType,
+        );
+        return;
+      }
+
+      if (tag == null || ToastTool.instance.hasTag(tag)) {
+        await ToastTool.instance.dismiss(tag: tag);
+      }
       return;
     }
 
@@ -49,6 +66,7 @@ extension _OverlayManagerDismiss on OverlayManager {
         status == DismissStatus.allAttach ||
         status == DismissStatus.allDialog) {
       await _closeAll<T>(
+        tag: tag,
         result: result,
         force: force,
         type: switch (status) {
@@ -67,8 +85,15 @@ extension _OverlayManagerDismiss on OverlayManager {
     }
 
     if (status == DismissStatus.allNotify) {
-      while (_notifyQueue.isNotEmpty) {
-        await _closeNotify<T>(result: result, closeType: closeType);
+      final records = _notifyQueue
+          .where((record) => tag == null || record.matchesTag(tag))
+          .toList(growable: false);
+      for (final record in records.reversed) {
+        await _closeNotify<T>(
+          tag: record.tag,
+          result: result,
+          closeType: closeType,
+        );
       }
       return;
     }
@@ -86,11 +111,12 @@ extension _OverlayManagerDismiss on OverlayManager {
     }
 
     if (status == DismissStatus.allToast) {
-      await ToastTool.instance.dismiss(closeAll: true);
+      await ToastTool.instance.dismiss(closeAll: tag == null, tag: tag);
     }
   }
 
   Future<void> _closeAll<T>({
+    required String? tag,
     required T? result,
     required bool force,
     required OverlayType? type,
@@ -98,6 +124,7 @@ extension _OverlayManagerDismiss on OverlayManager {
   }) async {
     final records = _dialogQueue
         .where((record) => type == null || record.type == type)
+        .where((record) => tag == null || record.matchesTag(tag))
         .where((record) => force || !record.permanent)
         .toList(growable: false);
 

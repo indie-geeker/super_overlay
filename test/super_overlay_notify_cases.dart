@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_overlay/super_overlay.dart';
 
+import 'overlay_test_support.dart';
+
 Widget buildNotifyOverlayApp(Widget child, {NotifyStyle? notifyStyle}) {
   return MaterialApp(
     builder: SuperOverlay.init(notifyStyle: notifyStyle),
@@ -16,7 +18,7 @@ void main() {
 
 void registerNotifyOverlayTests() {
   setUp(() {
-    SuperOverlay.config.notify = const NotifyConfig();
+    overlayConfig.notify = const NotifyConfig();
   });
 
   testWidgets('each notify command renders its default builder', (
@@ -36,7 +38,10 @@ void registerNotifyOverlayTests() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.text('notify-${NotifyType.values[i].name}'), findsOneWidget);
+      expect(
+        find.text('notify-${OverlayNotificationType.values[i].name}'),
+        findsOneWidget,
+      );
 
       await handles[i].close();
       await tester.pumpAndSettle();
@@ -66,8 +71,8 @@ void registerNotifyOverlayTests() {
   testWidgets('init notifyStyle changes default notify widgets', (
     tester,
   ) async {
-    final originalNotify = SuperOverlay.config.notify;
-    addTearDown(() => SuperOverlay.config.notify = originalNotify);
+    final originalNotify = overlayConfig.notify;
+    addTearDown(() => overlayConfig.notify = originalNotify);
 
     await tester.pumpWidget(
       buildNotifyOverlayApp(
@@ -111,7 +116,7 @@ void registerNotifyOverlayTests() {
     expect(find.text('Notify One'), findsNothing);
     expect(find.text('Notify Two'), findsOneWidget);
 
-    await SuperOverlay.dismiss(status: DismissStatus.allNotify);
+    await SuperOverlay.close(target: OverlayCloseTarget.allNotifications);
     await tester.pumpAndSettle();
     await two.closed;
     expect(find.text('Notify Two'), findsNothing);
@@ -129,7 +134,7 @@ void registerNotifyOverlayTests() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      await SuperOverlay.dismiss(status: DismissStatus.auto);
+      await SuperOverlay.close(target: OverlayCloseTarget.topMost);
       await tester.pumpAndSettle();
       await notify.closed;
 

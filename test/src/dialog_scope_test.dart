@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:super_overlay/src/kit/overlay_controller.dart';
 import 'package:super_overlay/src/widget/helper/dialog_scope.dart';
-import 'package:super_overlay/super_overlay.dart' show SuperOverlayController;
 
 void main() {
   testWidgets('DialogScope rebinds refresh when controller changes', (

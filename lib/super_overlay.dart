@@ -1,16 +1,8 @@
 export 'src/api/overlay_handle.dart';
 export 'src/api/overlay_options.dart';
 export 'src/api/overlay_policy.dart';
-export 'src/config/attach_dialog_config.dart';
-export 'src/config/custom_dialog_config.dart';
-export 'src/config/enum_config.dart';
-export 'src/config/loading_config.dart';
-export 'src/config/notify_config.dart';
-export 'src/config/overlay_config.dart';
-export 'src/config/toast_config.dart';
 export 'src/data/animation_param.dart';
 export 'src/data/notify_style.dart';
-export 'src/init_overlay.dart';
-export 'src/kit/overlay_controller.dart';
+export 'src/init_overlay.dart' hide SuperOverlayInit;
 export 'src/kit/typedef.dart';
 export 'src/super_overlay_core.dart';

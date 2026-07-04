@@ -139,11 +139,12 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
       _errorMessage = null;
     });
 
-    unawaited(
-      SuperOverlay.showLoading(msg: '加载商品列表...')
-          .withLeastLoadingTime(const Duration(milliseconds: 500))
-          .withBack(type: BackType.block)
-          .fire<void>(),
+    final loading = SuperOverlay.loading.show(
+      message: '加载商品列表...',
+      options: const OverlayLoadingOptions(
+        minimumVisibleDuration: Duration(milliseconds: 500),
+        backBehavior: OverlayBackBehavior.block,
+      ),
     );
 
     var feedback = '';
@@ -168,7 +169,7 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
       });
       feedback = '加载失败，请重试';
     } finally {
-      await SuperOverlay.dismiss(status: DismissStatus.loading);
+      await loading.close();
       if (mounted) {
         setState(() => _requesting = false);
       }
@@ -178,10 +179,11 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
       return;
     }
 
-    unawaited(
-      SuperOverlay.showToast(
-        feedback,
-      ).withDisplayType(ToastDisplayType.last).fire<void>(),
+    SuperOverlay.toast(
+      feedback,
+      options: const OverlayToastOptions(
+        displayPolicy: OverlayToastDisplayPolicy.replaceLatest,
+      ),
     );
   }
 }

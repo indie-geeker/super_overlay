@@ -7,7 +7,7 @@ import 'helper/pop_route_monitor.dart';
 import 'kit/super_overlay_entry.dart';
 import 'kit/typedef.dart';
 import 'data/notify_style.dart';
-import 'super_overlay_core.dart';
+import 'config/overlay_config.dart';
 
 typedef SuperOverlayStyleBuilder = Widget Function(Widget child);
 
@@ -86,23 +86,19 @@ class _SuperOverlayInitState extends State<SuperOverlayInit> {
   void _applyDefaultBuilders() {
     final toastBuilder = widget.toastBuilder;
     if (toastBuilder != null) {
-      SuperOverlay.config.toast = SuperOverlay.config.toast.copyWith(
-        builder: toastBuilder,
-      );
+      overlayConfig.toast = overlayConfig.toast.copyWith(builder: toastBuilder);
     }
 
     final loadingBuilder = widget.loadingBuilder;
     if (loadingBuilder != null) {
-      SuperOverlay.config.loading = SuperOverlay.config.loading.copyWith(
+      overlayConfig.loading = overlayConfig.loading.copyWith(
         builder: loadingBuilder,
       );
     }
 
     final notifyStyle = widget.notifyStyle;
     if (notifyStyle != null) {
-      SuperOverlay.config.notify = SuperOverlay.config.notify.copyWith(
-        style: notifyStyle,
-      );
+      overlayConfig.notify = overlayConfig.notify.copyWith(style: notifyStyle);
     }
   }
 

@@ -1,0 +1,37 @@
+name: Issue
+description: Report a bug or request an improvement.
+title: "[Issue]: "
+labels: ["needs triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What happened, or what would you like to improve?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Include a minimal code sample, steps, or a link to a small repo.
+      placeholder: |
+        1. Initialize SuperOverlay with ...
+        2. Call ...
+        3. Observe ...
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: super_overlay version
+      placeholder: "0.2.0"
+    validations:
+      required: false
+  - type: input
+    id: flutter
+    attributes:
+      label: Flutter version
+      placeholder: "flutter --version"
+    validations:
+      required: false

@@ -1,7 +1,7 @@
 part of '../super_overlay_core.dart';
 
-class SuperLoadingOverlayBuilder {
-  SuperLoadingOverlayBuilder({
+class _SuperLoadingOverlayBuilder {
+  _SuperLoadingOverlayBuilder({
     required this.message,
     required WidgetBuilder? builder,
   }) : _builder = builder;
@@ -9,32 +9,31 @@ class SuperLoadingOverlayBuilder {
   final String message;
   WidgetBuilder? _builder;
   Duration? _displayTime;
-  Duration _leastLoadingTime = SuperOverlay.config.loading.leastLoadingTime;
+  Duration _leastLoadingTime = overlayConfig.loading.leastLoadingTime;
   Color? _maskColor;
   Widget? _maskWidget;
-  bool _clickMaskDismiss = SuperOverlay.config.loading.clickMaskDismiss;
+  bool _clickMaskDismiss = overlayConfig.loading.clickMaskDismiss;
   String? _tag;
-  BackType _backType = SuperOverlay.config.loading.backType;
+  BackType _backType = overlayConfig.loading.backType;
   SuperOverlayOnBack? _onBack;
-  AwaitCompletion _awaitCompletion =
-      SuperOverlay.config.loading.awaitCompletion;
+  AwaitCompletion _awaitCompletion = overlayConfig.loading.awaitCompletion;
 
-  SuperLoadingOverlayBuilder withBuilder(WidgetBuilder builder) {
+  _SuperLoadingOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
     return this;
   }
 
-  SuperLoadingOverlayBuilder withDisplayTime(Duration displayTime) {
+  _SuperLoadingOverlayBuilder withDisplayTime(Duration displayTime) {
     _displayTime = displayTime;
     return this;
   }
 
-  SuperLoadingOverlayBuilder withLeastLoadingTime(Duration duration) {
+  _SuperLoadingOverlayBuilder withLeastLoadingTime(Duration duration) {
     _leastLoadingTime = duration;
     return this;
   }
 
-  SuperLoadingOverlayBuilder withMask({
+  _SuperLoadingOverlayBuilder withMask({
     Color? color,
     Widget? widget,
     bool dismissible = false,
@@ -45,12 +44,12 @@ class SuperLoadingOverlayBuilder {
     return this;
   }
 
-  SuperLoadingOverlayBuilder withTag(String tag) {
+  _SuperLoadingOverlayBuilder withTag(String tag) {
     _tag = tag;
     return this;
   }
 
-  SuperLoadingOverlayBuilder withBack({
+  _SuperLoadingOverlayBuilder withBack({
     BackType type = BackType.normal,
     SuperOverlayOnBack? onBack,
   }) {
@@ -59,13 +58,13 @@ class SuperLoadingOverlayBuilder {
     return this;
   }
 
-  SuperLoadingOverlayBuilder withAwait(AwaitCompletion completion) {
+  _SuperLoadingOverlayBuilder withAwait(AwaitCompletion completion) {
     _awaitCompletion = completion;
     return this;
   }
 
   Future<T?> fire<T>() {
-    final loading = SuperOverlay.config.loading;
+    final loading = overlayConfig.loading;
     return OverlayManager.instance.showLoading<T>(
       param: ShowLoadingParam(
         builder:

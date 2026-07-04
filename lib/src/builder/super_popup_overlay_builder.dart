@@ -1,23 +1,23 @@
 part of '../super_overlay_core.dart';
 
-class SuperPopupOverlayBuilder {
-  SuperPopupOverlayBuilder({
+class _SuperPopupOverlayBuilder {
+  _SuperPopupOverlayBuilder({
     required this.targetContext,
     required WidgetBuilder builder,
   }) : _builder = builder;
 
   final BuildContext? targetContext;
   WidgetBuilder _builder;
-  Alignment _alignment = SuperOverlay.config.attach.alignment;
+  Alignment _alignment = overlayConfig.attach.alignment;
   Color? _maskColor = Colors.transparent;
   Widget? _maskWidget;
-  bool _clickMaskDismiss = SuperOverlay.config.attach.clickMaskDismiss;
+  bool _clickMaskDismiss = overlayConfig.attach.clickMaskDismiss;
   String? _tag;
   String? _businessTag;
   HighlightConfig? _highlight;
   PopupTargetRectBuilder? _targetRectBuilder;
   PopupTargetPointBuilder? _targetPointBuilder;
-  PopupAlignmentMode _alignmentMode = SuperOverlay.config.attach.alignmentMode;
+  PopupAlignmentMode _alignmentMode = overlayConfig.attach.alignmentMode;
   PopupReplacementBuilder? _replacementBuilder;
   PopupAdjustmentBuilder? _adjustmentBuilder;
   PopupScaleOriginBuilder? _scaleOriginBuilder;
@@ -25,27 +25,27 @@ class SuperPopupOverlayBuilder {
   SuperOverlayController? _controller;
   Duration? _displayTime;
   bool _keepSingle = false;
-  bool _bindPage = SuperOverlay.config.attach.bindPage;
-  BackType _backType = SuperOverlay.config.attach.backType;
+  bool _bindPage = overlayConfig.attach.bindPage;
+  BackType _backType = overlayConfig.attach.backType;
   SuperOverlayOnBack? _onBack;
-  AwaitCompletion _awaitCompletion = SuperOverlay.config.attach.awaitCompletion;
+  AwaitCompletion _awaitCompletion = overlayConfig.attach.awaitCompletion;
 
-  SuperPopupOverlayBuilder withBuilder(WidgetBuilder builder) {
+  _SuperPopupOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
     return this;
   }
 
-  SuperPopupOverlayBuilder withAlignment(Alignment alignment) {
+  _SuperPopupOverlayBuilder withAlignment(Alignment alignment) {
     _alignment = alignment;
     return this;
   }
 
-  SuperPopupOverlayBuilder withDisplayTime(Duration displayTime) {
+  _SuperPopupOverlayBuilder withDisplayTime(Duration displayTime) {
     _displayTime = displayTime;
     return this;
   }
 
-  SuperPopupOverlayBuilder withMask({
+  _SuperPopupOverlayBuilder withMask({
     Color? color,
     Widget? widget,
     bool dismissible = true,
@@ -56,27 +56,27 @@ class SuperPopupOverlayBuilder {
     return this;
   }
 
-  SuperPopupOverlayBuilder withTag(String tag) {
+  _SuperPopupOverlayBuilder withTag(String tag) {
     _tag = tag;
     return this;
   }
 
-  SuperPopupOverlayBuilder _withBusinessTag(String? tag) {
+  _SuperPopupOverlayBuilder _withBusinessTag(String? tag) {
     _businessTag = tag;
     return this;
   }
 
-  SuperPopupOverlayBuilder withKeepSingle([bool enabled = true]) {
+  _SuperPopupOverlayBuilder withKeepSingle([bool enabled = true]) {
     _keepSingle = enabled;
     return this;
   }
 
-  SuperPopupOverlayBuilder bindPage([bool enabled = true]) {
+  _SuperPopupOverlayBuilder bindPage([bool enabled = true]) {
     _bindPage = enabled;
     return this;
   }
 
-  SuperPopupOverlayBuilder withHighlight({
+  _SuperPopupOverlayBuilder withHighlight({
     Color? maskColor,
     EdgeInsets padding = EdgeInsets.zero,
     BorderRadius borderRadius = BorderRadius.zero,
@@ -85,57 +85,57 @@ class SuperPopupOverlayBuilder {
     if (maskColor != null) {
       _maskColor = maskColor;
     } else if (_maskColor == Colors.transparent) {
-      _maskColor = SuperOverlay.config.attach.maskColor;
+      _maskColor = overlayConfig.attach.maskColor;
     }
     return this;
   }
 
-  SuperPopupOverlayBuilder withTargetRect(PopupTargetRectBuilder builder) {
+  _SuperPopupOverlayBuilder withTargetRect(PopupTargetRectBuilder builder) {
     _targetRectBuilder = builder;
     return this;
   }
 
-  SuperPopupOverlayBuilder withTargetPoint(PopupTargetPointBuilder builder) {
+  _SuperPopupOverlayBuilder withTargetPoint(PopupTargetPointBuilder builder) {
     _targetPointBuilder = builder;
     return this;
   }
 
-  SuperPopupOverlayBuilder withAlignmentMode(PopupAlignmentMode mode) {
+  _SuperPopupOverlayBuilder withAlignmentMode(PopupAlignmentMode mode) {
     _alignmentMode = mode;
     return this;
   }
 
-  SuperPopupOverlayBuilder withReplacement(PopupReplacementBuilder builder) {
+  _SuperPopupOverlayBuilder withReplacement(PopupReplacementBuilder builder) {
     _replacementBuilder = builder;
     return this;
   }
 
-  SuperPopupOverlayBuilder withAdjustment(PopupAdjustmentBuilder builder) {
+  _SuperPopupOverlayBuilder withAdjustment(PopupAdjustmentBuilder builder) {
     _adjustmentBuilder = builder;
     return this;
   }
 
-  SuperPopupOverlayBuilder withScaleOrigin(PopupScaleOriginBuilder builder) {
+  _SuperPopupOverlayBuilder withScaleOrigin(PopupScaleOriginBuilder builder) {
     _scaleOriginBuilder = builder;
     return this;
   }
 
-  SuperPopupOverlayBuilder withMaskIgnoreArea(Rect area) {
+  _SuperPopupOverlayBuilder withMaskIgnoreArea(Rect area) {
     _maskIgnoreArea = area;
     return this;
   }
 
-  SuperPopupOverlayBuilder withController(SuperOverlayController controller) {
+  _SuperPopupOverlayBuilder withController(SuperOverlayController controller) {
     _controller = controller;
     return this;
   }
 
-  SuperPopupOverlayBuilder withAwait(AwaitCompletion completion) {
+  _SuperPopupOverlayBuilder withAwait(AwaitCompletion completion) {
     _awaitCompletion = completion;
     return this;
   }
 
-  SuperPopupOverlayBuilder withBack({
+  _SuperPopupOverlayBuilder withBack({
     BackType type = BackType.normal,
     SuperOverlayOnBack? onBack,
   }) {
@@ -145,7 +145,7 @@ class SuperPopupOverlayBuilder {
   }
 
   Future<T?> fire<T>() {
-    final attach = SuperOverlay.config.attach;
+    final attach = overlayConfig.attach;
     return OverlayManager.instance.showAttach<T>(
       param: ShowAttachParam(
         builder: _builder,

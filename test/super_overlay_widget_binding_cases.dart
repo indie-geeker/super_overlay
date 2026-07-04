@@ -53,7 +53,7 @@ void registerWidgetBindingTests() {
     await handle.closed;
 
     expect(find.text('Widget Bound Dialog'), findsNothing);
-    expect(SuperOverlay.checkExist(tag: 'widget-bound'), isFalse);
+    expect(SuperOverlay.exists(tag: 'widget-bound'), isFalse);
     expect(handle.isVisible, isFalse);
   });
 }

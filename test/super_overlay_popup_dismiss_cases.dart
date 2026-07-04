@@ -212,8 +212,8 @@ void registerPopupDismissTests() {
       await tester.pumpAndSettle();
       expect(attachOne.isVisible, isTrue);
 
-      await SuperOverlay.dismiss(
-        status: DismissStatus.attach,
+      await SuperOverlay.close(
+        target: OverlayCloseTarget.popup,
         tag: 'attach-one',
       );
       await tester.pumpAndSettle();
@@ -232,7 +232,7 @@ void registerPopupDismissTests() {
       expect(attachTwo.isVisible, isTrue);
       expect(customTwo.isVisible, isTrue);
 
-      await SuperOverlay.dismiss(status: DismissStatus.allDialog);
+      await SuperOverlay.close(target: OverlayCloseTarget.all);
       await tester.pumpAndSettle();
       await attachTwo.closed;
       await customTwo.closed;

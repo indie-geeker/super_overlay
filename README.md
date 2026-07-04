@@ -1,262 +1,273 @@
 # SuperOverlay
 
-SuperOverlay is a Flutter overlay package built on a self-managed
-`OverlayEntry` tree. It provides custom dialogs, loading indicators, toasts,
-target-attached popups, highlighted masks, notifications, route binding, and
-back-button handling without requiring a package-owned `Navigator` key.
+SuperOverlay is a Flutter package for app-level overlays backed by a
+self-managed `OverlayEntry` tree. It provides command-style dialogs, loading
+indicators, toasts, target-attached popups, highlighted masks, notifications,
+route binding, widget binding, and back-button policies without requiring a
+package-owned `Navigator` key.
 
-## Install
+## Quick Start
+
+Add the package:
 
 ```yaml
 dependencies:
-  super_overlay: ^0.1.2
+  super_overlay: ^0.2.0
 ```
-
-## Initialize
-
-Add `SuperOverlayInit.init()` to `MaterialApp.builder` and register
-`SuperOverlayInit.observer` so page-bound overlays can react to route changes.
-
-```dart
-MaterialApp(
-  builder: SuperOverlayInit.init(),
-  navigatorObservers: [SuperOverlayInit.observer],
-  home: const AppHome(),
-);
-```
-
-The package entrypoint exports the intended consumer API, including
-configuration classes, public enums, `SuperOverlayController`, `AnimationParam`,
-popup geometry extension types, and default feedback builder types.
-
-## Requirements
 
 SuperOverlay requires Dart `>=3.7.0 <4.0.0` and Flutter `>=3.29.0`.
 
-## Global Configuration
-
-Tune defaults before showing overlays. Per-call builder methods still override
-the global defaults.
+Initialize the overlay host once at the app root:
 
 ```dart
-SuperOverlay.config.custom = const CustomDialogConfig(
-  animationTime: Duration(milliseconds: 160),
-  debounce: true,
-  debounceTime: Duration(milliseconds: 500),
-  bindPage: true,
+import 'package:flutter/material.dart';
+import 'package:super_overlay/super_overlay.dart';
+
+class App extends StatelessWidget {
+  const App({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      builder: SuperOverlay.init(),
+      navigatorObservers: [SuperOverlay.observer],
+      home: const AppHome(),
+    );
+  }
+}
+```
+
+Show overlays through command services and keep the returned handle when the
+calling flow owns the overlay lifecycle:
+
+```dart
+final loading = SuperOverlay.loading.show(message: 'Syncing...');
+try {
+  await syncProfile();
+  SuperOverlay.toast(
+    'Saved',
+    options: const OverlayToastOptions(
+      displayPolicy: OverlayToastDisplayPolicy.replaceLatest,
+    ),
+  );
+} finally {
+  await loading.close();
+}
+```
+
+Dialogs return a typed result through `OverlayHandle.closed`:
+
+```dart
+final handle = SuperOverlay.dialog.show<bool>(
+  builder: (_) => const ConfirmDeleteDialog(),
+  options: const OverlayDialogOptions(
+    tag: 'delete-confirmation',
+    strategy: OverlayStrategy.replaceExisting,
+    backBehavior: OverlayBackBehavior.dismiss,
+  ),
 );
 
-SuperOverlay.config.toast = const ToastConfig(
-  displayTime: Duration(seconds: 2),
-  debounce: true,
+final confirmed = await handle.closed;
+```
+
+Inside dialog content, close by handle when possible. For content that does not
+receive a handle, close by target and tag:
+
+```dart
+await SuperOverlay.close(
+  target: OverlayCloseTarget.dialog,
+  tag: 'delete-confirmation',
+  result: true,
 );
 ```
 
-## Custom Overlay
+## Production Recipes
 
-```dart
-final result = await SuperOverlay.show(
-  builder: (_) => const MyDialog(),
-)
-    .withTag('profile')
-    .withMask(dismissible: true)
-    .withBack(type: BackType.normal)
-    .fire<String>();
+### Default Feedback Styling
 
-await SuperOverlay.dismiss(
-  status: DismissStatus.auto,
-  tag: 'profile',
-  result: 'closed',
-);
-```
-
-Permanent overlays are skipped by normal untagged dismiss calls and by
-`allDialog`/`allCustom` cleanup. Close them explicitly with their tag and
-`force: true` when the owning flow is finished.
-
-```dart
-SuperOverlay.show(
-  builder: (_) => const BlockingDialog(),
-).withTag('blocking-flow').withPermanent().fire<void>();
-
-await SuperOverlay.dismiss(tag: 'blocking-flow', force: true);
-```
-
-## Loading, Toast, Popup, And Notify
-
-```dart
-SuperOverlay.showLoading(msg: 'Loading...').fire();
-await SuperOverlay.dismiss(status: DismissStatus.loading);
-
-await SuperOverlay.showToast('Saved').fire();
-
-await SuperOverlay.showPopup(
-  targetContext: targetContext,
-  builder: (_) => const PopupMenu(),
-).withHighlight().fire();
-
-await SuperOverlay.showNotify(
-  msg: 'Done',
-  type: NotifyType.success,
-).fire();
-```
-
-## Popup Target Points
-
-Popups can attach to a widget context, a custom target point derived from that
-context, or a target point without a target widget.
-
-```dart
-await SuperOverlay.showPopup(
-  targetContext: targetContext,
-  builder: (_) => const PopupMenu(),
-)
-    .withTargetPoint((targetOffset, targetSize) {
-      return targetOffset + Offset(0, targetSize.height + 8);
-    })
-    .fire<void>();
-
-await SuperOverlay.showPopup(
-  builder: (_) => const PopupMenu(),
-).withTargetPoint((_, _) => const Offset(240, 180)).fire<void>();
-```
-
-Corner popups can align inside the target edge, centered on the target edge, or
-outside the target edge. Popup geometry is clamped when it would leave the
-screen.
-
-```dart
-await SuperOverlay.showPopup(
-  targetContext: targetContext,
-  builder: (_) => const PopupMenu(),
-)
-    .withAlignment(Alignment.bottomLeft)
-    .withAlignmentMode(PopupAlignmentMode.center)
-    .fire<void>();
-```
-
-Replacement and adjustment hooks can react to measured target and popup
-geometry.
-
-```dart
-await SuperOverlay.showPopup(
-  targetContext: targetContext,
-  builder: (_) => const PopupMenu(),
-)
-    .withReplacement((info) {
-      return PopupMenu(anchor: info.targetOffset, size: info.popupSize);
-    })
-    .withAdjustment((info) {
-      return const PopupAdjustment(alignment: Alignment.centerRight);
-    })
-    .withScaleOrigin((popupSize) => Offset(popupSize.width, 0))
-    .fire<void>();
-```
-
-Mask ignore areas apply only to the popup mask layer, so uncovered app chrome can
-continue receiving input.
-
-```dart
-SuperOverlay.config.attach = const AttachDialogConfig(
-  nonAnimationTypes: [NonAnimationType.highlightMask],
-);
-
-await SuperOverlay.showPopup(
-  targetContext: targetContext,
-  builder: (_) => const PopupMenu(),
-)
-    .withHighlight()
-    .withMaskIgnoreArea(const Rect.fromLTRB(0, 0, 0, 80))
-    .fire<void>();
-```
-
-## Default Feedback Builders
-
-Applications can set default loading, toast, and notify rendering during
-initialization. Per-call builders still take precedence.
+Applications can configure default loading, toast, and notification rendering
+during initialization. Per-call builders still take precedence.
 
 ```dart
 MaterialApp(
-  builder: SuperOverlayInit.init(
-    toastBuilder: (message) => Text('Toast: $message'),
-    loadingBuilder: (message) => Text('Loading: $message'),
+  builder: SuperOverlay.init(
+    toastBuilder: (message) => AppToast(message: message),
+    loadingBuilder: (message) => AppLoading(message: message),
     notifyStyle: NotifyStyle(
-      successBuilder: (message) => Text('Success: $message'),
+      successBuilder: (message) => AppBanner.success(message),
+      errorBuilder: (message) => AppBanner.error(message),
     ),
   ),
-  navigatorObservers: [SuperOverlayInit.observer],
+  navigatorObservers: [SuperOverlay.observer],
   home: const AppHome(),
 );
 ```
 
-## Await Semantics
+### Loading Plus Page-Owned Empty And Error States
 
-By default, custom overlays, popups, loading indicators, and notifications
-complete their `fire()` future after dismissal. Toasts complete after scheduling
-by default so lightweight feedback calls do not pretend to represent dismissal.
-
-Use `.withAwait(...)` when a call site needs different completion timing:
+Use overlays for transient request state and keep durable empty or error pages
+inside the route that owns the data.
 
 ```dart
-await SuperOverlay.show(
-  builder: (_) => const MyDialog(),
-).withAwait(AwaitCompletion.appear).fire<void>();
+final loading = SuperOverlay.loading.show(
+  message: 'Loading products...',
+  options: const OverlayLoadingOptions(
+    minimumVisibleDuration: Duration(milliseconds: 500),
+    backBehavior: OverlayBackBehavior.block,
+  ),
+);
 
-await SuperOverlay.showToast('Saved')
-    .withAwait(AwaitCompletion.dismiss)
-    .fire<void>();
-```
-
-`AwaitCompletion.dismiss` is the only mode whose result value is meaningful.
-
-## Network State And Empty Pages
-
-`super_overlay` keeps empty and error pages in the application layer. Use
-overlay loading for short blocking requests, toast or notify for lightweight
-feedback, and render empty/error states inside the page that owns the data.
-
-The example app includes a `Network State Demo` that follows this split:
-
-```dart
-SuperOverlay.showLoading(msg: 'Loading...').fire();
 try {
-  final items = await loadItems();
-  // Render list, empty page, or error page in your own widget tree.
+  final products = await repository.loadProducts();
+  setState(() {
+    items = products;
+    error = null;
+  });
+} catch (error) {
+  setState(() {
+    items = const [];
+    this.error = error;
+  });
+  SuperOverlay.notify.error('Products could not be loaded');
 } finally {
-  await SuperOverlay.dismiss(status: DismissStatus.loading);
+  await loading.close();
 }
 ```
 
-## Route And Widget Binding
+### Anchored Popup
 
-Custom overlays and popups bind to the current page by default. When a new route
-covers that page, the bound overlay hides; when the page returns, it reappears.
-When the bound route is removed, the overlay is removed as well.
+Attach popups to a target context for menus, filters, or lightweight editors:
 
 ```dart
-await SuperOverlay.show(
-  builder: (_) => const Text('Bound'),
-).bindPage().fire();
+final handle = SuperOverlay.popup.show<void>(
+  targetContext: buttonContext,
+  builder: (_) => FilterPopup(onApply: applyFilters),
+  options: const OverlayPopupOptions(
+    tag: 'product-filter',
+    alignment: Alignment.bottomCenter,
+    strategy: OverlayStrategy.replaceExisting,
+  ),
+);
 
-await SuperOverlay.show(
-  builder: (_) => const Text('Follows target'),
-).bindWidget(targetContext).fire();
+await handle.visible;
 ```
 
-## Compatibility With Reference Ideas
+For geometry-sensitive popups, provide typed hooks:
 
-SuperOverlay is a breaking rewrite, not a compatibility layer for another
-package or the initial route-based API. The fluent builder API is the intended
-public API, reference-project names are not copied into current-project APIs,
-and `useSystem` remains out of scope unless a later requirement proves it is
-needed. See `doc/reference-comparison.md` for the reference comparison used to
-scope this rewrite.
+```dart
+SuperOverlay.popup.show<void>(
+  targetContext: targetContext,
+  builder: (_) => const ToolbarMenu(),
+  options: OverlayPopupOptions(
+    tag: 'toolbar-menu',
+    alignment: Alignment.bottomLeft,
+    alignmentMode: OverlayPopupAlignmentMode.center,
+    targetRectBuilder: (rect) => rect.inflate(4),
+    replacementBuilder: (info) {
+      return ToolbarMenu(width: info.popupSize.width);
+    },
+    adjustmentBuilder: (_) {
+      return const PopupAdjustment(alignment: Alignment.topRight);
+    },
+    scaleOriginBuilder: (size) => Offset(size.width, 0),
+  ),
+);
+```
 
-## Migration Notes
+### Guided Highlight
 
-This rewrite is not compatible with the initial route-based API. The package no
-longer exposes `SuperOverlay.navigatorKey`, `show(content:)`,
-`showToast(msg:)`, or `showPopup(content:)`.
+Use popup highlighting when the user must interact with a specific target while
+the rest of the screen is masked.
 
-The project is MIT licensed. `THIRD_PARTY_NOTICES.md` records the MIT notice for
-reference implementation ideas used during the rewrite.
+```dart
+SuperOverlay.popup.show<void>(
+  targetContext: targetContext,
+  builder: (_) => const GuideBubble(),
+  options: OverlayPopupOptions(
+    tag: 'onboarding-step',
+    dismissOnMaskTap: false,
+    highlightTarget: true,
+    highlightMaskColor: const Color(0x99000000),
+    highlightPadding: const EdgeInsets.all(8),
+    highlightBorderRadius: BorderRadius.circular(8),
+  ),
+);
+```
+
+### Route And Widget Binding
+
+Dialogs and popups bind to the current route by default. They hide while another
+route covers that page, reappear when the page returns, and close when the route
+is removed. Register `SuperOverlay.observer` for this behavior.
+
+Bind a dialog to a widget when the overlay must not outlive that widget:
+
+```dart
+SuperOverlay.dialog.show<void>(
+  builder: (_) => const FieldHelpDialog(),
+  options: OverlayDialogOptions(
+    tag: 'field-help',
+    bindToWidget: fieldContext,
+    alignment: Alignment.bottomCenter,
+    barrierColor: Colors.transparent,
+    dismissOnMaskTap: false,
+    consumeEvents: false,
+  ),
+);
+```
+
+### Global Cleanup
+
+Prefer `handle.close()` for owned overlays. Use `SuperOverlay.close` for global
+cleanup, tagged content buttons, or tests:
+
+```dart
+await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
+
+await SuperOverlay.close(
+  target: OverlayCloseTarget.allDialogs,
+  tag: 'checkout',
+  force: true,
+);
+```
+
+Check existence with typed surfaces:
+
+```dart
+final hasCheckoutOverlay = SuperOverlay.exists(
+  tag: 'checkout',
+  surfaces: const {OverlaySurface.dialog, OverlaySurface.popup},
+);
+```
+
+## Contracts And Limits
+
+SuperOverlay exposes a command-oriented public API from
+`package:super_overlay/super_overlay.dart`. The supported entrypoints are
+`SuperOverlay.init`, `SuperOverlay.observer`, `SuperOverlay.dialog`,
+`SuperOverlay.loading`, `SuperOverlay.popup`, `SuperOverlay.notify`,
+`SuperOverlay.toast`, `SuperOverlay.close`, `SuperOverlay.exists`, typed option
+objects, and `OverlayHandle`.
+
+`OverlayHandle.visible` completes when the overlay is ready for interaction.
+`OverlayHandle.closed` completes once, with the optional result. Calling
+`close()` more than once is safe.
+
+Tags are business identifiers. Use `OverlayStrategy.replaceExisting` when only
+one overlay for a flow should exist, `OverlayStrategy.keepExisting` when repeated
+commands should reuse the active overlay, and `OverlayStrategy.stack` when
+multiple overlays are intentional.
+
+Toasts are transient feedback. Empty pages, error pages, and durable network
+state belong in your application widget tree.
+
+This package intentionally stays UI-runtime lightweight: it has no runtime
+dependencies beyond the Flutter SDK and does not install a global navigator key.
+
+The current command API is a breaking public surface. Older fluent-builder,
+configuration-mutation, and route-key APIs are not part of the supported
+entrypoint.
+
+## License
+
+SuperOverlay is MIT licensed.

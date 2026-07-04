@@ -1,75 +1,75 @@
 part of '../super_overlay_core.dart';
 
-class SuperToastOverlayBuilder {
-  SuperToastOverlayBuilder({
+class _SuperToastOverlayBuilder {
+  _SuperToastOverlayBuilder({
     required this.message,
     required WidgetBuilder? builder,
   }) : _builder = builder;
 
   final String message;
   WidgetBuilder? _builder;
-  Duration _displayTime = SuperOverlay.config.toast.displayTime;
-  ToastDisplayType _displayType = SuperOverlay.config.toast.displayType;
-  Alignment _alignment = SuperOverlay.config.toast.alignment;
-  bool _consumeEvent = SuperOverlay.config.toast.consumeEvent;
-  bool _debounce = SuperOverlay.config.toast.debounce;
+  Duration _displayTime = overlayConfig.toast.displayTime;
+  ToastDisplayType _displayType = overlayConfig.toast.displayType;
+  Alignment _alignment = overlayConfig.toast.alignment;
+  bool _consumeEvent = overlayConfig.toast.consumeEvent;
+  bool _debounce = overlayConfig.toast.debounce;
   String? _tag;
   String? _businessTag;
   bool _keepSingle = false;
   bool _replaceExisting = false;
-  AwaitCompletion _awaitCompletion = SuperOverlay.config.toast.awaitCompletion;
+  AwaitCompletion _awaitCompletion = overlayConfig.toast.awaitCompletion;
 
-  SuperToastOverlayBuilder withBuilder(WidgetBuilder builder) {
+  _SuperToastOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
     return this;
   }
 
-  SuperToastOverlayBuilder withDisplayTime(Duration displayTime) {
+  _SuperToastOverlayBuilder withDisplayTime(Duration displayTime) {
     _displayTime = displayTime;
     return this;
   }
 
-  SuperToastOverlayBuilder withDisplayType(ToastDisplayType displayType) {
+  _SuperToastOverlayBuilder withDisplayType(ToastDisplayType displayType) {
     _displayType = displayType;
     return this;
   }
 
-  SuperToastOverlayBuilder withAlignment(Alignment alignment) {
+  _SuperToastOverlayBuilder withAlignment(Alignment alignment) {
     _alignment = alignment;
     return this;
   }
 
-  SuperToastOverlayBuilder withTag(String tag) {
+  _SuperToastOverlayBuilder withTag(String tag) {
     _tag = tag;
     return this;
   }
 
-  SuperToastOverlayBuilder _withBusinessTag(String? tag) {
+  _SuperToastOverlayBuilder _withBusinessTag(String? tag) {
     _businessTag = tag;
     return this;
   }
 
-  SuperToastOverlayBuilder withConsumeEvent(bool enabled) {
+  _SuperToastOverlayBuilder withConsumeEvent(bool enabled) {
     _consumeEvent = enabled;
     return this;
   }
 
-  SuperToastOverlayBuilder withDebounce(bool enabled) {
+  _SuperToastOverlayBuilder withDebounce(bool enabled) {
     _debounce = enabled;
     return this;
   }
 
-  SuperToastOverlayBuilder withKeepSingle([bool enabled = true]) {
+  _SuperToastOverlayBuilder withKeepSingle([bool enabled = true]) {
     _keepSingle = enabled;
     return this;
   }
 
-  SuperToastOverlayBuilder withReplaceExisting([bool enabled = true]) {
+  _SuperToastOverlayBuilder withReplaceExisting([bool enabled = true]) {
     _replaceExisting = enabled;
     return this;
   }
 
-  SuperToastOverlayBuilder withAwait(AwaitCompletion completion) {
+  _SuperToastOverlayBuilder withAwait(AwaitCompletion completion) {
     _awaitCompletion = completion;
     return this;
   }
@@ -83,7 +83,7 @@ class SuperToastOverlayBuilder {
   }
 
   ShowToastParam _buildParam() {
-    final toast = SuperOverlay.config.toast;
+    final toast = overlayConfig.toast;
     return ShowToastParam(
       builder:
           _builder ??

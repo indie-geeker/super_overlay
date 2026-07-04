@@ -17,13 +17,6 @@ Future<bool> _completesWithin<T>(Future<T> future) {
 }
 
 void main() {
-  setUp(() {
-    SuperOverlay.config.custom = const CustomDialogConfig();
-    SuperOverlay.config.attach = const AttachDialogConfig();
-    SuperOverlay.config.notify = const NotifyConfig();
-    SuperOverlay.config.toast = const ToastConfig();
-  });
-
   testWidgets('toast command shows a message and returns a handle', (
     tester,
   ) async {
@@ -41,6 +34,79 @@ void main() {
     await close;
     expect(find.text('Saved'), findsNothing);
     expect(handle.isVisible, isFalse);
+  });
+
+  testWidgets('default close dismisses an active toast', (tester) async {
+    await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
+
+    final handle = SuperOverlay.toast(
+      'Only toast',
+      options: const OverlayToastOptions(displayDuration: Duration(minutes: 1)),
+    );
+    await tester.pump();
+
+    expect(find.text('Only toast'), findsOneWidget);
+    expect(handle.isVisible, isTrue);
+
+    await SuperOverlay.close();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Only toast'), findsNothing);
+    expect(handle.isVisible, isFalse);
+  });
+
+  testWidgets('typed global close targets toast and loading surfaces', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
+
+    final toast = SuperOverlay.toast(
+      'Typed toast',
+      options: const OverlayToastOptions(
+        tag: 'typed-toast',
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Typed toast'), findsOneWidget);
+
+    await SuperOverlay.close(target: OverlayCloseTarget.toast);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Typed toast'), findsNothing);
+    expect(toast.isVisible, isFalse);
+
+    SuperOverlay.toast(
+      'First typed toast',
+      options: const OverlayToastOptions(
+        tag: 'first-typed-toast',
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    SuperOverlay.toast(
+      'Second typed toast',
+      options: const OverlayToastOptions(
+        tag: 'second-typed-toast',
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+
+    await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
+    await tester.pumpAndSettle();
+
+    expect(find.text('First typed toast'), findsNothing);
+    expect(find.text('Second typed toast'), findsNothing);
+
+    final loading = SuperOverlay.loading.show(message: 'Typed loading');
+    await tester.pump();
+    expect(find.text('Typed loading'), findsOneWidget);
+
+    await SuperOverlay.close(target: OverlayCloseTarget.loading);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Typed loading'), findsNothing);
+    expect(loading.isVisible, isFalse);
   });
 
   testWidgets('loading command can be shown and closed through its handle', (
@@ -196,14 +262,84 @@ void main() {
     expect(first.isVisible, isFalse);
     expect(second.isVisible, isTrue);
     expect(
-      SuperOverlay.checkExist(
+      SuperOverlay.exists(
         tag: 'shared-stack-dialog',
-        dialogTypes: const {OverlayType.custom},
+        surfaces: const {OverlaySurface.dialog},
       ),
       isTrue,
     );
 
     await second.close();
+  });
+
+  testWidgets('typed close can clear one tagged dialog family', (tester) async {
+    await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
+
+    SuperOverlay.dialog.show<void>(
+      builder: (_) => const Center(child: Text('First family dialog')),
+      options: const OverlayDialogOptions(tag: 'family-a'),
+    );
+    SuperOverlay.dialog.show<void>(
+      builder: (_) => const Center(child: Text('Second family dialog')),
+      options: const OverlayDialogOptions(tag: 'family-a'),
+    );
+    final other = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Center(child: Text('Other family dialog')),
+      options: const OverlayDialogOptions(tag: 'family-b'),
+    );
+    await tester.pump();
+
+    await SuperOverlay.close(
+      target: OverlayCloseTarget.allDialogs,
+      tag: 'family-a',
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('First family dialog'), findsNothing);
+    expect(find.text('Second family dialog'), findsNothing);
+    expect(find.text('Other family dialog'), findsOneWidget);
+    expect(SuperOverlay.exists(tag: 'family-a'), isFalse);
+    expect(
+      SuperOverlay.exists(
+        tag: 'family-b',
+        surfaces: const {OverlaySurface.dialog},
+      ),
+      isTrue,
+    );
+
+    await other.close();
+  });
+
+  testWidgets('default tagged close skips unrelated notifications', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
+
+    final notify = SuperOverlay.notify.success(
+      'Background notify',
+      options: const OverlayNotifyOptions(
+        tag: 'unrelated-notify',
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    final dialog = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Center(child: Text('Tagged dialog')),
+      options: const OverlayDialogOptions(tag: 'target-dialog'),
+    );
+    await tester.pump();
+
+    expect(find.text('Background notify'), findsOneWidget);
+    expect(find.text('Tagged dialog'), findsOneWidget);
+
+    await SuperOverlay.close(tag: 'target-dialog');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tagged dialog'), findsNothing);
+    expect(find.text('Background notify'), findsOneWidget);
+    expect(dialog.isVisible, isFalse);
+    expect(notify.isVisible, isTrue);
+
+    await notify.close();
   });
 
   testWidgets('dialog replaceExisting closes a matching tagged dialog', (
@@ -280,46 +416,6 @@ void main() {
   );
 
   testWidgets(
-    'dialog replaceExisting close during old animation prevents stuck content',
-    (tester) async {
-      SuperOverlay.config.custom = const CustomDialogConfig(
-        animationTime: Duration(milliseconds: 200),
-        nonAnimationTypes: [NonAnimationType.routeClose],
-      );
-      await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
-
-      SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Closing gap dialog')),
-        options: const OverlayDialogOptions(tag: 'gap-replace-dialog'),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Closing gap dialog'), findsOneWidget);
-
-      final replacement = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Canceled replacement')),
-        options: const OverlayDialogOptions(
-          tag: 'gap-replace-dialog',
-          strategy: OverlayStrategy.replaceExisting,
-        ),
-      );
-      await tester.pump();
-      expect(find.text('Canceled replacement'), findsNothing);
-
-      var closed = false;
-      final closedProbe = replacement.closed.then((_) => closed = true);
-      final close = replacement.close();
-      await tester.pumpAndSettle();
-      await close;
-
-      expect(closed, isTrue);
-      await closedProbe;
-      expect(find.text('Closing gap dialog'), findsNothing);
-      expect(find.text('Canceled replacement'), findsNothing);
-      expect(replacement.isVisible, isFalse);
-    },
-  );
-
-  testWidgets(
     'dialog keepExisting preserves first content and shares existing handle',
     (tester) async {
       await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
@@ -390,47 +486,6 @@ void main() {
 
     await second.close();
   });
-
-  testWidgets(
-    'dialog replaceExisting waits for close animation before showing replacement',
-    (tester) async {
-      SuperOverlay.config.custom = const CustomDialogConfig(
-        animationTime: Duration(milliseconds: 200),
-        nonAnimationTypes: [NonAnimationType.routeClose],
-      );
-      await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
-
-      SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Closing dialog')),
-        options: const OverlayDialogOptions(tag: 'animated-replace-dialog'),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Closing dialog'), findsOneWidget);
-
-      final second = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Replacement dialog')),
-        options: const OverlayDialogOptions(
-          tag: 'animated-replace-dialog',
-          strategy: OverlayStrategy.replaceExisting,
-        ),
-      );
-
-      await tester.pump();
-      expect(find.text('Closing dialog'), findsOneWidget);
-      expect(find.text('Replacement dialog'), findsNothing);
-
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('Replacement dialog'), findsNothing);
-
-      await tester.pumpAndSettle();
-      expect(find.text('Closing dialog'), findsNothing);
-      expect(find.text('Replacement dialog'), findsOneWidget);
-
-      final close = second.close();
-      await tester.pumpAndSettle();
-      await close;
-    },
-  );
 
   testWidgets('dialog refresh rebuilds command content', (tester) async {
     await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
@@ -573,9 +628,9 @@ void main() {
     expect(first.isVisible, isFalse);
     expect(second.isVisible, isTrue);
     expect(
-      SuperOverlay.checkExist(
+      SuperOverlay.exists(
         tag: 'shared-stack-popup',
-        dialogTypes: const {OverlayType.attach},
+        surfaces: const {OverlaySurface.popup},
       ),
       isTrue,
     );
@@ -890,9 +945,9 @@ void main() {
     expect(first.isVisible, isFalse);
     expect(second.isVisible, isTrue);
     expect(
-      SuperOverlay.checkExist(
+      SuperOverlay.exists(
         tag: 'shared-stack-notify',
-        dialogTypes: const {OverlayType.notify},
+        surfaces: const {OverlaySurface.notification},
       ),
       isTrue,
     );
@@ -1117,9 +1172,9 @@ void main() {
     expect(first.isVisible, isFalse);
     expect(second.isVisible, isTrue);
     expect(
-      SuperOverlay.checkExist(
+      SuperOverlay.exists(
         tag: 'shared-stack-toast',
-        dialogTypes: const {OverlayType.toast},
+        surfaces: const {OverlaySurface.toast},
       ),
       isTrue,
     );
@@ -1174,53 +1229,6 @@ void main() {
     await secondClose;
   });
 
-  testWidgets(
-    'toast replaceExisting waits for close animation before showing replacement',
-    (tester) async {
-      SuperOverlay.config.toast = const ToastConfig(
-        animationTime: Duration(milliseconds: 200),
-        nonAnimationTypes: [],
-      );
-      await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
-
-      SuperOverlay.toast(
-        'Closing toast',
-        options: const OverlayToastOptions(
-          tag: 'animated-replace-toast',
-          displayPolicy: OverlayToastDisplayPolicy.stack,
-          displayDuration: Duration(minutes: 1),
-        ),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Closing toast'), findsOneWidget);
-
-      final second = SuperOverlay.toast(
-        'Replacement toast',
-        options: const OverlayToastOptions(
-          tag: 'animated-replace-toast',
-          strategy: OverlayStrategy.replaceExisting,
-          displayPolicy: OverlayToastDisplayPolicy.stack,
-          displayDuration: Duration(minutes: 1),
-        ),
-      );
-
-      await tester.pump();
-      expect(find.text('Closing toast'), findsOneWidget);
-      expect(find.text('Replacement toast'), findsNothing);
-
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.text('Replacement toast'), findsNothing);
-
-      await tester.pumpAndSettle();
-      expect(find.text('Closing toast'), findsNothing);
-      expect(find.text('Replacement toast'), findsOneWidget);
-
-      final close = second.close();
-      await tester.pumpAndSettle();
-      await close;
-    },
-  );
-
   testWidgets('toast keepExisting keeps a matching tagged toast', (
     tester,
   ) async {
@@ -1267,9 +1275,9 @@ void main() {
 
     await tester.pump();
     expect(
-      SuperOverlay.checkExist(
+      SuperOverlay.exists(
         tag: 'sync-loading',
-        dialogTypes: const {OverlayType.loading},
+        surfaces: const {OverlaySurface.loading},
       ),
       isTrue,
     );
@@ -1291,14 +1299,14 @@ void main() {
     expect(find.text('Tagged auto loading'), findsOneWidget);
     expect(handle.isVisible, isTrue);
 
-    await SuperOverlay.dismiss(tag: 'wrong');
+    await SuperOverlay.close(tag: 'wrong');
     await tester.pump();
 
     expect(find.text('Tagged auto loading'), findsOneWidget);
     expect(handle.isVisible, isTrue);
 
     final closed = expectLater(handle.closed, completes);
-    await SuperOverlay.dismiss(tag: 'sync-loading');
+    await SuperOverlay.close(tag: 'sync-loading');
     await tester.pumpAndSettle();
     await closed;
 

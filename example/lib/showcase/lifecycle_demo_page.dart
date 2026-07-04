@@ -92,15 +92,18 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
                 runSpacing: 10,
                 children: [
                   FilledButton(
-                    onPressed: () => _showBackOverlay(BackType.normal),
+                    onPressed:
+                        () => _showBackOverlay(OverlayBackBehavior.dismiss),
                     child: const Text('Back normal'),
                   ),
                   OutlinedButton(
-                    onPressed: () => _showBackOverlay(BackType.block),
+                    onPressed:
+                        () => _showBackOverlay(OverlayBackBehavior.block),
                     child: const Text('Back block'),
                   ),
                   OutlinedButton(
-                    onPressed: () => _showBackOverlay(BackType.ignore),
+                    onPressed:
+                        () => _showBackOverlay(OverlayBackBehavior.passThrough),
                     child: const Text('Back ignore'),
                   ),
                 ],
@@ -113,19 +116,21 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
   }
 
   void _showRouteBoundOverlay() {
-    SuperOverlay.show(
-          builder:
-              (_) => const SmallOverlay(
-                title: '页面绑定弹窗',
-                message: '覆盖新路由时隐藏，返回这个页面时恢复。',
-              ),
-        )
-        .withTag('route-bound')
-        .bindPage()
-        .withAlignment(Alignment.bottomCenter)
-        .withMask(color: Colors.transparent, dismissible: false)
-        .withPenetrate()
-        .fire<void>();
+    SuperOverlay.dialog.show<void>(
+      builder:
+          (_) => const SmallOverlay(
+            title: '页面绑定弹窗',
+            message: '覆盖新路由时隐藏，返回这个页面时恢复。',
+          ),
+      options: const OverlayDialogOptions(
+        tag: 'route-bound',
+        bindToRoute: true,
+        alignment: Alignment.bottomCenter,
+        barrierColor: Colors.transparent,
+        dismissOnMaskTap: false,
+        consumeEvents: false,
+      ),
+    );
   }
 
   void _pushCoveringRoute() {
@@ -141,36 +146,36 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
   }
 
   void _showWidgetBoundOverlay(BuildContext targetContext) {
-    SuperOverlay.show(
-          builder:
-              (_) => const SmallOverlay(
-                title: '控件绑定弹窗',
-                message: '这个弹窗跟随目标控件生命周期。',
-              ),
-        )
-        .withTag('widget-bound')
-        .bindWidget(targetContext)
-        .withAlignment(Alignment.bottomCenter)
-        .withMask(color: Colors.transparent, dismissible: false)
-        .withPenetrate()
-        .fire<void>();
+    SuperOverlay.dialog.show<void>(
+      builder:
+          (_) =>
+              const SmallOverlay(title: '控件绑定弹窗', message: '这个弹窗跟随目标控件生命周期。'),
+      options: OverlayDialogOptions(
+        tag: 'widget-bound',
+        bindToWidget: targetContext,
+        alignment: Alignment.bottomCenter,
+        barrierColor: Colors.transparent,
+        dismissOnMaskTap: false,
+        consumeEvents: false,
+      ),
+    );
   }
 
-  void _showBackOverlay(BackType type) {
-    SuperOverlay.show(
-          builder:
-              (_) => SmallOverlay(
-                title: 'BackType.${type.name}',
-                message: switch (type) {
-                  BackType.normal => '按返回键会先关闭 overlay。',
-                  BackType.block => '按返回键会被 overlay 拦截。',
-                  BackType.ignore => '按返回键交给页面继续处理。',
-                },
-              ),
-        )
-        .withTag('back-${type.name}')
-        .withBack(type: type)
-        .withMask(dismissible: true)
-        .fire<void>();
+  void _showBackOverlay(OverlayBackBehavior behavior) {
+    SuperOverlay.dialog.show<void>(
+      builder:
+          (_) => SmallOverlay(
+            title: 'OverlayBackBehavior.${behavior.name}',
+            message: switch (behavior) {
+              OverlayBackBehavior.dismiss => '按返回键会先关闭 overlay。',
+              OverlayBackBehavior.block => '按返回键会被 overlay 拦截。',
+              OverlayBackBehavior.passThrough => '按返回键交给页面继续处理。',
+            },
+          ),
+      options: OverlayDialogOptions(
+        tag: 'back-${behavior.name}',
+        backBehavior: behavior,
+      ),
+    );
   }
 }

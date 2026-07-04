@@ -10,7 +10,7 @@ class OverlayLoadingService {
     WidgetBuilder? builder,
     OverlayLoadingOptions options = const OverlayLoadingOptions(),
   }) {
-    final command = SuperOverlay.showLoading(msg: message, builder: builder)
+    final command = SuperOverlay._loading(message: message, builder: builder)
         .withMask(dismissible: options.dismissOnMaskTap)
         .withLeastLoadingTime(options.minimumVisibleDuration)
         .withBack(type: _backTypeFor(options.backBehavior))
@@ -31,7 +31,7 @@ class OverlayLoadingService {
       status: DismissStatus.loading,
       tag: effectiveTag,
       close:
-          ([void result]) => SuperOverlay.dismiss<void>(
+          ([void result]) => SuperOverlay._dismiss<void>(
             status: DismissStatus.loading,
             tag: effectiveTag,
           ),
@@ -45,7 +45,7 @@ class OverlayLoadingService {
 
   /// Closes the active loading overlay.
   Future<void> close() {
-    return SuperOverlay.dismiss(status: DismissStatus.loading);
+    return SuperOverlay._dismiss(status: DismissStatus.loading);
   }
 }
 
@@ -59,13 +59,14 @@ class OverlayDialogService {
     OverlayDialogOptions options = const OverlayDialogOptions(),
   }) {
     final controller = SuperOverlayController();
-    final command = SuperOverlay.show(builder: builder)
+    final command = SuperOverlay._custom(builder: builder)
         .withAlignment(options.alignment)
         .withMask(
           color: options.barrierColor,
           dismissible: options.dismissOnMaskTap,
         )
         .bindPage(options.bindToRoute)
+        .withPenetrate(!options.consumeEvents)
         .withController(controller)
         .withBack(type: _backTypeFor(options.backBehavior))
         .withAwait(AwaitCompletion.dismiss);
@@ -130,7 +131,7 @@ class OverlayPopupService {
     OverlayPopupOptions options = const OverlayPopupOptions(),
   }) {
     final controller = SuperOverlayController();
-    final command = SuperOverlay.showPopup(
+    final command = SuperOverlay._popup(
           targetContext: targetContext,
           builder: builder,
         )
@@ -151,7 +152,7 @@ class OverlayPopupService {
     }
     final alignmentMode = options.alignmentMode;
     if (alignmentMode != null) {
-      command.withAlignmentMode(alignmentMode);
+      command.withAlignmentMode(_popupAlignmentModeFor(alignmentMode));
     }
     final replacementBuilder = options.replacementBuilder;
     if (replacementBuilder != null) {
@@ -275,8 +276,8 @@ class OverlayNotifyService {
     WidgetBuilder? builder,
     OverlayNotifyOptions options,
   ) {
-    final command = SuperOverlay.showNotify(
-          msg: message,
+    final command = SuperOverlay._notification(
+          message: message,
           type: type,
           builder: builder,
         )
@@ -333,7 +334,7 @@ class _OverlayToastService {
     WidgetBuilder? builder,
     OverlayToastOptions options = const OverlayToastOptions(),
   }) {
-    final command = SuperOverlay.showToast(message, builder: builder)
+    final command = SuperOverlay._toastCommand(message, builder: builder)
         .withAlignment(options.alignment)
         .withDisplayTime(options.displayDuration)
         .withDisplayType(_toastDisplayTypeFor(options.displayPolicy))
@@ -409,7 +410,7 @@ OverlayHandle<T> _overlayHandle<T>({
     final closeOverlay =
         close ??
         ([T? result]) =>
-            SuperOverlay.dismiss<T>(status: status, tag: tag, result: result);
+            SuperOverlay._dismiss<T>(status: status, tag: tag, result: result);
     return closeOverlay(result);
   }
 
@@ -472,7 +473,7 @@ class _CommandOverlayLifecycle<T> {
       return _closed.future.then((_) {});
     }
 
-    return SuperOverlay.dismiss<T>(
+    return SuperOverlay._dismiss<T>(
       status: status,
       tag: _dismissTag,
       result: result,
@@ -482,7 +483,7 @@ class _CommandOverlayLifecycle<T> {
   Future<void> _run() async {
     try {
       if (strategy == OverlayStrategy.replaceExisting) {
-        await SuperOverlay.dismiss(
+        await SuperOverlay._dismiss(
           status: status,
           tag: replaceTag,
           force: true,
@@ -582,5 +583,13 @@ ToastDisplayType _toastDisplayTypeFor(OverlayToastDisplayPolicy policy) {
     OverlayToastDisplayPolicy.replaceLatest => ToastDisplayType.last,
     OverlayToastDisplayPolicy.refreshActive => ToastDisplayType.onlyRefresh,
     OverlayToastDisplayPolicy.stack => ToastDisplayType.multi,
+  };
+}
+
+PopupAlignmentMode _popupAlignmentModeFor(OverlayPopupAlignmentMode mode) {
+  return switch (mode) {
+    OverlayPopupAlignmentMode.inside => PopupAlignmentMode.inside,
+    OverlayPopupAlignmentMode.center => PopupAlignmentMode.center,
+    OverlayPopupAlignmentMode.outside => PopupAlignmentMode.outside,
   };
 }

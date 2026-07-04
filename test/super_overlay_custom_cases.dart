@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_overlay/super_overlay.dart';
 
+import 'overlay_test_support.dart';
+
 Widget buildCustomOverlayApp(Widget child) {
   return MaterialApp(
     builder: SuperOverlay.init(),
@@ -16,11 +18,11 @@ void main() {
 
 void registerCustomOverlayTests() {
   setUp(() {
-    SuperOverlay.config.custom = const CustomDialogConfig();
-    SuperOverlay.config.attach = const AttachDialogConfig();
-    SuperOverlay.config.loading = const LoadingConfig();
-    SuperOverlay.config.notify = const NotifyConfig();
-    SuperOverlay.config.toast = const ToastConfig();
+    overlayConfig.custom = const CustomDialogConfig();
+    overlayConfig.attach = const AttachDialogConfig();
+    overlayConfig.loading = const LoadingConfig();
+    overlayConfig.notify = const NotifyConfig();
+    overlayConfig.toast = const ToastConfig();
   });
 
   testWidgets('initializes with SuperOverlay command host', (tester) async {
@@ -55,7 +57,7 @@ void registerCustomOverlayTests() {
     await handle.visible;
 
     expect(find.text('Dialog Content'), findsOneWidget);
-    expect(SuperOverlay.checkExist(tag: 'profile'), isTrue);
+    expect(SuperOverlay.exists(tag: 'profile'), isTrue);
 
     final closed = expectLater(handle.closed, completion('closed'));
     final close = handle.close('closed');
@@ -64,7 +66,7 @@ void registerCustomOverlayTests() {
     await closed;
 
     expect(find.text('Dialog Content'), findsNothing);
-    expect(SuperOverlay.checkExist(tag: 'profile'), isFalse);
+    expect(SuperOverlay.exists(tag: 'profile'), isFalse);
   });
 
   testWidgets('mask tap dismisses a dialog command when enabled', (
@@ -195,7 +197,7 @@ void registerCustomOverlayTests() {
     expect(find.text('Second Single'), findsOneWidget);
     expect(first.isVisible, isFalse);
     expect(second.isVisible, isTrue);
-    expect(SuperOverlay.checkExist(tag: 'single'), isTrue);
+    expect(SuperOverlay.exists(tag: 'single'), isTrue);
 
     await second.close();
     await tester.pumpAndSettle();
