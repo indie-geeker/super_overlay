@@ -201,6 +201,41 @@ void registerPopupGeometryTests() {
     expect(handle.isVisible, isFalse);
   });
 
+  testWidgets('popup skips invalid target context geometry', (tester) async {
+    late BuildContext targetContext;
+
+    await tester.pumpWidget(
+      buildPopupGeometryApp(
+        Builder(
+          builder: (context) {
+            targetContext = context;
+            return const SizedBox.shrink();
+          },
+        ),
+      ),
+    );
+
+    final handle = SuperOverlay.popup.show<void>(
+      targetContext: targetContext,
+      builder:
+          (_) => const SizedBox(
+            width: 80,
+            height: 20,
+            child: Text('Invalid Context Popup'),
+          ),
+      options: const OverlayPopupOptions(tag: 'invalid-context-popup'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Invalid Context Popup'), findsNothing);
+    final close = handle.close();
+    await tester.pumpAndSettle();
+    await close;
+    await handle.closed;
+    expect(handle.isVisible, isFalse);
+  });
+
   testWidgets('popup side alignment places content outside target', (
     tester,
   ) async {

@@ -11,6 +11,12 @@ class SuperOverlayController {
     _callback = callback;
   }
 
+  void removeListener(VoidCallback callback) {
+    if (identical(_callback, callback)) {
+      _callback = null;
+    }
+  }
+
   void dismiss() {
     _callback = null;
   }

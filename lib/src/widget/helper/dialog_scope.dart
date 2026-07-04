@@ -19,11 +19,21 @@ class DialogScope extends StatefulWidget {
 
 class _DialogScopeState extends State<DialogScope> {
   VoidCallback? _callback;
+  SuperOverlayController? _boundController;
 
   @override
   void initState() {
-    _setController(widget.controller);
     super.initState();
+    _bindController(widget.controller);
+  }
+
+  @override
+  void didUpdateWidget(covariant DialogScope oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.controller, widget.controller)) {
+      _unbindController(oldWidget.controller);
+      _bindController(widget.controller);
+    }
   }
 
   @override
@@ -31,23 +41,36 @@ class _DialogScopeState extends State<DialogScope> {
     return widget.builder(context);
   }
 
-  void _setController(SuperOverlayController? controller) {
-    controller?.setListener(
-      _callback = () {
-        ViewUtils.addSafeUse(() {
-          if (mounted) {
-            setState(() {});
-          }
-        });
-      },
-    );
+  void _bindController(SuperOverlayController? controller) {
+    if (controller == null) {
+      return;
+    }
+    final callback =
+        _callback ??= () {
+          ViewUtils.addSafeUse(() {
+            if (mounted) {
+              setState(() {});
+            }
+          });
+        };
+    controller.setListener(callback);
+    _boundController = controller;
+  }
+
+  void _unbindController(SuperOverlayController? controller) {
+    final callback = _callback;
+    if (callback == null || controller == null) {
+      return;
+    }
+    controller.removeListener(callback);
+    if (identical(_boundController, controller)) {
+      _boundController = null;
+    }
   }
 
   @override
   void dispose() {
-    if (_callback != null) {
-      widget.controller?.dismiss();
-    }
+    _unbindController(_boundController);
     super.dispose();
   }
 }
