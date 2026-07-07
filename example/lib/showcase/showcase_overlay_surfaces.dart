@@ -143,12 +143,15 @@ class ChoicePopup extends StatelessWidget {
           Text('多选能力', style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 4),
           for (var index = 0; index < 3; index++)
-            CheckboxListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              title: Text('能力 ${index + 1}'),
-              value: multi.contains(index),
-              onChanged: (value) => onToggle(index, value ?? false),
+            Material(
+              type: MaterialType.transparency,
+              child: CheckboxListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                title: Text('能力 ${index + 1}'),
+                value: multi.contains(index),
+                onChanged: (value) => onToggle(index, value ?? false),
+              ),
             ),
           const SizedBox(height: 8),
           Align(
