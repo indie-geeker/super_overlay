@@ -73,7 +73,7 @@ extension on ShowNotifyParam {
       bindWidget: null,
       ignoreArea: null,
       maskTriggerType: MaskTriggerType.up,
-      controller: null,
+      controller: controller,
       backType: backType,
       onBack: onBack,
     );

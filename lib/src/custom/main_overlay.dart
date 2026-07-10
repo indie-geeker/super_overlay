@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../config/enum_config.dart';
 import '../data/show_param.dart';
 import '../helper/overlay_manager.dart';
+import '../kit/overlay_controller.dart';
 import '../kit/super_overlay_entry.dart';
 import '../kit/view_utils.dart';
 import '../widget/attach_dialog_widget.dart';
@@ -21,6 +22,7 @@ class MainOverlay {
   Completer<dynamic>? _completer;
   VoidCallback? _onDismiss;
   VoidCallback? _refresh;
+  SuperOverlayController? _controller;
   OverlayDialogWidgetController? _dialogController;
 
   Future<T?> show<T>({
@@ -29,6 +31,7 @@ class MainOverlay {
   }) {
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
+    _controller = param.controller;
     _dialogController = OverlayDialogWidgetController();
     _widget = OverlayDialogWidget(
       controller: _dialogController!,
@@ -57,6 +60,7 @@ class MainOverlay {
   }) {
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
+    _controller = param.controller;
     _dialogController = null;
     _widget = AttachDialogWidget(param: param, onMask: onMask);
     overlayEntry.markNeedsBuild();
@@ -91,6 +95,7 @@ class MainOverlay {
   }
 
   VoidCallback? get currentRefresh => _refresh;
+  Future<void>? get currentVisibleFuture => _controller?.visible;
 
   Future<T?>? currentClosedFuture<T>() {
     final completer = _completer;
@@ -117,6 +122,8 @@ class MainOverlay {
     await _dialogController?.dismiss(closeType: closeType);
     _dialogController = null;
     _refresh = null;
+    _controller?.dismiss();
+    _controller = null;
     _widget = const SizedBox.shrink();
     overlayEntry.markNeedsBuild();
 

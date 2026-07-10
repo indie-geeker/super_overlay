@@ -10,9 +10,11 @@ class OverlayLoadingService {
     WidgetBuilder? builder,
     OverlayLoadingOptions options = const OverlayLoadingOptions(),
   }) {
+    final controller = SuperOverlayController();
     final command = SuperOverlay._loading(message: message, builder: builder)
         .withMask(dismissible: options.dismissOnMaskTap)
         .withLeastLoadingTime(options.minimumVisibleDuration)
+        .withController(controller)
         .withBack(type: _backTypeFor(options.backBehavior))
         .withAwait(AwaitCompletion.dismiss);
 
@@ -27,6 +29,7 @@ class OverlayLoadingService {
 
     final closed = command.fire<void>();
     return _overlayHandle<void>(
+      visible: controller.visible,
       closed: closed,
       status: DismissStatus.loading,
       tag: effectiveTag,
@@ -97,7 +100,11 @@ class OverlayDialogService {
     }
 
     final lifecycle = _CommandOverlayLifecycle<T>(
-      fire: () => _CommandFireResult<T>(closed: command.fire<T>()),
+      fire:
+          () => _CommandFireResult<T>(
+            visible: controller.visible,
+            closed: command.fire<T>(),
+          ),
       status: DismissStatus.custom,
       tag: identityTag,
       replaceTag: tag,
@@ -198,7 +205,11 @@ class OverlayPopupService {
     }
 
     final lifecycle = _CommandOverlayLifecycle<T>(
-      fire: () => _CommandFireResult<T>(closed: command.fire<T>()),
+      fire:
+          () => _CommandFireResult<T>(
+            visible: controller.visible,
+            closed: command.fire<T>(),
+          ),
       status: DismissStatus.attach,
       tag: identityTag,
       replaceTag: tag,
@@ -276,12 +287,14 @@ class OverlayNotifyService {
     WidgetBuilder? builder,
     OverlayNotifyOptions options,
   ) {
+    final controller = SuperOverlayController();
     final command = SuperOverlay._notification(
           message: message,
           type: type,
           builder: builder,
         )
         .withAlignment(options.alignment)
+        .withController(controller)
         .withBack(type: _backTypeFor(options.backBehavior))
         .withAwait(AwaitCompletion.dismiss);
 
@@ -304,7 +317,11 @@ class OverlayNotifyService {
     }
 
     final lifecycle = _CommandOverlayLifecycle<void>(
-      fire: () => _CommandFireResult<void>(closed: command.fire<void>()),
+      fire:
+          () => _CommandFireResult<void>(
+            visible: controller.visible,
+            closed: command.fire<void>(),
+          ),
       status: DismissStatus.notify,
       tag: identityTag,
       replaceTag: tag,
@@ -334,11 +351,13 @@ class _OverlayToastService {
     WidgetBuilder? builder,
     OverlayToastOptions options = const OverlayToastOptions(),
   }) {
+    final controller = SuperOverlayController();
     final command = SuperOverlay._toastCommand(message, builder: builder)
         .withAlignment(options.alignment)
         .withDisplayTime(options.displayDuration)
         .withDisplayType(_toastDisplayTypeFor(options.displayPolicy))
         .withConsumeEvent(options.consumeEvents)
+        .withController(controller)
         .withAwait(AwaitCompletion.dismiss);
 
     final tag = options.tag;
@@ -554,12 +573,18 @@ OverlayHandle<T>? _existingOverlayHandle<T>({
     return null;
   }
 
+  final visible = OverlayManager.instance.existingVisibleFuture(
+    tag: tag,
+    type: type,
+  );
+
   final existingRefresh = OverlayManager.instance.existingRefresh(
     tag: tag,
     type: type,
   );
 
   return _overlayHandle<T>(
+    visible: visible,
     closed: closed,
     status: status,
     tag: tag,

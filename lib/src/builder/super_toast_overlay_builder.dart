@@ -17,6 +17,7 @@ class _SuperToastOverlayBuilder {
   String? _businessTag;
   bool _keepSingle = false;
   bool _replaceExisting = false;
+  SuperOverlayController? _controller;
   AwaitCompletion _awaitCompletion = overlayConfig.toast.awaitCompletion;
 
   _SuperToastOverlayBuilder withBuilder(WidgetBuilder builder) {
@@ -69,6 +70,11 @@ class _SuperToastOverlayBuilder {
     return this;
   }
 
+  _SuperToastOverlayBuilder withController(SuperOverlayController controller) {
+    _controller = controller;
+    return this;
+  }
+
   _SuperToastOverlayBuilder withAwait(AwaitCompletion completion) {
     _awaitCompletion = completion;
     return this;
@@ -79,7 +85,17 @@ class _SuperToastOverlayBuilder {
   }
 
   ToastShowResult<T> _fireCommand<T>() {
-    return ToastTool.instance.showCommand<T>(_buildParam());
+    final result = ToastTool.instance.showCommand<T>(_buildParam());
+    final controller = _controller;
+    if (controller == null ||
+        (result.dismissTag != null && result.dismissTag != _tag)) {
+      return result;
+    }
+    return ToastShowResult<T>(
+      visible: controller.visible,
+      closed: result.closed,
+      dismissTag: result.dismissTag,
+    );
   }
 
   ShowToastParam _buildParam() {
@@ -101,6 +117,7 @@ class _SuperToastOverlayBuilder {
       onDismiss: null,
       onMask: null,
       awaitCompletion: _awaitCompletion,
+      controller: _controller,
       displayTime: _displayTime,
       debounceTime: toast.debounceTime,
       debounce: _debounce,

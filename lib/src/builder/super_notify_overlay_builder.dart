@@ -17,6 +17,7 @@ class _SuperNotifyOverlayBuilder {
   bool _keepSingle = false;
   BackType _backType = overlayConfig.notify.backType;
   SuperOverlayOnBack? _onBack;
+  SuperOverlayController? _controller;
   AwaitCompletion _awaitCompletion = overlayConfig.notify.awaitCompletion;
 
   _SuperNotifyOverlayBuilder withBuilder(WidgetBuilder builder) {
@@ -58,6 +59,11 @@ class _SuperNotifyOverlayBuilder {
     return this;
   }
 
+  _SuperNotifyOverlayBuilder withController(SuperOverlayController controller) {
+    _controller = controller;
+    return this;
+  }
+
   _SuperNotifyOverlayBuilder withAwait(AwaitCompletion completion) {
     _awaitCompletion = completion;
     return this;
@@ -81,6 +87,7 @@ class _SuperNotifyOverlayBuilder {
         onDismiss: null,
         onMask: null,
         awaitCompletion: _awaitCompletion,
+        controller: _controller,
         debounce: notify.debounce,
         debounceTime: notify.debounceTime,
         displayTime: _displayTime,

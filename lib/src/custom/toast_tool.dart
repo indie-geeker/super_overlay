@@ -279,6 +279,7 @@ class ToastTool {
       onDismiss: param.onDismiss,
       onMask: param.onMask,
       awaitCompletion: param.awaitCompletion,
+      controller: param.controller,
       displayTime: param.displayTime,
       debounceTime: param.debounceTime,
       debounce: param.debounce,

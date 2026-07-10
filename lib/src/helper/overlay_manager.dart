@@ -286,6 +286,18 @@ class OverlayManager {
     return record?.overlay.mainOverlay.currentClosedFuture<T>();
   }
 
+  Future<void>? existingVisibleFuture({
+    required String tag,
+    required OverlayType type,
+  }) {
+    if (type == OverlayType.notify) {
+      return _findNotify(tag: tag)?.overlay.mainOverlay.currentVisibleFuture;
+    }
+
+    final record = _findRecord(type: type, tag: tag, force: true);
+    return record?.overlay.mainOverlay.currentVisibleFuture;
+  }
+
   VoidCallback? existingRefresh({
     required String tag,
     required OverlayType type,

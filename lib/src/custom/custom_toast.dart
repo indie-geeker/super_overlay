@@ -82,7 +82,7 @@ extension on ShowToastParam {
       bindWidget: null,
       ignoreArea: null,
       maskTriggerType: MaskTriggerType.up,
-      controller: null,
+      controller: controller,
       backType: BackType.ignore,
       onBack: null,
     );

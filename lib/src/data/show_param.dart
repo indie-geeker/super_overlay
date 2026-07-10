@@ -30,6 +30,7 @@ class ShowParamBase {
     required this.onDismiss,
     required this.onMask,
     required this.awaitCompletion,
+    this.controller,
   });
 
   final WidgetBuilder builder;
@@ -46,6 +47,7 @@ class ShowParamBase {
   final VoidCallback? onDismiss;
   final VoidCallback? onMask;
   final AwaitCompletion awaitCompletion;
+  final SuperOverlayController? controller;
 }
 
 class ShowCustomParam extends ShowParamBase {
@@ -75,7 +77,7 @@ class ShowCustomParam extends ShowParamBase {
     required this.bindWidget,
     required this.ignoreArea,
     required this.maskTriggerType,
-    required this.controller,
+    required super.controller,
     required this.backType,
     required this.onBack,
   });
@@ -91,7 +93,6 @@ class ShowCustomParam extends ShowParamBase {
   final BuildContext? bindWidget;
   final Rect? ignoreArea;
   final MaskTriggerType maskTriggerType;
-  final SuperOverlayController? controller;
   final BackType backType;
   final SuperOverlayOnBack? onBack;
 
@@ -226,6 +227,7 @@ class ShowLoadingParam extends ShowParamBase {
     required super.onDismiss,
     required super.onMask,
     required super.awaitCompletion,
+    super.controller,
     required this.displayTime,
     required this.leastLoadingTime,
     required this.tag,
@@ -256,6 +258,7 @@ class ShowToastParam extends ShowParamBase {
     required super.onDismiss,
     required super.onMask,
     required super.awaitCompletion,
+    super.controller,
     required this.displayTime,
     required this.debounceTime,
     required this.debounce,
@@ -294,6 +297,7 @@ class ShowNotifyParam extends ShowParamBase {
     required super.onDismiss,
     required super.onMask,
     required super.awaitCompletion,
+    super.controller,
     required this.debounce,
     required this.debounceTime,
     required this.displayTime,

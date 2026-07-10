@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 class SuperOverlayController {
   VoidCallback? _callback;
+  final Completer<void> _visible = Completer<void>();
+
+  Future<void> get visible => _visible.future;
 
   void refresh() {
     _callback?.call();
@@ -17,7 +22,14 @@ class SuperOverlayController {
     }
   }
 
+  void markVisible() {
+    if (!_visible.isCompleted) {
+      _visible.complete();
+    }
+  }
+
   void dismiss() {
     _callback = null;
+    markVisible();
   }
 }

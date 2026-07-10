@@ -16,6 +16,7 @@ class _SuperLoadingOverlayBuilder {
   String? _tag;
   BackType _backType = overlayConfig.loading.backType;
   SuperOverlayOnBack? _onBack;
+  SuperOverlayController? _controller;
   AwaitCompletion _awaitCompletion = overlayConfig.loading.awaitCompletion;
 
   _SuperLoadingOverlayBuilder withBuilder(WidgetBuilder builder) {
@@ -58,6 +59,13 @@ class _SuperLoadingOverlayBuilder {
     return this;
   }
 
+  _SuperLoadingOverlayBuilder withController(
+    SuperOverlayController controller,
+  ) {
+    _controller = controller;
+    return this;
+  }
+
   _SuperLoadingOverlayBuilder withAwait(AwaitCompletion completion) {
     _awaitCompletion = completion;
     return this;
@@ -85,6 +93,7 @@ class _SuperLoadingOverlayBuilder {
         onDismiss: null,
         onMask: null,
         awaitCompletion: _awaitCompletion,
+        controller: _controller,
         displayTime: _displayTime,
         leastLoadingTime: _leastLoadingTime,
         tag: _tag,

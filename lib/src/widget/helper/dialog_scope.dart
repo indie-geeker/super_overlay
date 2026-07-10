@@ -20,6 +20,7 @@ class DialogScope extends StatefulWidget {
 class _DialogScopeState extends State<DialogScope> {
   VoidCallback? _callback;
   SuperOverlayController? _boundController;
+  bool _visibilityScheduled = false;
 
   @override
   void initState() {
@@ -33,11 +34,20 @@ class _DialogScopeState extends State<DialogScope> {
     if (!identical(oldWidget.controller, widget.controller)) {
       _unbindController(oldWidget.controller);
       _bindController(widget.controller);
+      _visibilityScheduled = false;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (!_visibilityScheduled) {
+      _visibilityScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.controller?.markVisible();
+        }
+      });
+    }
     return widget.builder(context);
   }
 
