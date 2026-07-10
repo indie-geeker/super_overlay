@@ -10,6 +10,24 @@
 
 ---
 
+## Execution Phases
+
+Execute sequentially because the tasks share `showcase_home_page.dart`, shared
+surfaces, and example integration tests.
+
+- **Phase A — behavior:** Tasks 1-4 fix notification spacing, feedback
+  semantics, popup anchoring, and the control lab. Stop for a checkpoint after
+  Task 4.
+- **Phase B — structure and documentation:** Tasks 5-6 remove the global status
+  panel, reorganize the home page, add responsive coverage, and update docs.
+- **Release gate:** Task 7 runs only after both phases are green.
+
+Implementation must preserve overlays owned outside each demo. In particular,
+do not use `OverlayToastDisplayPolicy.refreshActive` for the control-lab upload:
+its first activation intentionally resets the global toast deck. Use a tagged
+stack toast with `OverlayStrategy.replaceExisting`, then update the owned
+surface through `OverlayHandle.refresh()`.
+
 ### Task 1: Prove and polish notification safe-area behavior
 
 **Files:**
@@ -22,35 +40,56 @@
 Add this case to `registerNotifyOverlayTests()`:
 
 ```dart
-testWidgets('custom notify stays below display cutout padding', (tester) async {
+testWidgets('every custom notify stays below display cutout padding', (
+  tester,
+) async {
   tester.view.padding = const FakeViewPadding(top: 44);
   addTearDown(tester.view.resetPadding);
+
+  Widget surface(OverlayNotificationType type, String message) {
+    return Container(
+      key: ValueKey('safe-notify-${type.name}'),
+      child: Text(message),
+    );
+  }
 
   await tester.pumpWidget(
     buildNotifyOverlayApp(
       const SizedBox.shrink(),
       notifyStyle: NotifyStyle(
         successBuilder:
-            (message) => Container(
-              key: const ValueKey('safe-notify'),
-              child: Text(message),
-            ),
+            (message) => surface(OverlayNotificationType.success, message),
+        failureBuilder:
+            (message) => surface(OverlayNotificationType.failure, message),
+        warningBuilder:
+            (message) => surface(OverlayNotificationType.warning, message),
+        errorBuilder:
+            (message) => surface(OverlayNotificationType.error, message),
+        alertBuilder:
+            (message) => surface(OverlayNotificationType.alert, message),
       ),
     ),
   );
 
-  final handle = SuperOverlay.notify.success(
-    'Safe notification',
-    options: const OverlayNotifyOptions(displayDuration: null),
+  final handles = [
+    SuperOverlay.notify.success('success'),
+    SuperOverlay.notify.failure('failure'),
+    SuperOverlay.notify.warning('warning'),
+    SuperOverlay.notify.error('error'),
+    SuperOverlay.notify.alert('alert'),
+  ];
+  for (final type in OverlayNotificationType.values) {
+    await tester.pump();
+    expect(
+      tester.getTopLeft(find.byKey(ValueKey('safe-notify-${type.name}'))).dy,
+      greaterThanOrEqualTo(44),
+    );
+  }
+  await SuperOverlay.close(
+    target: OverlayCloseTarget.allNotifications,
+    force: true,
   );
-  await tester.pump();
-
-  expect(
-    tester.getTopLeft(find.byKey(const ValueKey('safe-notify'))).dy,
-    greaterThanOrEqualTo(44),
-  );
-
-  await handle.close();
+  await Future.wait(handles.map((handle) => handle.closed));
 });
 ```
 
@@ -63,7 +102,7 @@ Run:
 
 ```bash
 flutter test test/super_overlay_notify_cases.dart \
-  --plain-name "custom notify stays below display cutout padding"
+  --plain-name "every custom notify stays below display cutout padding"
 ```
 
 Expected: PASS. If it fails, inspect the `MediaQuery` inherited by
@@ -72,8 +111,8 @@ Expected: PASS. If it fails, inspect the `MediaQuery` inherited by
 **Step 3: Add the failing example visual-gap test**
 
 Add a test to `example/test/widget_test.dart` that sets the same 44-pixel top
-padding, opens the current custom success notification, and measures the
-decorated notification surface rather than its padded text:
+padding, directly opens all five example notification styles, and measures each
+keyed decorated surface rather than its padded text:
 
 ```dart
 testWidgets('custom notify keeps a visual gap below the safe area', (
@@ -83,17 +122,26 @@ testWidgets('custom notify keeps a visual gap below the safe area', (
   addTearDown(tester.view.resetPadding);
 
   await tester.pumpWidget(const MyApp());
-  await tester.ensureVisible(find.text('默认 Notify'));
-  await tester.tap(find.text('默认 Notify'));
-  await tester.pump();
+  final handles = [
+    SuperOverlay.notify.success('success'),
+    SuperOverlay.notify.failure('failure'),
+    SuperOverlay.notify.warning('warning'),
+    SuperOverlay.notify.error('error'),
+    SuperOverlay.notify.alert('alert'),
+  ];
 
-  final surface = find
-      .ancestor(
-        of: find.text('Init Notify Style'),
-        matching: find.byType(DecoratedBox),
-      )
-      .first;
-  expect(tester.getTopLeft(surface).dy, greaterThanOrEqualTo(56));
+  for (final type in OverlayNotificationType.values) {
+    await tester.pump();
+    final surface = find.byKey(ValueKey('init-notify-${type.name}'));
+    expect(surface, findsOneWidget);
+    expect(tester.getTopLeft(surface).dy, greaterThanOrEqualTo(56));
+  }
+
+  await SuperOverlay.close(
+    target: OverlayCloseTarget.allNotifications,
+    force: true,
+  );
+  await Future.wait(handles.map((handle) => handle.closed));
 });
 ```
 
@@ -107,43 +155,61 @@ flutter test test/widget_test.dart \
   --plain-name "custom notify keeps a visual gap below the safe area"
 ```
 
-Expected: FAIL because the custom `DecoratedBox` starts at the safe-area edge
-instead of 12 pixels below it.
+Expected: FAIL because only success has an init-level custom builder and that
+surface starts at the safe-area edge instead of 12 pixels below it.
 
 **Step 5: Add the example-only visual inset**
 
-Wrap the returned notification surface in
-`example/lib/showcase/showcase_app.dart`:
+Replace the success-only builder with one shared type-aware builder and register
+it for every `NotifyStyle` variant in `example/lib/showcase/showcase_app.dart`:
 
 ```dart
-return Padding(
-  padding: const EdgeInsets.only(top: 12),
-  child: DecoratedBox(
-    decoration: BoxDecoration(
-      color: const Color(0xFFEFF6EE),
-      border: Border.all(color: const Color(0xFF9CCC9C)),
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text(
-            'Init Notify Style',
-            style: TextStyle(color: Color(0xFF2E7D32), fontSize: 12),
-          ),
-          Text(message, style: const TextStyle(color: Color(0xFF1F5F2A))),
-        ],
+notifyStyle: NotifyStyle(
+  successBuilder:
+      (message) => _notifyBuilder(OverlayNotificationType.success, message),
+  failureBuilder:
+      (message) => _notifyBuilder(OverlayNotificationType.failure, message),
+  warningBuilder:
+      (message) => _notifyBuilder(OverlayNotificationType.warning, message),
+  errorBuilder:
+      (message) => _notifyBuilder(OverlayNotificationType.error, message),
+  alertBuilder:
+      (message) => _notifyBuilder(OverlayNotificationType.alert, message),
+),
+
+Widget _notifyBuilder(OverlayNotificationType type, String message) {
+  final colors = switch (type) {
+    OverlayNotificationType.success =>
+      (const Color(0xFFEFF6EE), const Color(0xFF2E7D32)),
+    OverlayNotificationType.failure =>
+      (const Color(0xFFF1F5F9), const Color(0xFF475569)),
+    OverlayNotificationType.warning =>
+      (const Color(0xFFFFF7ED), const Color(0xFFB45309)),
+    OverlayNotificationType.error =>
+      (const Color(0xFFFFF1F2), const Color(0xFFBE123C)),
+    OverlayNotificationType.alert =>
+      (const Color(0xFFF5F3FF), const Color(0xFF7C3AED)),
+  };
+  return Padding(
+    padding: const EdgeInsets.only(top: 12),
+    child: DecoratedBox(
+      key: ValueKey('init-notify-${type.name}'),
+      decoration: BoxDecoration(
+        color: colors.$1,
+        border: Border.all(color: colors.$2.withValues(alpha: 0.45)),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Text(message, style: TextStyle(color: colors.$2)),
       ),
     ),
-  ),
-);
+  );
+}
 ```
 
-Keep the existing inner notification contents unchanged. Do not add a new
-public option while the core test proves the package already respects safe
-padding.
+Do not add a new public option while the core test proves the package already
+respects safe padding.
 
 **Step 6: Run both regressions**
 
@@ -151,7 +217,7 @@ Run:
 
 ```bash
 flutter test test/super_overlay_notify_cases.dart \
-  --plain-name "custom notify stays below display cutout padding"
+  --plain-name "every custom notify stays below display cutout padding"
 cd example
 flutter test test/widget_test.dart \
   --plain-name "custom notify keeps a visual gap below the safe area"
@@ -329,8 +395,8 @@ Import and place `const InstantFeedbackPanel()` from
 single, queued, multi, default toast, default loading, and default notify. Keep
 network loading in `NetworkStateDemoPage`.
 
-Update the Task 1 visual-gap test to select success and tap `显示通知` instead of
-using the removed `默认 Notify` button.
+The Task 1 visual-gap test is independent of home-page labels and needs no
+follow-up change here.
 
 **Step 6: Run focused and existing example tests**
 
@@ -523,6 +589,8 @@ Add separate tests for:
 - `替换已有`: only `登录提示 #2` remains after settling.
 - Upload handle: start, wait for visible, refresh progress, close, and observe
   `exists(tag): false`.
+- Starting and refreshing the upload handle preserves an externally owned
+  stacked toast.
 - Await timeline: created, visible, closed, and completed events appear in
   order.
 - Page disposal preserves an externally owned toast.
@@ -566,7 +634,8 @@ _uploadHandle = SuperOverlay.toast(
       ),
   options: const OverlayToastOptions(
     tag: 'control-lab-upload',
-    displayPolicy: OverlayToastDisplayPolicy.refreshActive,
+    strategy: OverlayStrategy.replaceExisting,
+    displayPolicy: OverlayToastDisplayPolicy.stack,
     displayDuration: Duration(minutes: 1),
   ),
 );
@@ -576,6 +645,8 @@ Store the handle, await `visible`, update progress and call `refresh()`, then
 close it from the cancel action. Disable update/cancel when no active handle
 exists. Keep a local lifecycle state and show
 `SuperOverlay.exists(tag: 'control-lab-upload')` in developer-facing code text.
+The test must create an external stack toast before starting the upload and
+assert that it remains visible after start, refresh, cancel, and page disposal.
 
 **Step 5: Implement the awaited lifecycle timeline**
 
@@ -782,7 +853,17 @@ At 320, 600, and 1200 pixels, visit or reveal every home section and assert
 `tester.takeException()` is null. At 1200, assert the first two common-scenario
 panels have different horizontal positions and approximately equal top
 positions. At 320, assert they share the same horizontal origin and the second
-starts below the first.
+starts below the first. Add stable keys to the panel roots:
+
+```dart
+const ValueKey('instant-feedback-panel')
+const ValueKey('anchored-menu-panel')
+const ValueKey('dialog-demo-panel')
+const ValueKey('network-state-panel')
+```
+
+Geometry tests must locate these keys instead of relying on translated text or
+widget order.
 
 **Step 2: Run the responsive test and fix only real layout failures**
 
@@ -823,7 +904,10 @@ Create `tool/verification/example_device_matrix.md` with unchecked rows for:
 - notification with the keyboard visible.
 
 Record that automation verifies simulated padding but does not constitute real
-device proof.
+device proof. A completed implementation may report automated acceptance as
+green while this matrix remains pending, but it must not claim the reported
+cutout issue is verified on hardware until at least one iPhone and one Android
+cutout device are checked.
 
 **Step 5: Run documentation and example checks**
 
