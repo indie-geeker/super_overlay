@@ -24,11 +24,13 @@ class MainOverlay {
   VoidCallback? _refresh;
   SuperOverlayController? _controller;
   OverlayDialogWidgetController? _dialogController;
+  Type? _resultType;
 
   Future<T?> show<T>({
     required ShowCustomParam param,
     required VoidCallback onMask,
   }) {
+    _resultType = T;
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _controller = param.controller;
@@ -58,6 +60,7 @@ class MainOverlay {
     required ShowAttachParam param,
     required VoidCallback onMask,
   }) {
+    _resultType = T;
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _controller = param.controller;
@@ -97,10 +100,17 @@ class MainOverlay {
   VoidCallback? get currentRefresh => _refresh;
   Future<void>? get currentVisibleFuture => _controller?.visible;
 
-  Future<T?>? currentClosedFuture<T>() {
+  Future<T?>? currentClosedFuture<T>({String? tag}) {
     final completer = _completer;
     if (completer == null) {
       return null;
+    }
+    final resultType = _resultType;
+    if (resultType != null && resultType != T) {
+      throw StateError(
+        'Overlay tag "${tag ?? '<unknown>'}" uses result type $resultType '
+        'and cannot be reused as $T.',
+      );
     }
     return completer.future.then((value) => value as T?);
   }
@@ -132,6 +142,7 @@ class MainOverlay {
       completer.complete(result);
     }
     _completer = null;
+    _resultType = null;
   }
 
   void disposeImmediately() {
@@ -148,6 +159,7 @@ class MainOverlay {
       completer.complete(null);
     }
     _completer = null;
+    _resultType = null;
   }
 
   Widget getWidget() => Offstage(offstage: !visible, child: _widget);

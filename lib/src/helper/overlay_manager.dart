@@ -301,11 +301,11 @@ class OverlayManager {
     if (type == OverlayType.notify) {
       return _findNotify(
         tag: tag,
-      )?.overlay.mainOverlay.currentClosedFuture<T>();
+      )?.overlay.mainOverlay.currentClosedFuture<T>(tag: tag);
     }
 
     final record = _findRecord(type: type, tag: tag, force: true);
-    return record?.overlay.mainOverlay.currentClosedFuture<T>();
+    return record?.overlay.mainOverlay.currentClosedFuture<T>(tag: tag);
   }
 
   Future<void>? existingVisibleFuture({
