@@ -73,6 +73,12 @@ class CustomOverlay extends BaseOverlay {
           closeType: OverlayCloseType.mask,
         );
       },
+      onTargetUnavailable:
+          () => OverlayManager.instance.dismiss<void>(
+            status: DismissStatus.attach,
+            tag: push.tag,
+            force: true,
+          ),
     );
   }
 

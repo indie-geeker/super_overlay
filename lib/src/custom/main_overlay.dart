@@ -30,10 +30,10 @@ class MainOverlay {
     required ShowCustomParam param,
     required VoidCallback onMask,
   }) {
+    _replaceController(param.controller);
     _resultType = T;
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
-    _controller = param.controller;
     _dialogController = OverlayDialogWidgetController();
     _widget = OverlayDialogWidget(
       controller: _dialogController!,
@@ -59,16 +59,28 @@ class MainOverlay {
   Future<T?> showAttach<T>({
     required ShowAttachParam param,
     required VoidCallback onMask,
+    required Future<void> Function() onTargetUnavailable,
   }) {
+    _replaceController(param.controller);
     _resultType = T;
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
-    _controller = param.controller;
     _dialogController = null;
-    _widget = AttachDialogWidget(param: param, onMask: onMask);
+    _widget = AttachDialogWidget(
+      param: param,
+      onMask: onMask,
+      onTargetUnavailable: onTargetUnavailable,
+    );
     overlayEntry.markNeedsBuild();
 
     return _completionFuture<T>(param);
+  }
+
+  void _replaceController(SuperOverlayController? controller) {
+    if (!identical(_controller, controller)) {
+      _controller?.dismiss();
+    }
+    _controller = controller;
   }
 
   Future<T?> _completionFuture<T>(ShowCustomParam param) {

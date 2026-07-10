@@ -149,4 +149,46 @@ void main() {
 
     await second.close();
   });
+
+  testWidgets('canceling a queued replacement preserves the current winner', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
+
+    final original = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Text('Original queued dialog'),
+      options: const OverlayDialogOptions(
+        tag: 'queued-dialog',
+        strategy: OverlayStrategy.replaceExisting,
+      ),
+    );
+    await tester.pumpAndSettle();
+    await original.visible;
+
+    final winner = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Text('Current queued winner'),
+      options: const OverlayDialogOptions(
+        tag: 'queued-dialog',
+        strategy: OverlayStrategy.replaceExisting,
+      ),
+    );
+    final canceled = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Text('Canceled queued successor'),
+      options: const OverlayDialogOptions(
+        tag: 'queued-dialog',
+        strategy: OverlayStrategy.replaceExisting,
+      ),
+    );
+    final canceledClose = canceled.close();
+
+    await tester.pumpAndSettle();
+    await canceledClose;
+
+    expect(find.text('Current queued winner'), findsOneWidget);
+    expect(find.text('Canceled queued successor'), findsNothing);
+    expect(winner.isVisible, isTrue);
+    expect(canceled.isVisible, isFalse);
+
+    await winner.close();
+  });
 }

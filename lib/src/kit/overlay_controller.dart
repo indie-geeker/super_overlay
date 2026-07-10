@@ -3,6 +3,12 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 class SuperOverlayController {
+  SuperOverlayController() {
+    unawaited(
+      _visible.future.then<void>((_) {}, onError: (Object _, StackTrace __) {}),
+    );
+  }
+
   VoidCallback? _callback;
   final Completer<void> _visible = Completer<void>();
 
@@ -28,8 +34,14 @@ class SuperOverlayController {
     }
   }
 
+  void failVisible(String message) {
+    if (!_visible.isCompleted) {
+      _visible.completeError(StateError(message));
+    }
+  }
+
   void dismiss() {
     _callback = null;
-    markVisible();
+    failVisible('The overlay closed before its first rendered frame.');
   }
 }

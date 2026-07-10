@@ -41,4 +41,3 @@ Introduce one internal runtime result carrying visible, closed, and identity dat
 ### Task 8: Open-source and release finish
 
 Update README and CHANGELOG, add concise contribution and pull-request guidance, then run formatting, analysis, package tests with coverage, dartdoc, dependency inspection, example analysis/tests/Web build, diff checks, and publish dry-run.
-

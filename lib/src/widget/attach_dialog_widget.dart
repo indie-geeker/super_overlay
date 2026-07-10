@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../config/enum_config.dart';
@@ -19,10 +21,12 @@ class AttachDialogWidget extends StatefulWidget {
     super.key,
     required this.param,
     required this.onMask,
+    required this.onTargetUnavailable,
   });
 
   final ShowAttachParam param;
   final VoidCallback onMask;
+  final Future<void> Function() onTargetUnavailable;
 
   @override
   State<AttachDialogWidget> createState() => _AttachDialogWidgetState();
@@ -35,6 +39,7 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
   PopupLayoutInfo? _layoutInfo;
   PopupLayoutInfo? _pendingLayoutInfo;
   Alignment? _adjustedAlignment;
+  bool _targetFailureScheduled = false;
 
   ShowAttachParam get param => widget.param;
 
@@ -66,6 +71,7 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
   Widget build(BuildContext context) {
     final targetRect = _targetRect();
     if (targetRect == null) {
+      _scheduleTargetFailure();
       return const SizedBox.shrink();
     }
 
@@ -90,6 +96,21 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
   }
 
   Alignment get _effectiveAlignment => _adjustedAlignment ?? param.alignment;
+
+  void _scheduleTargetFailure() {
+    if (_targetFailureScheduled) {
+      return;
+    }
+    _targetFailureScheduled = true;
+    param.controller?.failVisible(
+      'The popup could not become visible because its target geometry is unavailable.',
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(widget.onTargetUnavailable());
+      }
+    });
+  }
 
   Widget _buildBody() {
     final layoutInfo = _layoutInfo;
@@ -271,7 +292,10 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
 
   Rect? _targetRect() {
     final targetContext = param.targetContext;
-    final renderObject = targetContext?.findRenderObject();
+    final renderObject =
+        targetContext?.mounted == true
+            ? targetContext?.findRenderObject()
+            : null;
     var hasTargetInfo = false;
     var targetOffset = Offset.zero;
     var targetSize = Size.zero;

@@ -109,7 +109,6 @@ void registerPopupGeometryTests() {
         ),
       ),
     );
-
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
@@ -192,15 +191,25 @@ void registerPopupGeometryTests() {
         targetPointBuilder: _invalidTargetPoint,
       ),
     );
+    var visibleSucceeded = false;
+    Object? visibleError;
+    handle.visible.then(
+      (_) {
+        visibleSucceeded = true;
+      },
+      onError: (Object error) {
+        visibleError = error;
+      },
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
     expect(find.text('Invalid Point Popup'), findsNothing);
-    final close = handle.close();
-    await tester.pumpAndSettle();
-    await close;
+    expect(visibleSucceeded, isFalse);
+    expect(visibleError, isA<StateError>());
     await handle.closed;
     expect(handle.isVisible, isFalse);
+    expect(SuperOverlay.exists(tag: 'invalid-point-popup'), isFalse);
   });
 
   testWidgets('popup skips invalid target context geometry', (tester) async {
@@ -216,6 +225,7 @@ void registerPopupGeometryTests() {
         ),
       ),
     );
+    await tester.pumpWidget(buildPopupGeometryApp(const SizedBox.shrink()));
 
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
@@ -227,15 +237,25 @@ void registerPopupGeometryTests() {
           ),
       options: const OverlayPopupOptions(tag: 'invalid-context-popup'),
     );
+    var visibleSucceeded = false;
+    Object? visibleError;
+    handle.visible.then(
+      (_) {
+        visibleSucceeded = true;
+      },
+      onError: (Object error) {
+        visibleError = error;
+      },
+    );
     await tester.pumpAndSettle();
 
     expect(tester.takeException(), isNull);
     expect(find.text('Invalid Context Popup'), findsNothing);
-    final close = handle.close();
-    await tester.pumpAndSettle();
-    await close;
+    expect(visibleSucceeded, isFalse);
+    expect(visibleError, isA<StateError>());
     await handle.closed;
     expect(handle.isVisible, isFalse);
+    expect(SuperOverlay.exists(tag: 'invalid-context-popup'), isFalse);
   });
 
   testWidgets('popup side alignment places content outside target', (

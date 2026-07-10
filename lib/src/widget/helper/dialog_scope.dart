@@ -42,9 +42,10 @@ class _DialogScopeState extends State<DialogScope> {
   Widget build(BuildContext context) {
     if (!_visibilityScheduled) {
       _visibilityScheduled = true;
+      final scheduledController = widget.controller;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          widget.controller?.markVisible();
+        if (mounted && identical(_boundController, scheduledController)) {
+          scheduledController?.markVisible();
         }
       });
     }

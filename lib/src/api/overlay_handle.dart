@@ -15,7 +15,14 @@ class OverlayHandle<T> {
        _closed = closed,
        _close = close,
        _refresh = refresh,
-       _isVisible = isVisible;
+       _isVisible = isVisible {
+    // Consumers are not required to await [visible]. Keep a rejection from
+    // becoming an unhandled asynchronous error while preserving it for callers
+    // that do await the original future.
+    unawaited(
+      visible.then<void>((_) {}, onError: (Object _, StackTrace __) {}),
+    );
+  }
 
   /// Creates a handle that is already closed and not attached to an overlay.
   factory OverlayHandle.detached() {
@@ -36,6 +43,9 @@ class OverlayHandle<T> {
   Future<void>? _closeFuture;
 
   /// Completes when the overlay has become visible.
+  ///
+  /// Fails with a [StateError] if the overlay closes or is rejected before its
+  /// first rendered frame.
   Future<void> get visible => _visible;
 
   /// Completes once, when the overlay has closed.

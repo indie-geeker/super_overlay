@@ -366,7 +366,8 @@ class _ToastRequest {
   final Completer<void> _dismissCompleter = Completer<void>();
 
   bool matchesTag(String tag) => param.tag == tag || param.businessTag == tag;
-  Future<void> get visible => _appearCompleter.future;
+  Future<void> get visible =>
+      param.controller?.visible ?? _appearCompleter.future;
 
   Future<T?> future<T>() {
     return switch (param.awaitCompletion) {
@@ -394,6 +395,7 @@ class _ToastRequest {
   }
 
   void completeDismiss() {
+    param.controller?.dismiss();
     if (!_appearCompleter.isCompleted) {
       _appearCompleter.complete();
     }

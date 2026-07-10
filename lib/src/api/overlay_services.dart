@@ -528,7 +528,7 @@ class _CommandOverlayLifecycle<T> {
       );
       final result = await fired.closed;
       if (!_visible.isCompleted) {
-        _visible.complete();
+        _failVisible();
       }
       if (!_closed.isCompleted) {
         _closed.complete(result);
@@ -544,6 +544,9 @@ class _CommandOverlayLifecycle<T> {
   }
 
   Future<_CommandFireResult<T>?> _replaceAndFire() async {
+    if (_closeRequested) {
+      return _fireIfOpen();
+    }
     await SuperOverlay._dismiss(status: status, tag: replaceTag, force: true);
     return _fireIfOpen();
   }
@@ -551,7 +554,7 @@ class _CommandOverlayLifecycle<T> {
   _CommandFireResult<T>? _fireIfOpen() {
     if (_closeRequested) {
       if (!_visible.isCompleted) {
-        _visible.complete();
+        _failVisible();
       }
       if (!_closed.isCompleted) {
         _closed.complete(_closeResult);
@@ -561,6 +564,14 @@ class _CommandOverlayLifecycle<T> {
 
     _fireStarted = true;
     return fire();
+  }
+
+  void _failVisible() {
+    if (!_visible.isCompleted) {
+      _visible.completeError(
+        StateError('The overlay closed before its first rendered frame.'),
+      );
+    }
   }
 }
 
