@@ -5,9 +5,9 @@ import 'package:super_overlay/super_overlay.dart';
 
 import '../network_state/presentation/network_state_demo_page.dart';
 import 'anchored_menu_panel.dart';
-import 'command_contracts_demo_page.dart';
 import 'instant_feedback_panel.dart';
 import 'lifecycle_demo_page.dart';
+import 'overlay_control_lab_page.dart';
 import 'showcase_overlay_surfaces.dart';
 import 'showcase_theme.dart';
 import 'showcase_widgets.dart';
@@ -83,7 +83,6 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
             SizedBox(width: width, child: _buildDialogPanel()),
             SizedBox(width: width, child: const InstantFeedbackPanel()),
             SizedBox(width: width, child: const AnchoredMenuPanel()),
-            SizedBox(width: width, child: _buildAdvancedPopupPanel()),
             SizedBox(width: width, child: _buildGuidePanel()),
             SizedBox(width: width, child: _buildActivityPanel()),
             SizedBox(width: width, child: _buildLifecyclePanel()),
@@ -123,47 +122,6 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
               icon: const Icon(Icons.open_in_full),
               label: const Text('打开自定义弹窗'),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAdvancedPopupPanel() {
-    return FeaturePanel(
-      title: 'Popup Advanced',
-      subtitle: '定点、替换、缩放原点和遮罩区域等几何能力',
-      icon: Icons.architecture_outlined,
-      accent: ShowcaseColors.violet,
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: [
-          OutlinedButton.icon(
-            onPressed: _showPointPopup,
-            icon: const Icon(Icons.my_location_outlined),
-            label: const Text('定点 Popup'),
-          ),
-          Builder(
-            builder:
-                (targetContext) => OutlinedButton.icon(
-                  onPressed: () => _showAdjustedPopup(targetContext),
-                  icon: const Icon(Icons.flip_to_front_outlined),
-                  label: const Text('替换/调整 Popup'),
-                ),
-          ),
-          Builder(
-            builder:
-                (targetContext) => OutlinedButton.icon(
-                  onPressed: () => _showScaleOriginPopup(targetContext),
-                  icon: const Icon(Icons.open_with_outlined),
-                  label: const Text('缩放原点 Popup'),
-                ),
-          ),
-          OutlinedButton.icon(
-            onPressed: _showMaskIgnorePopup,
-            icon: const Icon(Icons.layers_clear_outlined),
-            label: const Text('忽略遮罩区域'),
           ),
         ],
       ),
@@ -267,22 +225,22 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
 
   Widget _buildCommandContractsPanel() {
     return FeaturePanel(
-      title: 'Command Contracts',
-      subtitle: '策略、Handle、exists、refreshActive、全局清理',
+      title: 'Overlay 控制实验室',
+      subtitle: '用真实业务场景理解策略、Handle 和生命周期',
       icon: Icons.integration_instructions_outlined,
       accent: ShowcaseColors.info,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '通过可交互案例验证命令 API 的生命周期和标签策略。',
+            '比较重复触发策略，再亲手刷新、关闭和 await 一个 Overlay。',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
-            onPressed: () => _pushPage(const CommandContractsDemoPage()),
+            onPressed: () => _pushPage(const OverlayControlLabPage()),
             icon: const Icon(Icons.open_in_new),
-            label: const Text('打开命令契约案例'),
+            label: const Text('打开控制实验室'),
           ),
         ],
       ),

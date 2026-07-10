@@ -391,6 +391,7 @@ class _OverlayToastService {
       status: DismissStatus.toast,
       tag: identityTag,
       close: lifecycle.close,
+      refresh: controller.refresh,
       isVisible:
           () =>
               !lifecycle.isQueued &&

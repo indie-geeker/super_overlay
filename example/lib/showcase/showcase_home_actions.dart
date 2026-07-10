@@ -50,90 +50,6 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
     );
   }
 
-  void _showPointPopup() {
-    _log('Popup: 定点显示');
-    SuperOverlay.popup.show<void>(
-      builder:
-          (_) => const PopupDemoSurface(
-            title: '定点 Popup',
-            message: '定点 Popup 内容',
-            icon: Icons.my_location_outlined,
-          ),
-      options: const OverlayPopupOptions(
-        tag: 'point-popup',
-        targetPointBuilder: _pointPopupTarget,
-        alignment: Alignment.topLeft,
-        alignmentMode: OverlayPopupAlignmentMode.inside,
-      ),
-    );
-  }
-
-  void _showAdjustedPopup(BuildContext targetContext) {
-    _log('Popup: 替换内容并调整位置');
-    SuperOverlay.popup.show<void>(
-      targetContext: targetContext,
-      builder:
-          (_) => const PopupDemoSurface(
-            title: '原始 Popup',
-            message: '这个内容会被 replacement 替换',
-            icon: Icons.flip_to_front_outlined,
-          ),
-      options: OverlayPopupOptions(
-        tag: 'adjusted-popup',
-        alignment: Alignment.bottomCenter,
-        replacementBuilder: (info) {
-          final target =
-              '${info.targetSize.width.round()}x'
-              '${info.targetSize.height.round()}';
-          return PopupDemoSurface(
-            title: '替换/调整 Popup',
-            message: '替换/调整 Popup 内容，目标 $target',
-            icon: Icons.flip_to_front_outlined,
-          );
-        },
-        adjustmentBuilder:
-            (_) => const PopupAdjustment(alignment: Alignment.topRight),
-      ),
-    );
-  }
-
-  void _showScaleOriginPopup(BuildContext targetContext) {
-    _log('Popup: 自定义缩放原点');
-    SuperOverlay.popup.show<void>(
-      targetContext: targetContext,
-      builder:
-          (_) => const PopupDemoSurface(
-            title: '缩放原点 Popup',
-            message: '缩放原点 Popup 内容',
-            icon: Icons.open_with_outlined,
-          ),
-      options: const OverlayPopupOptions(
-        tag: 'scale-origin-popup',
-        alignment: Alignment.bottomRight,
-        scaleOriginBuilder: _scaleOriginTopRight,
-      ),
-    );
-  }
-
-  void _showMaskIgnorePopup() {
-    _log('Popup: 遮罩忽略顶部区域');
-    final screenWidth = MediaQuery.sizeOf(context).width;
-    SuperOverlay.popup.show<void>(
-      builder:
-          (_) => const PopupDemoSurface(
-            title: '忽略遮罩区域',
-            message: '忽略遮罩 Popup 内容',
-            icon: Icons.layers_clear_outlined,
-          ),
-      options: OverlayPopupOptions(
-        tag: 'mask-ignore-popup',
-        targetPointBuilder: _maskIgnoreTarget,
-        alignment: Alignment.topCenter,
-        maskIgnoreArea: Rect.fromLTWH(0, 0, screenWidth, 96),
-      ),
-    );
-  }
-
   void _showNotify() {
     _log('Notify: 顶部通知');
     SuperOverlay.notify.success(
@@ -243,16 +159,4 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
       }
     });
   }
-}
-
-Offset _pointPopupTarget(Offset targetOffset, Size targetSize) {
-  return const Offset(260, 260);
-}
-
-Offset _scaleOriginTopRight(Size popupSize) {
-  return Offset(popupSize.width, 0);
-}
-
-Offset _maskIgnoreTarget(Offset targetOffset, Size targetSize) {
-  return const Offset(280, 320);
 }

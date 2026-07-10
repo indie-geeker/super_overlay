@@ -36,6 +36,31 @@ void main() {
     expect(handle.isVisible, isFalse);
   });
 
+  testWidgets('toast handle refresh rebuilds command content', (tester) async {
+    await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
+
+    var progress = 0;
+    final handle = SuperOverlay.toast(
+      'upload',
+      builder: (_) => Text('Upload progress $progress%'),
+      options: const OverlayToastOptions(
+        displayPolicy: OverlayToastDisplayPolicy.stack,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Upload progress 0%'), findsOneWidget);
+
+    progress = 35;
+    handle.refresh();
+    await tester.pump();
+
+    expect(find.text('Upload progress 0%'), findsNothing);
+    expect(find.text('Upload progress 35%'), findsOneWidget);
+
+    await handle.close();
+  });
+
   testWidgets('default close dismisses an active toast', (tester) async {
     await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
 
