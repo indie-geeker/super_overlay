@@ -258,6 +258,29 @@ class CodeStrip extends StatelessWidget {
   }
 }
 
+class DemoStatusBanner extends StatelessWidget {
+  const DemoStatusBanner({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: ShowcaseColors.surfaceHigh,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: ShowcaseColors.border),
+        ),
+        child: Text(message),
+      ),
+    );
+  }
+}
+
 class ActivityRow extends StatelessWidget {
   const ActivityRow({super.key, required this.text});
 

@@ -47,9 +47,10 @@ void main() {
       '替换/调整 Popup',
       '缩放原点 Popup',
       '忽略遮罩区域',
-      '默认 Toast',
-      '默认 Loading',
-      '默认 Notify',
+      '替换最新',
+      '依次排队',
+      '同时显示',
+      '显示通知',
       'Await 事件',
     ]) {
       expect(find.text(label), findsOneWidget);
@@ -63,11 +64,10 @@ void main() {
     await SuperOverlay.close(target: OverlayCloseTarget.allPopups, force: true);
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('默认 Toast'));
-    await tester.tap(find.text('默认 Toast'));
+    await tester.ensureVisible(find.text('运行 Toast 演示'));
+    await tester.tap(find.text('运行 Toast 演示'));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('Init Toast Style'), findsOneWidget);
-    expect(find.text('Init 默认 Toast'), findsOneWidget);
+    expect(find.text('保存结果 3'), findsOneWidget);
 
     await SuperOverlay.close(target: OverlayCloseTarget.allToasts, force: true);
     await tester.pumpAndSettle();
@@ -108,7 +108,7 @@ void main() {
     expect(find.text('super_overlay'), findsOneWidget);
     expect(find.text('Overlay features in one place'), findsNothing);
     expect(find.text('Dialog Lab'), findsOneWidget);
-    expect(find.text('Toast Deck'), findsOneWidget);
+    expect(find.text('即时反馈'), findsOneWidget);
     expect(find.text('Popup Window'), findsOneWidget);
     expect(find.text('Guided Mask'), findsOneWidget);
     expect(find.text('Lifecycle Binding'), findsOneWidget);
@@ -123,27 +123,28 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('自定义弹窗'), findsNothing);
 
-    await tester.ensureVisible(find.text('单个 Toast'));
-    await tester.tap(find.text('单个 Toast'));
+    await tester.ensureVisible(find.text('运行 Toast 演示'));
+    await tester.tap(find.text('运行 Toast 演示'));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('图标 + 文案'), findsOneWidget);
+    expect(find.text('保存结果 3'), findsOneWidget);
 
     await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('多个 Toast'));
-    await tester.tap(find.text('多个 Toast'));
+    await tester.ensureVisible(find.text('同时显示'));
+    await tester.tap(find.text('同时显示'));
+    await tester.tap(find.text('运行 Toast 演示'));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('同步完成'), findsOneWidget);
-    expect(find.text('权限通过'), findsOneWidget);
-    expect(find.text('任务加速'), findsOneWidget);
+    expect(find.text('后台同步完成'), findsOneWidget);
+    expect(find.text('权限校验通过'), findsOneWidget);
+    expect(find.text('缓存预热完成'), findsOneWidget);
     expect(
-      tester.getTopLeft(find.text('权限通过')).dy,
-      greaterThan(tester.getTopLeft(find.text('同步完成')).dy),
+      tester.getTopLeft(find.text('权限校验通过')).dy,
+      greaterThan(tester.getTopLeft(find.text('后台同步完成')).dy),
     );
     expect(
-      tester.getTopLeft(find.text('任务加速')).dy,
-      greaterThan(tester.getTopLeft(find.text('权限通过')).dy),
+      tester.getTopLeft(find.text('缓存预热完成')).dy,
+      greaterThan(tester.getTopLeft(find.text('权限校验通过')).dy),
     );
 
     await SuperOverlay.close(target: OverlayCloseTarget.allToasts);

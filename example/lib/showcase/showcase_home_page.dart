@@ -5,6 +5,7 @@ import 'package:super_overlay/super_overlay.dart';
 
 import '../network_state/presentation/network_state_demo_page.dart';
 import 'command_contracts_demo_page.dart';
+import 'instant_feedback_panel.dart';
 import 'lifecycle_demo_page.dart';
 import 'showcase_overlay_surfaces.dart';
 import 'showcase_theme.dart';
@@ -87,7 +88,7 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
           runSpacing: 16,
           children: [
             SizedBox(width: width, child: _buildDialogPanel()),
-            SizedBox(width: width, child: _buildToastPanel()),
+            SizedBox(width: width, child: const InstantFeedbackPanel()),
             SizedBox(width: width, child: _buildPopupPanel()),
             SizedBox(width: width, child: _buildGuidePanel()),
             SizedBox(width: width, child: _buildActivityPanel()),
@@ -128,51 +129,6 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
               icon: const Icon(Icons.open_in_full),
               label: const Text('打开自定义弹窗'),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToastPanel() {
-    return FeaturePanel(
-      title: 'Toast Deck',
-      subtitle: '自定义内容、单个 toast、多个 toast',
-      icon: Icons.sms_outlined,
-      accent: ShowcaseColors.warning,
-      child: Wrap(
-        spacing: 10,
-        runSpacing: 10,
-        children: [
-          FilledButton.icon(
-            onPressed: _showSingleToast,
-            icon: const Icon(Icons.looks_one_outlined),
-            label: const Text('单个 Toast'),
-          ),
-          OutlinedButton.icon(
-            onPressed: _showQueuedToasts,
-            icon: const Icon(Icons.queue_outlined),
-            label: const Text('队列 Toast'),
-          ),
-          OutlinedButton.icon(
-            onPressed: _showMultiToasts,
-            icon: const Icon(Icons.library_add_outlined),
-            label: const Text('多个 Toast'),
-          ),
-          OutlinedButton.icon(
-            onPressed: _showDefaultToast,
-            icon: const Icon(Icons.branding_watermark_outlined),
-            label: const Text('默认 Toast'),
-          ),
-          OutlinedButton.icon(
-            onPressed: () => unawaited(_showDefaultLoading()),
-            icon: const Icon(Icons.hourglass_top_outlined),
-            label: const Text('默认 Loading'),
-          ),
-          OutlinedButton.icon(
-            onPressed: _showDefaultNotify,
-            icon: const Icon(Icons.notification_important_outlined),
-            label: const Text('默认 Notify'),
           ),
         ],
       ),
