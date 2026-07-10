@@ -13,6 +13,7 @@ import 'data/show_param.dart';
 import 'helper/overlay_manager.dart';
 import 'init_overlay.dart';
 import 'kit/overlay_controller.dart';
+import 'kit/overlay_runtime_result.dart';
 import 'kit/typedef.dart';
 import 'widget/default/loading_widget.dart';
 import 'widget/default/notify_alert.dart';

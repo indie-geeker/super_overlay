@@ -27,12 +27,16 @@ class OverlayLoadingService {
       command.withDisplayTime(displayDuration);
     }
 
-    final closed = command.fire<void>();
-    return _overlayHandle<void>(
+    final runtime = OverlayRuntimeResult<void>(
       visible: controller.visible,
-      closed: closed,
+      closed: command.fire<void>(),
+      identityTag: effectiveTag,
+    );
+    return _overlayHandle<void>(
+      visible: runtime.visible,
+      closed: runtime.closed,
       status: DismissStatus.loading,
-      tag: effectiveTag,
+      tag: runtime.identityTag,
       close:
           ([void result]) => SuperOverlay._dismiss<void>(
             status: DismissStatus.loading,
@@ -101,7 +105,7 @@ class OverlayDialogService {
 
     final lifecycle = _CommandOverlayLifecycle<T>(
       fire:
-          () => _CommandFireResult<T>(
+          () => OverlayRuntimeResult<T>(
             visible: controller.visible,
             closed: command.fire<T>(),
           ),
@@ -206,7 +210,7 @@ class OverlayPopupService {
 
     final lifecycle = _CommandOverlayLifecycle<T>(
       fire:
-          () => _CommandFireResult<T>(
+          () => OverlayRuntimeResult<T>(
             visible: controller.visible,
             closed: command.fire<T>(),
           ),
@@ -318,7 +322,7 @@ class OverlayNotifyService {
 
     final lifecycle = _CommandOverlayLifecycle<void>(
       fire:
-          () => _CommandFireResult<void>(
+          () => OverlayRuntimeResult<void>(
             visible: controller.visible,
             closed: command.fire<void>(),
           ),
@@ -374,14 +378,7 @@ class _OverlayToastService {
     }
 
     final lifecycle = _CommandOverlayLifecycle<void>(
-      fire: () {
-        final result = command._fireCommand<void>();
-        return _CommandFireResult<void>(
-          visible: result.visible,
-          closed: result.closed,
-          dismissTag: result.dismissTag,
-        );
-      },
+      fire: command._fireCommand<void>,
       status: DismissStatus.toast,
       tag: identityTag,
       replaceTag: tag,
@@ -442,18 +439,6 @@ OverlayHandle<T> _overlayHandle<T>({
   );
 }
 
-class _CommandFireResult<T> {
-  _CommandFireResult({
-    Future<void>? visible,
-    required this.closed,
-    this.dismissTag,
-  }) : visible = visible ?? Future<void>.value();
-
-  final Future<void> visible;
-  final Future<T?> closed;
-  final String? dismissTag;
-}
-
 class _CommandOverlayLifecycle<T> {
   _CommandOverlayLifecycle({
     required this.fire,
@@ -463,14 +448,14 @@ class _CommandOverlayLifecycle<T> {
     required this.strategy,
   }) : replaceTag = replaceTag ?? tag;
 
-  final _CommandFireResult<T> Function() fire;
+  final OverlayRuntimeResult<T> Function() fire;
   final DismissStatus status;
   final String tag;
   final String replaceTag;
   final OverlayStrategy strategy;
   final Completer<void> _visible = Completer<void>();
   final Completer<T?> _closed = Completer<T?>();
-  late String _dismissTag = tag;
+  late String _identityTag = tag;
 
   bool _closeRequested = false;
   bool _fireStarted = false;
@@ -479,7 +464,7 @@ class _CommandOverlayLifecycle<T> {
   Future<void> get visible => _visible.future;
   Future<T?> get closed => _closed.future;
   bool get isQueued => _fireStarted && !_visible.isCompleted;
-  String get activeTag => _dismissTag;
+  String get activeTag => _identityTag;
 
   void start() {
     unawaited(_run());
@@ -494,7 +479,7 @@ class _CommandOverlayLifecycle<T> {
 
     return SuperOverlay._dismiss<T>(
       status: status,
-      tag: _dismissTag,
+      tag: _identityTag,
       result: result,
     );
   }
@@ -511,7 +496,7 @@ class _CommandOverlayLifecycle<T> {
       if (fired == null) {
         return;
       }
-      _dismissTag = fired.dismissTag ?? tag;
+      _identityTag = fired.identityTag ?? tag;
       unawaited(
         fired.visible.then(
           (_) {
@@ -543,7 +528,7 @@ class _CommandOverlayLifecycle<T> {
     }
   }
 
-  Future<_CommandFireResult<T>?> _replaceAndFire() async {
+  Future<OverlayRuntimeResult<T>?> _replaceAndFire() async {
     if (_closeRequested) {
       return _fireIfOpen();
     }
@@ -551,7 +536,7 @@ class _CommandOverlayLifecycle<T> {
     return _fireIfOpen();
   }
 
-  _CommandFireResult<T>? _fireIfOpen() {
+  OverlayRuntimeResult<T>? _fireIfOpen() {
     if (_closeRequested) {
       if (!_visible.isCompleted) {
         _failVisible();

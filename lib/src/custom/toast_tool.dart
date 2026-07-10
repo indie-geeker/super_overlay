@@ -6,19 +6,8 @@ import 'package:flutter/widgets.dart';
 import '../config/enum_config.dart';
 import '../data/show_param.dart';
 import '../kit/debounce_utils.dart';
+import '../kit/overlay_runtime_result.dart';
 import 'custom_toast.dart';
-
-class ToastShowResult<T> {
-  const ToastShowResult({
-    required this.visible,
-    required this.closed,
-    this.dismissTag,
-  });
-
-  final Future<void> visible;
-  final Future<T?> closed;
-  final String? dismissTag;
-}
 
 class ToastTool {
   ToastTool._();
@@ -45,13 +34,13 @@ class ToastTool {
     return showCommand<T>(param).closed;
   }
 
-  ToastShowResult<T> showCommand<T>(ShowToastParam param) {
+  OverlayRuntimeResult<T> showCommand<T>(ShowToastParam param) {
     if (DebounceUtils.instance.banContinue(
       OverlayDebounceType.toast,
       debounce: param.debounce,
       duration: param.debounceTime,
     )) {
-      return ToastShowResult<T>(
+      return OverlayRuntimeResult<T>(
         visible: Future<void>.value(),
         closed: Future<T?>.value(),
       );
@@ -87,14 +76,14 @@ class ToastTool {
             rethrow;
           }
         }();
-        return ToastShowResult<T>(visible: visible.future, closed: closed);
+        return OverlayRuntimeResult<T>(visible: visible.future, closed: closed);
       } else if (param.keepSingle) {
         final existing = _findTaggedRequest(lookupTag);
         if (existing != null) {
-          return ToastShowResult<T>(
+          return OverlayRuntimeResult<T>(
             visible: existing.visible,
             closed: existing.future<T>(),
-            dismissTag: existing.param.tag,
+            identityTag: existing.param.tag,
           );
         }
       }
@@ -103,7 +92,7 @@ class ToastTool {
     return _show<T>(param);
   }
 
-  ToastShowResult<T> _show<T>(ShowToastParam param) {
+  OverlayRuntimeResult<T> _show<T>(ShowToastParam param) {
     final request = _ToastRequest(param);
     switch (param.displayType) {
       case ToastDisplayType.normal:
@@ -123,10 +112,10 @@ class ToastTool {
         _showStandalone(request);
         break;
     }
-    return ToastShowResult<T>(
+    return OverlayRuntimeResult<T>(
       visible: request.visible,
       closed: request.future<T>(),
-      dismissTag: request.param.tag,
+      identityTag: request.param.tag,
     );
   }
 
