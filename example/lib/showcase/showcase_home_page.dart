@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:super_overlay/super_overlay.dart';
 
 import '../network_state/presentation/network_state_demo_page.dart';
+import 'command_contracts_demo_page.dart';
 import 'lifecycle_demo_page.dart';
 import 'showcase_overlay_surfaces.dart';
 import 'showcase_theme.dart';
@@ -92,6 +93,7 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
             SizedBox(width: width, child: _buildActivityPanel()),
             SizedBox(width: width, child: _buildLifecyclePanel()),
             SizedBox(width: width, child: _buildNetworkStatePanel()),
+            SizedBox(width: width, child: _buildCommandContractsPanel()),
           ],
         );
       },
@@ -349,6 +351,30 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
             onPressed: () => _pushPage(const NetworkStateDemoPage()),
             icon: const Icon(Icons.open_in_new),
             label: const Text('打开网络状态案例'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCommandContractsPanel() {
+    return FeaturePanel(
+      title: 'Command Contracts',
+      subtitle: '策略、Handle、exists、refreshActive、全局清理',
+      icon: Icons.integration_instructions_outlined,
+      accent: ShowcaseColors.info,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '通过可交互案例验证命令 API 的生命周期和标签策略。',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: () => _pushPage(const CommandContractsDemoPage()),
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('打开命令契约案例'),
           ),
         ],
       ),

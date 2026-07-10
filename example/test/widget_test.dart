@@ -238,4 +238,74 @@ void main() {
       await tester.pumpAndSettle();
     },
   );
+
+  testWidgets('command contracts page demonstrates public lifecycle APIs', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
+
+    await tester.ensureVisible(find.text('打开命令契约案例'));
+    await tester.tap(find.text('打开命令契约案例'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Command Contracts'), findsWidgets);
+    expect(find.text('Tagged strategies'), findsOneWidget);
+    expect(find.text('Handle + exists'), findsOneWidget);
+    expect(find.text('Refresh active toast'), findsOneWidget);
+    expect(find.text('Notifications + cleanup'), findsOneWidget);
+
+    await tester.tap(find.text('Replace tagged dialog'));
+    await tester.pumpAndSettle();
+    expect(find.text('Replacement loser'), findsNothing);
+    expect(find.text('Replacement winner'), findsOneWidget);
+    await SuperOverlay.close(
+      target: OverlayCloseTarget.allDialogs,
+      force: true,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Show owned handle'));
+    await tester.tap(find.text('Show owned handle'));
+    await tester.pumpAndSettle();
+    expect(find.text('Owned handle revision 0'), findsOneWidget);
+    expect(find.text('exists(contracts-owned): true'), findsOneWidget);
+
+    await tester.tap(find.text('Refresh owned handle'));
+    await tester.pump();
+    expect(find.text('Owned handle revision 1'), findsOneWidget);
+
+    await tester.tap(find.text('Close owned handle'));
+    await tester.pumpAndSettle();
+    expect(find.text('Owned handle revision 1'), findsNothing);
+    expect(find.text('exists(contracts-owned): false'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Start refresh toast'));
+    await tester.tap(find.text('Start refresh toast'));
+    await tester.pump();
+    expect(find.text('Refresh active toast #1'), findsOneWidget);
+
+    await tester.tap(find.text('Update refresh toast'));
+    await tester.pump();
+    expect(find.text('Refresh active toast #1'), findsNothing);
+    expect(find.text('Refresh active toast #2'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Show all notification types'));
+    await tester.tap(find.text('Show all notification types'));
+    await tester.pump();
+    for (final message in [
+      'Success notification',
+      'Failure notification',
+      'Warning notification',
+      'Error notification',
+      'Alert notification',
+    ]) {
+      expect(find.text(message), findsOneWidget);
+    }
+
+    await tester.tap(find.text('Cleanup all overlays'));
+    await tester.pumpAndSettle();
+    expect(find.text('Refresh active toast #2'), findsNothing);
+    expect(find.text('Success notification'), findsNothing);
+    expect(find.text('All overlays closed'), findsOneWidget);
+  });
 }
