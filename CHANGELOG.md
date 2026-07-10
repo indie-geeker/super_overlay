@@ -13,9 +13,14 @@
   invalid.
 * Reset init-level builders and settle active handles when the overlay host is
   disposed or replaced.
-* Add an interactive Command Contracts example for strategies, handle refresh
-  and close, existence checks, refresh-active toasts, every notification style,
-  and global cleanup.
+* Reorganize the example around real development scenarios, including Toast
+  policies, one-at-a-time notifications, anchored dropdown and upward menus,
+  route/widget lifecycle cases, and a scoped Overlay Control Lab.
+* Keep custom notifications below display cutouts and add simulated safe-area
+  regression coverage for all notification types.
+* Wire Toast command handles to their content refresh controller so
+  `OverlayHandle.refresh()` rebuilds an active Toast without affecting other
+  Toast owners.
 
 ## 0.2.0
 

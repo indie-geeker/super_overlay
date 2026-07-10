@@ -294,9 +294,16 @@ entrypoint.
 
 ## Example And Contributing
 
-The [example app](example/README.md) includes visual surface demos plus an
-interactive Command Contracts page for strategies, handles, existence checks,
-refresh-active toasts, notification variants, and global cleanup.
+The [example app](example/README.md) is organized around common scenarios,
+interaction enhancements, and advanced capabilities. It includes Toast policy
+comparisons, one-at-a-time notifications, anchored dropdown and upward menus,
+route/widget lifecycle cases, and an Overlay Control Lab for strategies,
+Handle-owned refresh/close, lifecycle futures, scoped cleanup, and advanced
+popup geometry.
+
+Automated tests simulate safe-area padding and responsive widths. Physical
+cutout-device checks remain a separate release step documented in the example
+[device matrix](tool/verification/example_device_matrix.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and release-gate commands. Use
 the [security policy](SECURITY.md) for private vulnerability reports.
