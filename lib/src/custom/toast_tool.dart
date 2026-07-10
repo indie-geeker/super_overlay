@@ -154,7 +154,7 @@ class ToastTool {
   void reset() {
     for (final active in _activeToasts) {
       active.timer.cancel();
-      active.toast.remove();
+      active.toast.disposeImmediately();
       active.completeDismiss();
     }
     for (final request in _normalQueue) {

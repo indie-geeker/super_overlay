@@ -38,26 +38,48 @@ class OverlayManager {
   BuildContext? contextToast;
 
   var _nextTagId = 0;
+  bool _initialized = false;
 
   void initialize() {
-    for (final record in _dialogQueue) {
-      record.displayTimer?.cancel();
-      record.overlay.overlayEntry.remove();
+    if (_initialized) {
+      disposeHost();
     }
-    for (final record in _notifyQueue) {
-      record.displayTimer?.cancel();
-      record.overlay.overlayEntry.remove();
-    }
-    _dialogQueue.clear();
-    _notifyQueue.clear();
-    ToastTool.instance.reset();
-    DebounceUtils.instance.reset();
-    RouteRecord.instance.reset();
+    _initialized = true;
     _nextTagId = 0;
     CustomLoading? loading;
     entryLoading = SuperOverlayEntry(builder: (_) => loading!.getWidget());
     loading = CustomLoading(overlayEntry: entryLoading);
     loadingOverlay = loading;
+  }
+
+  void disposeHost() {
+    if (!_initialized) {
+      return;
+    }
+    _initialized = false;
+
+    for (final record in _dialogQueue) {
+      record.displayTimer?.cancel();
+      record.overlay.mainOverlay.disposeImmediately();
+      record.overlay.overlayEntry.remove();
+    }
+    for (final record in _notifyQueue) {
+      record.displayTimer?.cancel();
+      record.overlay.mainOverlay.disposeImmediately();
+      record.overlay.overlayEntry.remove();
+    }
+    _dialogQueue.clear();
+    _notifyQueue.clear();
+    loadingOverlay.disposeHost();
+    entryLoading.remove();
+    ToastTool.instance.reset();
+    DebounceUtils.instance.reset();
+    RouteRecord.instance.reset();
+    contextCustom = null;
+    contextAttach = null;
+    contextNotify = null;
+    contextToast = null;
+    _nextTagId = 0;
   }
 
   void captureContexts(BuildContext context) {

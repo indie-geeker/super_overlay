@@ -92,6 +92,11 @@ class CustomLoading extends BaseOverlay {
     _backType = BackType.normal;
     _onBack = null;
   }
+
+  void disposeHost() {
+    reset();
+    mainOverlay.disposeImmediately();
+  }
 }
 
 extension on ShowLoadingParam {

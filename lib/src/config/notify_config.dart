@@ -41,6 +41,10 @@ class NotifyConfig {
   final AwaitCompletion awaitCompletion;
 
   NotifyConfig copyWith({NotifyStyle? style}) {
+    return withStyle(style ?? this.style);
+  }
+
+  NotifyConfig withStyle(NotifyStyle? style) {
     return NotifyConfig(
       alignment: alignment,
       animationType: animationType,
@@ -56,7 +60,7 @@ class NotifyConfig {
       maskTriggerType: maskTriggerType,
       nonAnimationTypes: nonAnimationTypes,
       backType: backType,
-      style: style ?? this.style,
+      style: style,
       awaitCompletion: awaitCompletion,
     );
   }

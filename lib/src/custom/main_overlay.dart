@@ -134,5 +134,21 @@ class MainOverlay {
     _completer = null;
   }
 
+  void disposeImmediately() {
+    visible = false;
+    _onDismiss = null;
+    _dialogController = null;
+    _refresh = null;
+    _controller?.dismiss();
+    _controller = null;
+    _widget = const SizedBox.shrink();
+
+    final completer = _completer;
+    if (completer != null && !completer.isCompleted) {
+      completer.complete(null);
+    }
+    _completer = null;
+  }
+
   Widget getWidget() => Offstage(offstage: !visible, child: _widget);
 }

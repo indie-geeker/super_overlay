@@ -51,6 +51,11 @@ class CustomToast extends BaseOverlay {
   void remove() {
     overlayEntry.remove();
   }
+
+  void disposeImmediately() {
+    mainOverlay.disposeImmediately();
+    remove();
+  }
 }
 
 extension on ShowToastParam {

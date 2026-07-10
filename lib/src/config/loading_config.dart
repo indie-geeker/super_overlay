@@ -40,6 +40,10 @@ class LoadingConfig {
   final AwaitCompletion awaitCompletion;
 
   LoadingConfig copyWith({SuperOverlayLoadingBuilder? builder}) {
+    return withBuilder(builder ?? this.builder);
+  }
+
+  LoadingConfig withBuilder(SuperOverlayLoadingBuilder? builder) {
     return LoadingConfig(
       alignment: alignment,
       animationType: animationType,
@@ -53,7 +57,7 @@ class LoadingConfig {
       maskTriggerType: maskTriggerType,
       nonAnimationTypes: nonAnimationTypes,
       backType: backType,
-      builder: builder ?? this.builder,
+      builder: builder,
       awaitCompletion: awaitCompletion,
     );
   }

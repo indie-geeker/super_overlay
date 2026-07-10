@@ -84,22 +84,20 @@ class _SuperOverlayInitState extends State<SuperOverlayInit> {
   }
 
   void _applyDefaultBuilders() {
-    final toastBuilder = widget.toastBuilder;
-    if (toastBuilder != null) {
-      overlayConfig.toast = overlayConfig.toast.copyWith(builder: toastBuilder);
-    }
+    overlayConfig.toast = overlayConfig.toast.withBuilder(widget.toastBuilder);
+    overlayConfig.loading = overlayConfig.loading.withBuilder(
+      widget.loadingBuilder,
+    );
+    overlayConfig.notify = overlayConfig.notify.withStyle(widget.notifyStyle);
+  }
 
-    final loadingBuilder = widget.loadingBuilder;
-    if (loadingBuilder != null) {
-      overlayConfig.loading = overlayConfig.loading.copyWith(
-        builder: loadingBuilder,
-      );
-    }
-
-    final notifyStyle = widget.notifyStyle;
-    if (notifyStyle != null) {
-      overlayConfig.notify = overlayConfig.notify.copyWith(style: notifyStyle);
-    }
+  @override
+  void dispose() {
+    overlayConfig.toast = overlayConfig.toast.withBuilder(null);
+    overlayConfig.loading = overlayConfig.loading.withBuilder(null);
+    overlayConfig.notify = overlayConfig.notify.withStyle(null);
+    OverlayManager.instance.disposeHost();
+    super.dispose();
   }
 
   @override

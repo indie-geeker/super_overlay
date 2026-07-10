@@ -43,6 +43,10 @@ class ToastConfig {
   final AwaitCompletion awaitCompletion;
 
   ToastConfig copyWith({SuperOverlayToastBuilder? builder}) {
+    return withBuilder(builder ?? this.builder);
+  }
+
+  ToastConfig withBuilder(SuperOverlayToastBuilder? builder) {
     return ToastConfig(
       alignment: alignment,
       animationType: animationType,
@@ -59,7 +63,7 @@ class ToastConfig {
       displayTime: displayTime,
       maskTriggerType: maskTriggerType,
       nonAnimationTypes: nonAnimationTypes,
-      builder: builder ?? this.builder,
+      builder: builder,
       awaitCompletion: awaitCompletion,
     );
   }
