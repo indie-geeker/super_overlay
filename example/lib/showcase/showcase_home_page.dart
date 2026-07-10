@@ -1,57 +1,22 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:super_overlay/super_overlay.dart';
 
 import '../network_state/presentation/network_state_demo_page.dart';
 import 'anchored_menu_panel.dart';
+import 'dialog_demo_panel.dart';
+import 'guided_mask_panel.dart';
 import 'instant_feedback_panel.dart';
 import 'lifecycle_demo_page.dart';
 import 'overlay_control_lab_page.dart';
-import 'showcase_overlay_surfaces.dart';
 import 'showcase_theme.dart';
 import 'showcase_widgets.dart';
 
-part 'showcase_home_actions.dart';
-
-const _guideTag = 'showcase-guide';
-
-class ShowcaseHomePage extends StatefulWidget {
+class ShowcaseHomePage extends StatelessWidget {
   const ShowcaseHomePage({super.key});
-
-  @override
-  State<ShowcaseHomePage> createState() => _ShowcaseHomePageState();
-}
-
-class _ShowcaseHomePageState extends State<ShowcaseHomePage>
-    with _ShowcaseHomeActions {
-  @override
-  final List<GlobalKey> _guideKeys = List.generate(3, (_) => GlobalKey());
-  @override
-  final List<String> _events = <String>['等待触发一个 overlay'];
-
-  @override
-  bool _dialogDismissible = true;
-  @override
-  bool _dialogDimmed = true;
-  @override
-  int? _guideStep;
-  @override
-  OverlayHandle<void>? _guideHandle;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SuperOverlay Showcase'),
-        actions: [
-          IconButton(
-            tooltip: 'Notify',
-            onPressed: _showNotify,
-            icon: const Icon(Icons.notifications_active_outlined),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text('SuperOverlay Showcase')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -59,10 +24,38 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const ShowcaseHeader(),
-              const SizedBox(height: 14),
-              const CapabilityStats(),
+              const SizedBox(height: 24),
+              const ShowcaseSectionTitle(
+                title: '常用场景',
+                subtitle: '从业务反馈、锚点菜单、弹窗和网络状态开始',
+              ),
+              const SizedBox(height: 12),
+              const _ResponsivePair(
+                first: InstantFeedbackPanel(),
+                second: AnchoredMenuPanel(),
+              ),
               const SizedBox(height: 16),
-              _buildPanelGrid(),
+              _ResponsivePair(
+                first: const DialogDemoPanel(),
+                second: _buildNetworkStatePanel(context),
+              ),
+              const SizedBox(height: 28),
+              const ShowcaseSectionTitle(
+                title: '交互增强',
+                subtitle: '用高亮遮罩组织不可跳步的新手引导',
+              ),
+              const SizedBox(height: 12),
+              const GuidedMaskPanel(),
+              const SizedBox(height: 28),
+              const ShowcaseSectionTitle(
+                title: '高级能力',
+                subtitle: '深入路由生命周期、标签策略和 Handle 控制',
+              ),
+              const SizedBox(height: 12),
+              _ResponsivePair(
+                first: _buildLifecyclePanel(context),
+                second: _buildControlLabPanel(context),
+              ),
             ],
           ),
         ),
@@ -70,151 +63,23 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
     );
   }
 
-  Widget _buildPanelGrid() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isWide = constraints.maxWidth >= 920;
-        final width =
-            isWide ? (constraints.maxWidth - 16) / 2 : constraints.maxWidth;
-        return Wrap(
-          spacing: 16,
-          runSpacing: 16,
-          children: [
-            SizedBox(width: width, child: _buildDialogPanel()),
-            SizedBox(width: width, child: const InstantFeedbackPanel()),
-            SizedBox(width: width, child: const AnchoredMenuPanel()),
-            SizedBox(width: width, child: _buildGuidePanel()),
-            SizedBox(width: width, child: _buildActivityPanel()),
-            SizedBox(width: width, child: _buildLifecyclePanel()),
-            SizedBox(width: width, child: _buildNetworkStatePanel()),
-            SizedBox(width: width, child: _buildCommandContractsPanel()),
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _buildDialogPanel() {
+  Widget _buildNetworkStatePanel(BuildContext context) {
     return FeaturePanel(
-      title: 'Dialog Lab',
-      subtitle: '自定义弹窗、点击外部关闭、背景高亮',
-      icon: Icons.dashboard_customize_outlined,
-      accent: ShowcaseColors.primary,
-      child: Column(
-        children: [
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('点击弹窗外部允许关闭'),
-            value: _dialogDismissible,
-            onChanged: (value) => setState(() => _dialogDismissible = value),
-          ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('背景高亮遮罩'),
-            value: _dialogDimmed,
-            onChanged: (value) => setState(() => _dialogDimmed = value),
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              onPressed: _showDialogDemo,
-              icon: const Icon(Icons.open_in_full),
-              label: const Text('打开自定义弹窗'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGuidePanel() {
-    return FeaturePanel(
-      title: 'Guided Mask',
-      subtitle: '只能点击高亮目标，点击后推进下一步',
-      icon: Icons.center_focus_strong_outlined,
-      accent: ShowcaseColors.danger,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              GuideTarget(
-                key: _guideKeys[0],
-                label: '高亮入口',
-                icon: Icons.touch_app_outlined,
-                active: _guideStep == 0,
-                onPressed: () => _handleGuideTargetTap(0),
-              ),
-              GuideTarget(
-                key: _guideKeys[1],
-                label: '配置参数',
-                icon: Icons.tune_outlined,
-                active: _guideStep == 1,
-                onPressed: () => _handleGuideTargetTap(1),
-              ),
-              GuideTarget(
-                key: _guideKeys[2],
-                label: '状态面板',
-                icon: Icons.analytics_outlined,
-                active: _guideStep == 2,
-                onPressed: () => _handleGuideTargetTap(2),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: _startGuide,
-            icon: const Icon(Icons.play_arrow_outlined),
-            label: const Text('开始引导'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLifecyclePanel() {
-    return FeaturePanel(
-      title: 'Lifecycle Binding',
-      subtitle: '页面绑定、控件绑定、返回键处理',
-      icon: Icons.route_outlined,
-      accent: ShowcaseColors.violet,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '进入独立页面观察 overlay 如何随路由覆盖、目标控件卸载、返回键配置而变化。',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 12),
-          FilledButton.icon(
-            onPressed: () => _pushPage(const LifecycleDemoPage()),
-            icon: const Icon(Icons.open_in_new),
-            label: const Text('打开生命周期案例'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNetworkStatePanel() {
-    return FeaturePanel(
-      title: 'Network State Demo',
-      subtitle: '请求 loading、缺省页、错误页、局部图片状态',
+      key: const ValueKey('network-state-panel'),
+      title: '网络请求状态',
+      subtitle: '请求 loading、缺省页、错误页和局部图片状态',
       icon: Icons.cloud_sync_outlined,
       accent: ShowcaseColors.primary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '示例只在页面内渲染缺省页，overlay 负责 loading 和 toast。',
+            '缺省与错误内容在页面内渲染，Overlay 只负责 loading 和 Toast。',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
-            onPressed: () => _pushPage(const NetworkStateDemoPage()),
+            onPressed: () => _pushPage(context, const NetworkStateDemoPage()),
             icon: const Icon(Icons.open_in_new),
             label: const Text('打开网络状态案例'),
           ),
@@ -223,8 +88,34 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
     );
   }
 
-  Widget _buildCommandContractsPanel() {
+  Widget _buildLifecyclePanel(BuildContext context) {
     return FeaturePanel(
+      key: const ValueKey('lifecycle-panel'),
+      title: '生命周期绑定',
+      subtitle: '页面绑定、控件绑定和返回键处理',
+      icon: Icons.route_outlined,
+      accent: ShowcaseColors.violet,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '观察 Overlay 如何随路由覆盖、目标控件卸载和返回键策略变化。',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: () => _pushPage(context, const LifecycleDemoPage()),
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('打开生命周期案例'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControlLabPanel(BuildContext context) {
+    return FeaturePanel(
+      key: const ValueKey('control-lab-panel'),
       title: 'Overlay 控制实验室',
       subtitle: '用真实业务场景理解策略、Handle 和生命周期',
       icon: Icons.integration_instructions_outlined,
@@ -238,7 +129,7 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
-            onPressed: () => _pushPage(const OverlayControlLabPage()),
+            onPressed: () => _pushPage(context, const OverlayControlLabPage()),
             icon: const Icon(Icons.open_in_new),
             label: const Text('打开控制实验室'),
           ),
@@ -247,24 +138,38 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
     );
   }
 
-  Widget _buildActivityPanel() {
-    return FeaturePanel(
-      title: 'Live Status',
-      subtitle: '最近触发的 overlay 行为',
-      icon: Icons.query_stats_outlined,
-      accent: ShowcaseColors.muted,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final event in _events.take(4)) ActivityRow(text: event),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => unawaited(_showAwaitDemo()),
-            icon: const Icon(Icons.av_timer_outlined),
-            label: const Text('Await 事件'),
-          ),
-        ],
-      ),
+  void _pushPage(BuildContext context, Widget page) {
+    Navigator.of(
+      context,
+    ).push<void>(MaterialPageRoute<void>(builder: (_) => page));
+  }
+}
+
+class _ResponsivePair extends StatelessWidget {
+  const _ResponsivePair({required this.first, required this.second});
+
+  final Widget first;
+  final Widget second;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 920) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [first, const SizedBox(height: 16), second],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: first),
+            const SizedBox(width: 16),
+            Expanded(child: second),
+          ],
+        );
+      },
     );
   }
 }

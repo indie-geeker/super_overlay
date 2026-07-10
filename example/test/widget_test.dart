@@ -110,21 +110,21 @@ void main() {
     expect(find.text('SuperOverlay Showcase'), findsOneWidget);
     expect(find.text('super_overlay'), findsOneWidget);
     expect(find.text('Overlay features in one place'), findsNothing);
-    expect(find.text('Dialog Lab'), findsOneWidget);
+    expect(find.text('自定义弹窗'), findsOneWidget);
     expect(find.text('即时反馈'), findsOneWidget);
     expect(find.text('锚点菜单'), findsOneWidget);
-    expect(find.text('Guided Mask'), findsOneWidget);
-    expect(find.text('Lifecycle Binding'), findsOneWidget);
-    expect(find.text('Network State Demo'), findsOneWidget);
+    expect(find.text('高亮引导'), findsOneWidget);
+    expect(find.text('生命周期绑定'), findsOneWidget);
+    expect(find.text('网络请求状态'), findsOneWidget);
 
     await tester.ensureVisible(find.text('打开自定义弹窗'));
     await tester.tap(find.text('打开自定义弹窗'));
     await tester.pumpAndSettle();
-    expect(find.text('自定义弹窗'), findsOneWidget);
+    expect(find.text('自定义弹窗'), findsNWidgets(2));
 
     await tester.tap(find.text('关闭弹窗'));
     await tester.pumpAndSettle();
-    expect(find.text('自定义弹窗'), findsNothing);
+    expect(find.text('自定义弹窗'), findsOneWidget);
 
     await tester.ensureVisible(find.text('运行 Toast 演示'));
     await tester.tap(find.text('运行 Toast 演示'));

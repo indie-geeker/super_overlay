@@ -75,19 +75,34 @@ class ShowcaseHeader extends StatelessWidget {
   }
 }
 
-class CapabilityStats extends StatelessWidget {
-  const CapabilityStats({super.key});
+class ShowcaseSectionTitle extends StatelessWidget {
+  const ShowcaseSectionTitle({
+    super.key,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final String title;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
-    return const Wrap(
-      spacing: 12,
-      runSpacing: 12,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        StatPill(label: 'Overlay modes', value: '6'),
-        StatPill(label: 'Route aware', value: 'Yes'),
-        StatPill(label: 'Back policy', value: '3'),
-        StatPill(label: 'Live log', value: 'On'),
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          subtitle,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: ShowcaseColors.muted),
+        ),
       ],
     );
   }
@@ -190,46 +205,6 @@ class PackageBadge extends StatelessWidget {
   }
 }
 
-class StatPill extends StatelessWidget {
-  const StatPill({super.key, required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minWidth: 144),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: ShowcaseColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: ShowcaseColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: ShowcaseColors.primary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: ShowcaseColors.muted),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class CodeStrip extends StatelessWidget {
   const CodeStrip({super.key, required this.code});
 
@@ -276,33 +251,6 @@ class DemoStatusBanner extends StatelessWidget {
           border: Border.all(color: ShowcaseColors.border),
         ),
         child: Text(message),
-      ),
-    );
-  }
-}
-
-class ActivityRow extends StatelessWidget {
-  const ActivityRow({super.key, required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          const Icon(Icons.circle, size: 8, color: ShowcaseColors.primary),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: ShowcaseColors.text),
-            ),
-          ),
-        ],
       ),
     );
   }
