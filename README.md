@@ -174,6 +174,20 @@ SuperOverlay.popup.show<void>(
 );
 ```
 
+`maskIgnoreArea` removes one exact rectangle from the popup mask's hit-test
+area. Coordinates are relative to the overlay host, so the underlying UI
+receives pointer events only inside that rectangle:
+
+```dart
+SuperOverlay.popup.show<void>(
+  options: const OverlayPopupOptions(
+    targetPointBuilder: menuAnchor,
+    maskIgnoreArea: Rect.fromLTWH(16, 16, 240, 48),
+  ),
+  builder: (_) => const ToolbarMenu(),
+);
+```
+
 ### Guided Highlight
 
 Use popup highlighting when the user must interact with a specific target while
@@ -249,14 +263,24 @@ SuperOverlay exposes a command-oriented public API from
 `SuperOverlay.toast`, `SuperOverlay.close`, `SuperOverlay.exists`, typed option
 objects, and `OverlayHandle`.
 
-`OverlayHandle.visible` completes when the overlay is ready for interaction.
-`OverlayHandle.closed` completes once, with the optional result. Calling
+`OverlayHandle.visible` completes only after the overlay's first rendered
+frame. It fails with `StateError` if the request is rejected or closes before
+rendering, such as when a popup target is detached or has invalid geometry.
+`OverlayHandle.closed` still completes once with the optional result. Calling
 `close()` more than once is safe.
 
 Tags are business identifiers. Use `OverlayStrategy.replaceExisting` when only
 one overlay for a flow should exist, `OverlayStrategy.keepExisting` when repeated
 commands should reuse the active overlay, and `OverlayStrategy.stack` when
-multiple overlays are intentional.
+multiple overlays are intentional. Same-tag replacements are serialized, so
+multiple commands issued in one event-loop turn leave the latest replacement
+active. A tag reused through `keepExisting` must keep the same dialog or popup
+result type; an incompatible generic result type throws `StateError` instead of
+failing later with a cast error.
+
+Removing or replacing the widget that hosts `SuperOverlay.init()` closes active
+handles and clears init-level builders. Mounting a new host starts from the
+package defaults unless that host supplies new builders.
 
 Toasts are transient feedback. Empty pages, error pages, and durable network
 state belong in your application widget tree.
@@ -267,6 +291,15 @@ dependencies beyond the Flutter SDK and does not install a global navigator key.
 The current command API is a breaking public surface. Older fluent-builder,
 configuration-mutation, and route-key APIs are not part of the supported
 entrypoint.
+
+## Example And Contributing
+
+The [example app](example/README.md) includes visual surface demos plus an
+interactive Command Contracts page for strategies, handles, existence checks,
+refresh-active toasts, notification variants, and global cleanup.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and release-gate commands. Use
+the [security policy](SECURITY.md) for private vulnerability reports.
 
 ## License
 

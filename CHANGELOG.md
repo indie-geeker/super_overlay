@@ -1,3 +1,22 @@
+## Unreleased
+
+* Make `OverlayHandle.visible` reflect the first rendered frame across dialog,
+  loading, popup, toast, and notification surfaces. Requests that terminate
+  before rendering now fail `visible` with `StateError` while still settling
+  `closed`.
+* Serialize same-tag `replaceExisting` commands and preserve the current overlay
+  when a queued replacement is canceled.
+* Reject `keepExisting` calls that reuse a dialog or popup tag with an
+  incompatible generic result type.
+* Treat `OverlayPopupOptions.maskIgnoreArea` as an exact rectangular mask
+  cutout, and automatically close popups whose target context or geometry is
+  invalid.
+* Reset init-level builders and settle active handles when the overlay host is
+  disposed or replaced.
+* Add an interactive Command Contracts example for strategies, handle refresh
+  and close, existence checks, refresh-active toasts, every notification style,
+  and global cleanup.
+
 ## 0.2.0
 
 * Breaking: replace the fluent public API with command services:
