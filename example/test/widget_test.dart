@@ -254,6 +254,26 @@ void main() {
     expect(find.text('Refresh active toast'), findsOneWidget);
     expect(find.text('Notifications + cleanup'), findsOneWidget);
 
+    await tester.tap(find.text('Stack tagged dialogs'));
+    await tester.pumpAndSettle();
+    expect(find.text('Stacked dialog A'), findsOneWidget);
+    expect(find.text('Stacked dialog B'), findsOneWidget);
+    await SuperOverlay.close(
+      target: OverlayCloseTarget.allDialogs,
+      force: true,
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Keep existing dialog'));
+    await tester.pumpAndSettle();
+    expect(find.text('Kept original dialog'), findsOneWidget);
+    expect(find.text('Ignored duplicate dialog'), findsNothing);
+    await SuperOverlay.close(
+      target: OverlayCloseTarget.allDialogs,
+      force: true,
+    );
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('Replace tagged dialog'));
     await tester.pumpAndSettle();
     expect(find.text('Replacement loser'), findsNothing);
@@ -307,5 +327,36 @@ void main() {
     expect(find.text('Refresh active toast #2'), findsNothing);
     expect(find.text('Success notification'), findsNothing);
     expect(find.text('All overlays closed'), findsOneWidget);
+  });
+
+  testWidgets('leaving command contracts preserves overlays owned elsewhere', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
+
+    await tester.ensureVisible(find.text('打开命令契约案例'));
+    await tester.tap(find.text('打开命令契约案例'));
+    await tester.pumpAndSettle();
+
+    final external = SuperOverlay.toast(
+      'Externally owned toast',
+      options: const OverlayToastOptions(
+        tag: 'external-owner',
+        displayPolicy: OverlayToastDisplayPolicy.stack,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+    expect(find.text('Externally owned toast'), findsOneWidget);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Externally owned toast'), findsOneWidget);
+    expect(external.isVisible, isTrue);
+
+    final close = external.close();
+    await tester.pumpAndSettle();
+    await close;
   });
 }

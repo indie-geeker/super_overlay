@@ -9,6 +9,8 @@ import 'showcase_widgets.dart';
 
 const _strategyTag = 'contracts-strategy';
 const _ownedTag = 'contracts-owned';
+const _refreshToastTag = 'contracts-refresh-toast';
+const _notificationTag = 'contracts-notifications';
 
 class CommandContractsDemoPage extends StatefulWidget {
   const CommandContractsDemoPage({super.key});
@@ -271,6 +273,7 @@ class _CommandContractsDemoPageState extends State<CommandContractsDemoPage> {
     SuperOverlay.toast(
       message,
       options: const OverlayToastOptions(
+        tag: _refreshToastTag,
         displayPolicy: OverlayToastDisplayPolicy.refreshActive,
         displayDuration: Duration(minutes: 1),
       ),
@@ -278,7 +281,10 @@ class _CommandContractsDemoPageState extends State<CommandContractsDemoPage> {
   }
 
   void _showAllNotifications() {
-    const options = OverlayNotifyOptions(displayDuration: null);
+    const options = OverlayNotifyOptions(
+      tag: _notificationTag,
+      displayDuration: null,
+    );
     SuperOverlay.notify.success('Success notification', options: options);
     SuperOverlay.notify.failure('Failure notification', options: options);
     SuperOverlay.notify.warning('Warning notification', options: options);
@@ -311,7 +317,24 @@ class _CommandContractsDemoPageState extends State<CommandContractsDemoPage> {
 
   @override
   void dispose() {
-    unawaited(SuperOverlay.close(target: OverlayCloseTarget.all, force: true));
+    final ownedHandle = _ownedHandle;
+    _ownedHandle = null;
+    unawaited(_closeDemoOverlays(ownedHandle));
     super.dispose();
+  }
+
+  Future<void> _closeDemoOverlays(OverlayHandle<void>? ownedHandle) async {
+    await ownedHandle?.close();
+    await _closeStrategyDialogs();
+    await SuperOverlay.close(
+      target: OverlayCloseTarget.allToasts,
+      tag: _refreshToastTag,
+      force: true,
+    );
+    await SuperOverlay.close(
+      target: OverlayCloseTarget.allNotifications,
+      tag: _notificationTag,
+      force: true,
+    );
   }
 }
