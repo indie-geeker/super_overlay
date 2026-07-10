@@ -262,13 +262,9 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
       return maskLayer;
     }
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: area.left,
-        top: area.top,
-        right: area.right,
-        bottom: area.bottom,
-      ),
+    return ClipPath(
+      clipper: _MaskIgnoreRectClipper(area),
+      clipBehavior: Clip.hardEdge,
       child: maskLayer,
     );
   }
@@ -324,5 +320,29 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
         rect.bottom.isFinite &&
         rect.width.isFinite &&
         rect.height.isFinite;
+  }
+}
+
+class _MaskIgnoreRectClipper extends CustomClipper<Path> {
+  const _MaskIgnoreRectClipper(this.ignoreRect);
+
+  final Rect ignoreRect;
+
+  @override
+  Path getClip(Size size) {
+    final bounds = Offset.zero & size;
+    final visibleMask = Path()..addRect(bounds);
+    final clippedIgnoreRect = ignoreRect.intersect(bounds);
+    if (clippedIgnoreRect.isEmpty) {
+      return visibleMask;
+    }
+
+    final ignoredArea = Path()..addRect(clippedIgnoreRect);
+    return Path.combine(PathOperation.difference, visibleMask, ignoredArea);
+  }
+
+  @override
+  bool shouldReclip(covariant _MaskIgnoreRectClipper oldClipper) {
+    return ignoreRect != oldClipper.ignoreRect;
   }
 }

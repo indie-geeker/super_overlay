@@ -42,6 +42,32 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('mask ignore popup passes only taps inside the top strip', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
+
+    await tester.ensureVisible(find.text('忽略遮罩区域'));
+    await tester.tap(find.text('忽略遮罩区域'));
+    await tester.pumpAndSettle();
+    expect(find.text('忽略遮罩 Popup 内容'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Notify'));
+    await tester.pump();
+    expect(find.text('Notify message'), findsOneWidget);
+    expect(find.text('忽略遮罩 Popup 内容'), findsOneWidget);
+
+    await tester.tapAt(const Offset(10, 150));
+    await tester.pumpAndSettle();
+    expect(find.text('忽略遮罩 Popup 内容'), findsNothing);
+
+    await SuperOverlay.close(
+      target: OverlayCloseTarget.allNotifications,
+      force: true,
+    );
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('example demonstrates the SuperOverlay feature set', (
     tester,
   ) async {

@@ -124,7 +124,7 @@ void registerPopupDismissTests() {
     expect(dismissibleHandle.isVisible, isFalse);
   });
 
-  testWidgets('popup mask ignore area lets uncovered taps pass through', (
+  testWidgets('popup mask ignore rect passes only taps inside the rect', (
     tester,
   ) async {
     var bottomTaps = 0;
@@ -149,9 +149,9 @@ void registerPopupDismissTests() {
               ),
             ),
             Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
+              left: 320,
+              top: 240,
+              width: 160,
               height: 80,
               child: TextButton(
                 onPressed: () => bottomTaps++,
@@ -169,7 +169,7 @@ void registerPopupDismissTests() {
       options: const OverlayPopupOptions(
         tag: 'ignore-area-popup',
         dismissOnMaskTap: true,
-        maskIgnoreArea: Rect.fromLTRB(0, 0, 0, 100),
+        maskIgnoreArea: Rect.fromLTRB(300, 200, 500, 400),
       ),
     );
     await tester.pumpAndSettle();
@@ -183,10 +183,10 @@ void registerPopupDismissTests() {
 
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
-    await handle.closed;
 
-    expect(find.text('Ignore Area Popup'), findsNothing);
     expect(handle.isVisible, isFalse);
+    await handle.closed;
+    expect(find.text('Ignore Area Popup'), findsNothing);
   });
 
   testWidgets(

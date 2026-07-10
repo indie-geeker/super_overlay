@@ -230,6 +230,7 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
 
   void _showMaskIgnorePopup() {
     _log('Popup: 遮罩忽略顶部区域');
+    final screenWidth = MediaQuery.sizeOf(context).width;
     SuperOverlay.popup.show<void>(
       builder:
           (_) => const PopupDemoSurface(
@@ -237,11 +238,11 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
             message: '忽略遮罩 Popup 内容',
             icon: Icons.layers_clear_outlined,
           ),
-      options: const OverlayPopupOptions(
+      options: OverlayPopupOptions(
         tag: 'mask-ignore-popup',
         targetPointBuilder: _maskIgnoreTarget,
         alignment: Alignment.topCenter,
-        maskIgnoreArea: Rect.fromLTRB(0, 0, 1000, 96),
+        maskIgnoreArea: Rect.fromLTWH(0, 0, screenWidth, 96),
       ),
     );
   }
