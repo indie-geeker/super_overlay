@@ -48,6 +48,62 @@ void registerNotifyOverlayTests() {
     }
   });
 
+  testWidgets('every custom notify stays below display cutout padding', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(top: 44);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPadding);
+
+    Widget surface(OverlayNotificationType type, String message) {
+      return Container(
+        key: ValueKey('safe-notify-${type.name}'),
+        child: Text(message),
+      );
+    }
+
+    await tester.pumpWidget(
+      buildNotifyOverlayApp(
+        const SizedBox.shrink(),
+        notifyStyle: NotifyStyle(
+          successBuilder:
+              (message) => surface(OverlayNotificationType.success, message),
+          failureBuilder:
+              (message) => surface(OverlayNotificationType.failure, message),
+          warningBuilder:
+              (message) => surface(OverlayNotificationType.warning, message),
+          errorBuilder:
+              (message) => surface(OverlayNotificationType.error, message),
+          alertBuilder:
+              (message) => surface(OverlayNotificationType.alert, message),
+        ),
+      ),
+    );
+
+    final handles = [
+      SuperOverlay.notify.success('success'),
+      SuperOverlay.notify.failure('failure'),
+      SuperOverlay.notify.warning('warning'),
+      SuperOverlay.notify.error('error'),
+      SuperOverlay.notify.alert('alert'),
+    ];
+    await tester.pump();
+
+    for (final type in OverlayNotificationType.values) {
+      expect(
+        tester.getTopLeft(find.byKey(ValueKey('safe-notify-${type.name}'))).dy,
+        greaterThanOrEqualTo(44),
+      );
+    }
+
+    await SuperOverlay.close(
+      target: OverlayCloseTarget.allNotifications,
+      force: true,
+    );
+    await Future.wait(handles.map((handle) => handle.closed));
+  });
+
   testWidgets('notify auto-dismisses after displayDuration', (tester) async {
     await tester.pumpWidget(buildNotifyOverlayApp(const SizedBox.shrink()));
 

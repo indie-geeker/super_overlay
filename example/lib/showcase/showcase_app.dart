@@ -15,7 +15,23 @@ class MyApp extends StatelessWidget {
       builder: SuperOverlay.init(
         toastBuilder: _toastBuilder,
         loadingBuilder: _loadingBuilder,
-        notifyStyle: NotifyStyle(successBuilder: _successNotifyBuilder),
+        notifyStyle: NotifyStyle(
+          successBuilder:
+              (message) =>
+                  _notifyBuilder(OverlayNotificationType.success, message),
+          failureBuilder:
+              (message) =>
+                  _notifyBuilder(OverlayNotificationType.failure, message),
+          warningBuilder:
+              (message) =>
+                  _notifyBuilder(OverlayNotificationType.warning, message),
+          errorBuilder:
+              (message) =>
+                  _notifyBuilder(OverlayNotificationType.error, message),
+          alertBuilder:
+              (message) =>
+                  _notifyBuilder(OverlayNotificationType.alert, message),
+        ),
       ),
       navigatorObservers: [SuperOverlay.observer],
       theme: ShowcaseTheme.light(),
@@ -79,24 +95,41 @@ class MyApp extends StatelessWidget {
     );
   }
 
-  Widget _successNotifyBuilder(String message) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6EE),
-        border: Border.all(color: const Color(0xFF9CCC9C)),
-        borderRadius: BorderRadius.circular(8),
+  Widget _notifyBuilder(OverlayNotificationType type, String message) {
+    final colors = switch (type) {
+      OverlayNotificationType.success => (
+        const Color(0xFFEFF6EE),
+        const Color(0xFF2E7D32),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Init Notify Style',
-              style: TextStyle(color: Color(0xFF2E7D32), fontSize: 12),
-            ),
-            Text(message, style: const TextStyle(color: Color(0xFF1F5F2A))),
-          ],
+      OverlayNotificationType.failure => (
+        const Color(0xFFF1F5F9),
+        const Color(0xFF475569),
+      ),
+      OverlayNotificationType.warning => (
+        const Color(0xFFFFF7ED),
+        const Color(0xFFB45309),
+      ),
+      OverlayNotificationType.error => (
+        const Color(0xFFFFF1F2),
+        const Color(0xFFBE123C),
+      ),
+      OverlayNotificationType.alert => (
+        const Color(0xFFF5F3FF),
+        const Color(0xFF7C3AED),
+      ),
+    };
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: DecoratedBox(
+        key: ValueKey('init-notify-${type.name}'),
+        decoration: BoxDecoration(
+          color: colors.$1,
+          border: Border.all(color: colors.$2.withValues(alpha: 0.45)),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Text(message, style: TextStyle(color: colors.$2)),
         ),
       ),
     );

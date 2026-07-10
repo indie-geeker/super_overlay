@@ -6,6 +6,37 @@ import 'package:super_overlay/super_overlay.dart';
 import '../lib/main.dart';
 
 void main() {
+  testWidgets('custom notify keeps a visual gap below the safe area', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(top: 44);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPadding);
+
+    await tester.pumpWidget(const MyApp());
+    final handles = [
+      SuperOverlay.notify.success('success'),
+      SuperOverlay.notify.failure('failure'),
+      SuperOverlay.notify.warning('warning'),
+      SuperOverlay.notify.error('error'),
+      SuperOverlay.notify.alert('alert'),
+    ];
+    await tester.pump();
+
+    for (final type in OverlayNotificationType.values) {
+      final surface = find.byKey(ValueKey('init-notify-${type.name}'));
+      expect(surface, findsOneWidget);
+      expect(tester.getTopLeft(surface).dy, greaterThanOrEqualTo(56));
+    }
+
+    await SuperOverlay.close(
+      target: OverlayCloseTarget.allNotifications,
+      force: true,
+    );
+    await Future.wait(handles.map((handle) => handle.closed));
+  });
+
   testWidgets('example exposes reference parity demo cases', (tester) async {
     await tester.pumpWidget(const MyApp());
 
