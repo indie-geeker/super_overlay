@@ -501,26 +501,16 @@ class _CommandOverlayLifecycle<T> {
 
   Future<void> _run() async {
     try {
-      if (strategy == OverlayStrategy.replaceExisting) {
-        await SuperOverlay._dismiss(
-          status: status,
-          tag: replaceTag,
-          force: true,
-        );
-      }
-
-      if (_closeRequested) {
-        if (!_visible.isCompleted) {
-          _visible.complete();
-        }
-        if (!_closed.isCompleted) {
-          _closed.complete(_closeResult);
-        }
+      final fired =
+          strategy == OverlayStrategy.replaceExisting
+              ? await _replacementQueue.run(
+                '$status::$replaceTag',
+                _replaceAndFire,
+              )
+              : _fireIfOpen();
+      if (fired == null) {
         return;
       }
-
-      _fireStarted = true;
-      final fired = fire();
       _dismissTag = fired.dismissTag ?? tag;
       unawaited(
         fired.visible.then(
@@ -549,6 +539,51 @@ class _CommandOverlayLifecycle<T> {
       }
       if (!_closed.isCompleted) {
         _closed.completeError(error, stackTrace);
+      }
+    }
+  }
+
+  Future<_CommandFireResult<T>?> _replaceAndFire() async {
+    await SuperOverlay._dismiss(status: status, tag: replaceTag, force: true);
+    return _fireIfOpen();
+  }
+
+  _CommandFireResult<T>? _fireIfOpen() {
+    if (_closeRequested) {
+      if (!_visible.isCompleted) {
+        _visible.complete();
+      }
+      if (!_closed.isCompleted) {
+        _closed.complete(_closeResult);
+      }
+      return null;
+    }
+
+    _fireStarted = true;
+    return fire();
+  }
+}
+
+final _replacementQueue = _OverlayOperationQueue();
+
+class _OverlayOperationQueue {
+  final Map<String, Future<void>> _tails = <String, Future<void>>{};
+
+  Future<T> run<T>(String key, Future<T> Function() operation) async {
+    final previous = _tails[key] ?? Future<void>.value();
+    final release = Completer<void>();
+    final tail = previous.then((_) => release.future);
+    _tails[key] = tail;
+
+    await previous;
+    try {
+      return await operation();
+    } finally {
+      if (!release.isCompleted) {
+        release.complete();
+      }
+      if (identical(_tails[key], tail)) {
+        _tails.remove(key);
       }
     }
   }
