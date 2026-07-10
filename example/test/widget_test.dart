@@ -109,7 +109,7 @@ void main() {
     expect(find.text('Overlay features in one place'), findsNothing);
     expect(find.text('Dialog Lab'), findsOneWidget);
     expect(find.text('即时反馈'), findsOneWidget);
-    expect(find.text('Popup Window'), findsOneWidget);
+    expect(find.text('锚点菜单'), findsOneWidget);
     expect(find.text('Guided Mask'), findsOneWidget);
     expect(find.text('Lifecycle Binding'), findsOneWidget);
     expect(find.text('Network State Demo'), findsOneWidget);
@@ -150,22 +150,14 @@ void main() {
     await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('打开选择器'));
-    expect(find.text('显示位置'), findsOneWidget);
-    expect(find.text('上方'), findsOneWidget);
-    expect(find.text('下方'), findsOneWidget);
-    expect(find.text('左侧'), findsOneWidget);
-    expect(find.text('右侧'), findsOneWidget);
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, 120));
+    final sortTrigger = find.byKey(const ValueKey('sort-menu-trigger'));
+    await tester.ensureVisible(sortTrigger);
+    await tester.tap(sortTrigger);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('上方'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('打开选择器'));
-    await tester.pumpAndSettle();
-    expect(find.text('选择过滤条件'), findsOneWidget);
+    expect(find.byKey(const ValueKey('sort-menu-popup')), findsOneWidget);
     expect(
-      tester.getBottomLeft(find.text('选择过滤条件')).dy,
-      lessThan(tester.getTopLeft(find.text('打开选择器')).dy),
+      tester.getTopLeft(find.byKey(const ValueKey('sort-menu-popup'))).dy,
+      greaterThanOrEqualTo(tester.getBottomLeft(sortTrigger).dy),
     );
 
     await SuperOverlay.close(target: OverlayCloseTarget.allPopups);

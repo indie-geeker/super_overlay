@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:super_overlay/super_overlay.dart';
 
 import '../network_state/presentation/network_state_demo_page.dart';
+import 'anchored_menu_panel.dart';
 import 'command_contracts_demo_page.dart';
 import 'instant_feedback_panel.dart';
 import 'lifecycle_demo_page.dart';
@@ -12,8 +13,6 @@ import 'showcase_theme.dart';
 import 'showcase_widgets.dart';
 
 part 'showcase_home_actions.dart';
-
-enum PopupPlacement { top, bottom, left, right }
 
 const _guideTag = 'showcase-guide';
 
@@ -35,12 +34,6 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
   bool _dialogDismissible = true;
   @override
   bool _dialogDimmed = true;
-  @override
-  int _popupSingle = 1;
-  @override
-  final Set<int> _popupMulti = <int>{0, 2};
-  @override
-  PopupPlacement _popupPlacement = PopupPlacement.bottom;
   @override
   int? _guideStep;
   @override
@@ -89,7 +82,8 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
           children: [
             SizedBox(width: width, child: _buildDialogPanel()),
             SizedBox(width: width, child: const InstantFeedbackPanel()),
-            SizedBox(width: width, child: _buildPopupPanel()),
+            SizedBox(width: width, child: const AnchoredMenuPanel()),
+            SizedBox(width: width, child: _buildAdvancedPopupPanel()),
             SizedBox(width: width, child: _buildGuidePanel()),
             SizedBox(width: width, child: _buildActivityPanel()),
             SizedBox(width: width, child: _buildLifecyclePanel()),
@@ -135,83 +129,41 @@ class _ShowcaseHomePageState extends State<ShowcaseHomePage>
     );
   }
 
-  Widget _buildPopupPanel() {
-    final selectedText = '单选 ${_popupSingle + 1} / 多选 ${_popupMulti.length} 项';
+  Widget _buildAdvancedPopupPanel() {
     return FeaturePanel(
-      title: 'Popup Window',
-      subtitle: selectedText,
-      icon: Icons.filter_alt_outlined,
-      accent: ShowcaseColors.info,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      title: 'Popup Advanced',
+      subtitle: '定点、替换、缩放原点和遮罩区域等几何能力',
+      icon: Icons.architecture_outlined,
+      accent: ShowcaseColors.violet,
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
         children: [
-          Text(
-            'Popup 承载真实表单内容：单选、复选框、确认动作。',
-            style: Theme.of(context).textTheme.bodyMedium,
+          OutlinedButton.icon(
+            onPressed: _showPointPopup,
+            icon: const Icon(Icons.my_location_outlined),
+            label: const Text('定点 Popup'),
           ),
-          const SizedBox(height: 12),
-          Text('显示位置', style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: 8),
-          SegmentedButton<PopupPlacement>(
-            showSelectedIcon: false,
-            segments: const [
-              ButtonSegment<PopupPlacement>(
-                value: PopupPlacement.top,
-                label: Text('上方'),
-              ),
-              ButtonSegment<PopupPlacement>(
-                value: PopupPlacement.bottom,
-                label: Text('下方'),
-              ),
-              ButtonSegment<PopupPlacement>(
-                value: PopupPlacement.left,
-                label: Text('左侧'),
-              ),
-              ButtonSegment<PopupPlacement>(
-                value: PopupPlacement.right,
-                label: Text('右侧'),
-              ),
-            ],
-            selected: {_popupPlacement},
-            onSelectionChanged: (values) {
-              setState(() => _popupPlacement = values.first);
-            },
-          ),
-          const SizedBox(height: 12),
           Builder(
-            builder: (targetContext) {
-              return Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  FilledButton.icon(
-                    onPressed: () => _showChoicePopup(targetContext),
-                    icon: const Icon(Icons.tune_outlined),
-                    label: const Text('打开选择器'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: _showPointPopup,
-                    icon: const Icon(Icons.my_location_outlined),
-                    label: const Text('定点 Popup'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => _showAdjustedPopup(targetContext),
-                    icon: const Icon(Icons.flip_to_front_outlined),
-                    label: const Text('替换/调整 Popup'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => _showScaleOriginPopup(targetContext),
-                    icon: const Icon(Icons.open_with_outlined),
-                    label: const Text('缩放原点 Popup'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: _showMaskIgnorePopup,
-                    icon: const Icon(Icons.layers_clear_outlined),
-                    label: const Text('忽略遮罩区域'),
-                  ),
-                ],
-              );
-            },
+            builder:
+                (targetContext) => OutlinedButton.icon(
+                  onPressed: () => _showAdjustedPopup(targetContext),
+                  icon: const Icon(Icons.flip_to_front_outlined),
+                  label: const Text('替换/调整 Popup'),
+                ),
+          ),
+          Builder(
+            builder:
+                (targetContext) => OutlinedButton.icon(
+                  onPressed: () => _showScaleOriginPopup(targetContext),
+                  icon: const Icon(Icons.open_with_outlined),
+                  label: const Text('缩放原点 Popup'),
+                ),
+          ),
+          OutlinedButton.icon(
+            onPressed: _showMaskIgnorePopup,
+            icon: const Icon(Icons.layers_clear_outlined),
+            label: const Text('忽略遮罩区域'),
           ),
         ],
       ),

@@ -5,10 +5,6 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
   List<String> get _events;
   bool get _dialogDismissible;
   bool get _dialogDimmed;
-  int get _popupSingle;
-  set _popupSingle(int value);
-  Set<int> get _popupMulti;
-  PopupPlacement get _popupPlacement;
   int? get _guideStep;
   set _guideStep(int? value);
   OverlayHandle<void>? get _guideHandle;
@@ -50,43 +46,6 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
       options: const OverlayToastOptions(
         displayPolicy: OverlayToastDisplayPolicy.replaceLatest,
         displayDuration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  void _showChoicePopup(BuildContext targetContext) {
-    var selected = _popupSingle;
-    final multi = Set<int>.from(_popupMulti);
-    _log('Popup: 打开选择器');
-    late final OverlayHandle<void> handle;
-    handle = SuperOverlay.popup.show<void>(
-      targetContext: targetContext,
-      builder:
-          (_) => StatefulBuilder(
-            builder: (context, setPopupState) {
-              return ChoicePopup(
-                selected: selected,
-                multi: multi,
-                onSelected: (value) {
-                  setPopupState(() => selected = value);
-                },
-                onToggle: (value, enabled) {
-                  setPopupState(() {
-                    if (enabled) {
-                      multi.add(value);
-                    } else {
-                      multi.remove(value);
-                    }
-                  });
-                },
-                onApply: () => _applyChoicePopup(selected, multi, handle),
-              );
-            },
-          ),
-      options: OverlayPopupOptions(
-        tag: 'choice-popup',
-        alignment: _popupAlignment,
-        targetRectBuilder: (targetRect) => targetRect.inflate(4),
       ),
     );
   }
@@ -173,30 +132,6 @@ mixin _ShowcaseHomeActions on State<ShowcaseHomePage> {
         maskIgnoreArea: Rect.fromLTWH(0, 0, screenWidth, 96),
       ),
     );
-  }
-
-  void _applyChoicePopup(
-    int selected,
-    Set<int> multi,
-    OverlayHandle<void> handle,
-  ) {
-    setState(() {
-      _popupSingle = selected;
-      _popupMulti
-        ..clear()
-        ..addAll(multi);
-    });
-    _log('Popup: 已应用筛选条件');
-    unawaited(handle.close());
-  }
-
-  Alignment get _popupAlignment {
-    return switch (_popupPlacement) {
-      PopupPlacement.top => Alignment.topCenter,
-      PopupPlacement.bottom => Alignment.bottomCenter,
-      PopupPlacement.left => Alignment.centerLeft,
-      PopupPlacement.right => Alignment.centerRight,
-    };
   }
 
   void _showNotify() {
