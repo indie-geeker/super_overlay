@@ -368,7 +368,7 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
       return;
     }
     if (mounted) {
-      setState(() => _awaitEvents.add('3. Overlay 已关闭'));
+      setState(() => _awaitEvents.add('3. 已请求关闭 Overlay'));
     }
     await handle.close();
     if (!mounted || !identical(_awaitHandle, handle)) {
@@ -376,7 +376,7 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
     }
     await handle.closed;
     setState(() {
-      _awaitEvents.add('4. closed Future 已完成');
+      _awaitEvents.add('4. Overlay 已关闭，closed Future 已完成');
       _awaitHandle = null;
     });
   }

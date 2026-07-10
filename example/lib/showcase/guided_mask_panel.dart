@@ -19,6 +19,7 @@ class GuidedMaskPanel extends StatefulWidget {
 class _GuidedMaskPanelState extends State<GuidedMaskPanel> {
   final _guideKeys = List<GlobalKey>.generate(3, (_) => GlobalKey());
   OverlayHandle<void>? _guideHandle;
+  OverlayHandle<void>? _completionToastHandle;
   int? _guideStep;
 
   @override
@@ -83,7 +84,7 @@ class _GuidedMaskPanelState extends State<GuidedMaskPanel> {
         return;
       }
       setState(() => _guideStep = null);
-      SuperOverlay.toast(
+      final completionHandle = SuperOverlay.toast(
         'guide-complete',
         builder:
             (_) => const ToastSurface(
@@ -98,6 +99,14 @@ class _GuidedMaskPanelState extends State<GuidedMaskPanel> {
           displayDuration: Duration(seconds: 2),
         ),
       );
+      _completionToastHandle = completionHandle;
+      unawaited(
+        completionHandle.closed.whenComplete(() {
+          if (identical(_completionToastHandle, completionHandle)) {
+            _completionToastHandle = null;
+          }
+        }),
+      );
       return;
     }
 
@@ -105,6 +114,11 @@ class _GuidedMaskPanelState extends State<GuidedMaskPanel> {
   }
 
   Future<void> _showGuideStep(int step) async {
+    if (step == 0) {
+      final completionHandle = _completionToastHandle;
+      _completionToastHandle = null;
+      await completionHandle?.close();
+    }
     final previous = _guideHandle;
     _guideHandle = null;
     await previous?.close();
@@ -150,9 +164,12 @@ class _GuidedMaskPanelState extends State<GuidedMaskPanel> {
 
   @override
   void dispose() {
-    final handle = _guideHandle;
+    final guideHandle = _guideHandle;
+    final completionHandle = _completionToastHandle;
     _guideHandle = null;
-    unawaited(handle?.close());
+    _completionToastHandle = null;
+    unawaited(guideHandle?.close());
+    unawaited(completionHandle?.close());
     super.dispose();
   }
 }

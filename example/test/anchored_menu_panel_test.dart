@@ -35,7 +35,13 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(const MyApp());
+    final input = find.byKey(const ValueKey('attachment-message-field'));
     final trigger = find.byKey(const ValueKey('attachment-menu-trigger'));
+
+    await tester.ensureVisible(input);
+    await tester.tap(input);
+    await tester.pump();
+    expect(tester.testTextInput.isVisible, isTrue);
 
     await tester.ensureVisible(trigger);
     await tester.drag(find.byType(Scrollable).first, const Offset(0, 280));
@@ -49,6 +55,7 @@ void main() {
       tester.getBottomLeft(popup).dy,
       lessThanOrEqualTo(tester.getTopLeft(trigger).dy),
     );
+    expect(tester.testTextInput.isVisible, isTrue);
 
     await tester.tap(find.text('从相册选择'));
     await tester.pumpAndSettle();

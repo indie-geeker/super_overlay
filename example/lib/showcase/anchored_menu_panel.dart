@@ -49,6 +49,16 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
           const SizedBox(height: 18),
           Text('附件来源', style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 8),
+          const TextField(
+            key: ValueKey('attachment-message-field'),
+            decoration: InputDecoration(
+              labelText: '消息内容',
+              hintText: '先输入消息，再选择附件来源',
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 10),
           _constrainTrigger(
             Builder(
               builder:
@@ -59,6 +69,13 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
                     onTap: () => _showAttachmentMenu(targetContext),
                   ),
             ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '聚焦输入框后打开菜单，可验证键盘弹出时的上拉定位。',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: ShowcaseColors.muted),
           ),
           const SizedBox(height: 8),
           Text('最近操作：$_attachmentAction'),

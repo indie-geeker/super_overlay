@@ -112,8 +112,8 @@ void main() {
 
     await tester.tap(find.text('关闭 Await Overlay'));
     await tester.pumpAndSettle();
-    expect(find.text('3. Overlay 已关闭'), findsOneWidget);
-    expect(find.text('4. closed Future 已完成'), findsOneWidget);
+    expect(find.text('3. 已请求关闭 Overlay'), findsOneWidget);
+    expect(find.text('4. Overlay 已关闭，closed Future 已完成'), findsOneWidget);
   });
 
   testWidgets('leaving control lab only closes overlays owned by that page', (
