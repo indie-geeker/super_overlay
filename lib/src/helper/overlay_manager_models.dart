@@ -19,10 +19,14 @@ class _OverlayHostState {
     required this.generation,
     required this.ownerIdentity,
     required this.defaults,
+    required void Function() onBackDispositionChanged,
   }) {
     CustomLoading? loading;
     entryLoading = SuperOverlayEntry(builder: (_) => loading!.getWidget());
-    loading = CustomLoading(overlayEntry: entryLoading);
+    loading = CustomLoading(
+      overlayEntry: entryLoading,
+      onBackDispositionChanged: onBackDispositionChanged,
+    );
     loadingOverlay = loading;
   }
 

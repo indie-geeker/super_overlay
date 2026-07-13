@@ -8,8 +8,13 @@ import '../kit/typedef.dart';
 import 'base_overlay.dart';
 
 class CustomLoading extends BaseOverlay {
-  CustomLoading({required SuperOverlayEntry overlayEntry})
-    : super(overlayEntry);
+  CustomLoading({
+    required SuperOverlayEntry overlayEntry,
+    void Function()? onBackDispositionChanged,
+  }) : _onBackDispositionChanged = onBackDispositionChanged,
+       super(overlayEntry);
+
+  final void Function()? _onBackDispositionChanged;
 
   Timer? _leastTimer;
   Timer? _displayTimer;
@@ -60,6 +65,7 @@ class CustomLoading extends BaseOverlay {
     _businessTag = param.businessTag;
     _backType = param.backType;
     _onBack = param.onBack;
+    _onBackDispositionChanged?.call();
     _leastTimer?.cancel();
     _displayTimer?.cancel();
 
@@ -127,6 +133,7 @@ class CustomLoading extends BaseOverlay {
       businessTag: _businessTag,
     );
     _pendingDismiss = operation;
+    _onBackDispositionChanged?.call();
     if (_canDismiss) {
       _startPendingDismiss();
     }
@@ -190,6 +197,7 @@ class CustomLoading extends BaseOverlay {
       if (identical(_pendingDismiss, operation)) {
         _pendingDismiss = null;
       }
+      _onBackDispositionChanged?.call();
       operation.complete();
     }
   }
@@ -198,6 +206,7 @@ class CustomLoading extends BaseOverlay {
     final operation = _pendingDismiss;
     _pendingDismiss = null;
     operation?.cancel();
+    _onBackDispositionChanged?.call();
   }
 
   void _cancelDeferredShow([_DeferredLoadingShow<dynamic>? expected]) {
@@ -208,6 +217,7 @@ class CustomLoading extends BaseOverlay {
     }
     _deferredShow = null;
     deferred.cancel();
+    _onBackDispositionChanged?.call();
   }
 
   void reset() {
@@ -224,6 +234,7 @@ class CustomLoading extends BaseOverlay {
     _businessTag = null;
     _backType = BackType.normal;
     _onBack = null;
+    _onBackDispositionChanged?.call();
   }
 
   void disposeHost() {

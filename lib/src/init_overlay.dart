@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'helper/monitor_widget_helper.dart';
+import 'helper/navigator_scope_registry.dart';
 import 'helper/overlay_host_lease.dart';
-import 'helper/pop_route_monitor.dart';
 import 'kit/super_overlay_entry.dart';
 import 'kit/typedef.dart';
 import 'data/notify_style.dart';
@@ -63,7 +63,6 @@ class _SuperOverlayInitState extends State<SuperOverlayInit> {
   void initState() {
     super.initState();
     _hostLease = _acquireLease(widget);
-    PopRouteMonitor.instance.ensureRegistered();
     MonitorWidgetHelper.instance.ensureRegistered();
     _appEntry = _createAppEntry(_hostLease, widget.ownerIdentity);
   }
@@ -96,6 +95,13 @@ class _SuperOverlayInitState extends State<SuperOverlayInit> {
       final oldLease = _hostLease;
       _hostLease = _acquireLease(widget);
       _appEntry = _createAppEntry(_hostLease, widget.ownerIdentity);
+      NavigatorScopeRegistry.instance.transferRootRoutes(
+        fromOwnerIdentity: oldWidget.ownerIdentity,
+        fromGeneration: oldLease.generation,
+        toOwnerIdentity: widget.ownerIdentity,
+        toGeneration: _hostLease.generation,
+      );
+      _scheduleObserverAttachmentCheck();
       oldLease.dispose(ownerIdentity: oldWidget.ownerIdentity);
       return;
     }
@@ -109,6 +115,18 @@ class _SuperOverlayInitState extends State<SuperOverlayInit> {
         notifyStyle: widget.notifyStyle,
       );
     }
+    _scheduleObserverAttachmentCheck();
+  }
+
+  void _scheduleObserverAttachmentCheck() {
+    final ownerIdentity = widget.ownerIdentity;
+    final generation = _hostLease.generation;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NavigatorScopeRegistry.instance.pruneDetachedRoot(
+        ownerIdentity: ownerIdentity,
+        generation: generation,
+      );
+    });
   }
 
   @override

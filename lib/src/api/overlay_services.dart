@@ -12,6 +12,14 @@ class OverlayLoadingService {
   }) {
     final manager = OverlayManager.instance;
     final generation = manager.requireActiveGeneration();
+    final backType = _backTypeFor(options.backBehavior);
+    manager.validateCommandRoute(
+      generation: generation,
+      bindToRoute: false,
+      backType: backType,
+      onBack: null,
+      operation: 'SuperOverlay loading',
+    );
     final hostBuilder = manager.loadingBuilderFor(generation);
     final controller = SuperOverlayController();
     final command = SuperOverlay._loading(
@@ -23,7 +31,7 @@ class OverlayLoadingService {
         .withMask(dismissible: options.dismissOnMaskTap)
         .withLeastLoadingTime(options.minimumVisibleDuration)
         .withController(controller)
-        .withBack(type: _backTypeFor(options.backBehavior))
+        .withBack(type: backType)
         .withAwait(AwaitCompletion.dismiss);
 
     final identityTag = _commandTag('loading');
@@ -78,6 +86,14 @@ class OverlayDialogService {
   }) {
     final manager = OverlayManager.instance;
     final generation = manager.requireActiveGeneration();
+    final backType = _backTypeFor(options.backBehavior);
+    manager.validateCommandRoute(
+      generation: generation,
+      bindToRoute: options.bindToRoute,
+      backType: backType,
+      onBack: null,
+      operation: 'SuperOverlay dialog',
+    );
     final controller = SuperOverlayController();
     final command = SuperOverlay._custom(builder: builder)
         .withAlignment(options.alignment)
@@ -88,7 +104,7 @@ class OverlayDialogService {
         .bindPage(options.bindToRoute)
         .withPenetrate(!options.consumeEvents)
         .withController(controller)
-        .withBack(type: _backTypeFor(options.backBehavior))
+        .withBack(type: backType)
         .withAwait(AwaitCompletion.dismiss);
 
     final bindToWidget = options.bindToWidget;
@@ -160,6 +176,14 @@ class OverlayPopupService {
   }) {
     final manager = OverlayManager.instance;
     final generation = manager.requireActiveGeneration();
+    final backType = _backTypeFor(options.backBehavior);
+    manager.validateCommandRoute(
+      generation: generation,
+      bindToRoute: options.bindToRoute,
+      backType: backType,
+      onBack: null,
+      operation: 'SuperOverlay popup',
+    );
     final controller = SuperOverlayController();
     final command = SuperOverlay._popup(
           targetContext: targetContext,
@@ -169,7 +193,7 @@ class OverlayPopupService {
         .withMask(dismissible: options.dismissOnMaskTap)
         .bindPage(options.bindToRoute)
         .withController(controller)
-        .withBack(type: _backTypeFor(options.backBehavior))
+        .withBack(type: backType)
         .withAwait(AwaitCompletion.dismiss);
 
     final targetRectBuilder = options.targetRectBuilder;
@@ -316,6 +340,14 @@ class OverlayNotifyService {
   ) {
     final manager = OverlayManager.instance;
     final generation = manager.requireActiveGeneration();
+    final backType = _backTypeFor(options.backBehavior);
+    manager.validateCommandRoute(
+      generation: generation,
+      bindToRoute: false,
+      backType: backType,
+      onBack: null,
+      operation: 'SuperOverlay notification',
+    );
     final hostStyle = manager.notifyStyleFor(generation);
     final styledWidget = hostStyle?.build(_notificationTypeFor(type), message);
     final controller = SuperOverlayController();
@@ -327,7 +359,7 @@ class OverlayNotifyService {
         )
         .withAlignment(options.alignment)
         .withController(controller)
-        .withBack(type: _backTypeFor(options.backBehavior))
+        .withBack(type: backType)
         .withAwait(AwaitCompletion.dismiss);
 
     final tag = options.tag;

@@ -191,12 +191,14 @@ extension _OverlayManagerDismiss on OverlayManager {
 
     _dialogQueue.remove(record);
     _inFlightDialogRecords.add(record);
+    _syncBackDispositionForGeneration(generation);
     record.displayTimer?.cancel();
     try {
       await record.overlay.dismiss<T>(result: result, closeType: closeType);
     } finally {
       _inFlightDialogRecords.remove(record);
       record.overlay.overlayEntry.remove();
+      _syncBackDispositionForGeneration(generation);
     }
   }
 
@@ -246,12 +248,14 @@ extension _OverlayManagerDismiss on OverlayManager {
 
     _notifyQueue.remove(record);
     _inFlightNotifyRecords.add(record);
+    _syncBackDispositionForGeneration(generation);
     record.displayTimer?.cancel();
     try {
       await record.overlay.dismiss<T>(result: result, closeType: closeType);
     } finally {
       _inFlightNotifyRecords.remove(record);
       record.overlay.overlayEntry.remove();
+      _syncBackDispositionForGeneration(generation);
     }
   }
 }

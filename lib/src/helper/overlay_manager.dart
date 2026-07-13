@@ -14,6 +14,7 @@ import '../kit/debounce_utils.dart';
 import '../kit/super_overlay_entry.dart';
 import '../kit/typedef.dart';
 import '../kit/view_utils.dart';
+import 'navigator_scope_registry.dart';
 import 'route_record.dart';
 
 part 'overlay_manager_dismiss.dart';
@@ -32,6 +33,7 @@ class OverlayManager {
   final Queue<_NotifyRecord> _notifyQueue = ListQueue<_NotifyRecord>();
   final Set<_OverlayRecord> _inFlightDialogRecords = <_OverlayRecord>{};
   final Set<_NotifyRecord> _inFlightNotifyRecords = <_NotifyRecord>{};
+  final Set<int> _backAttemptsInProgress = <int>{};
 
   final Map<int, _OverlayHostState> _hosts = <int, _OverlayHostState>{};
   final List<_OverlayHostState> _candidates = <_OverlayHostState>[];
@@ -53,20 +55,28 @@ class OverlayManager {
     required SuperOverlayLoadingBuilder? loadingBuilder,
     required NotifyStyle? notifyStyle,
   }) {
+    final generation = _nextGeneration++;
     final host = _OverlayHostState(
-      generation: _nextGeneration++,
+      generation: generation,
       ownerIdentity: ownerIdentity,
       defaults: _OverlayHostDefaults(
         toastBuilder: toastBuilder,
         loadingBuilder: loadingBuilder,
         notifyStyle: notifyStyle,
       ),
+      onBackDispositionChanged:
+          () => _syncBackDispositionForGeneration(generation),
     );
     _hosts[host.generation] = host;
+    NavigatorScopeRegistry.instance.attachHost(
+      ownerIdentity: ownerIdentity,
+      generation: host.generation,
+    );
 
     if (_activeHost == null && _candidates.isEmpty) {
       _activeHost = host;
       _topology = _OverlayHostTopology.active;
+      _syncBackDispositionForGeneration(host.generation);
       return host.generation;
     }
 
@@ -228,6 +238,7 @@ class OverlayManager {
       RouteRecord.instance.replaceWith(promoted.routeRecord);
       _nextTagId = 0;
       _topology = _OverlayHostTopology.active;
+      _syncBackDispositionForGeneration(promoted.generation);
       return;
     }
 
@@ -275,16 +286,29 @@ class OverlayManager {
     ToastTool.instance.reset(generation: host.generation);
     DebounceUtils.instance.reset();
     RouteRecord.instance.reset();
+    _backAttemptsInProgress.remove(generation);
     _nextTagId = 0;
+    _syncBackDispositionForGeneration(generation);
   }
 
   void _retireHost(_OverlayHostState host) {
+    NavigatorScopeRegistry.instance.detachHost(
+      ownerIdentity: host.ownerIdentity,
+      generation: host.generation,
+    );
     host.disposeResources();
     _hosts.remove(host.generation);
   }
 
   Future<T?> show<T>({required ShowCustomParam param}) {
-    requireActiveGeneration();
+    final generation = requireActiveGeneration();
+    validateCommandRoute(
+      generation: generation,
+      bindToRoute: param.bindPage,
+      backType: param.backType,
+      onBack: param.onBack,
+      operation: 'SuperOverlay dialog',
+    );
     CustomOverlay? overlay;
     final entry = SuperOverlayEntry(builder: (_) => overlay!.getWidget());
     overlay = CustomOverlay(overlayEntry: entry);
@@ -292,7 +316,14 @@ class OverlayManager {
   }
 
   Future<T?> showAttach<T>({required ShowAttachParam param}) {
-    requireActiveGeneration();
+    final generation = requireActiveGeneration();
+    validateCommandRoute(
+      generation: generation,
+      bindToRoute: param.bindPage,
+      backType: param.backType,
+      onBack: param.onBack,
+      operation: 'SuperOverlay popup',
+    );
     CustomOverlay? overlay;
     final entry = SuperOverlayEntry(builder: (_) => overlay!.getWidget());
     overlay = CustomOverlay(overlayEntry: entry);
@@ -300,12 +331,28 @@ class OverlayManager {
   }
 
   Future<T?> showLoading<T>({required ShowLoadingParam param}) {
-    requireActiveGeneration();
-    return loadingOverlay.showLoading<T>(param: param);
+    final generation = requireActiveGeneration();
+    validateCommandRoute(
+      generation: generation,
+      bindToRoute: false,
+      backType: param.backType,
+      onBack: param.onBack,
+      operation: 'SuperOverlay loading',
+    );
+    final result = loadingOverlay.showLoading<T>(param: param);
+    _syncBackDispositionForGeneration(generation);
+    return result;
   }
 
   Future<T?> showNotify<T>({required ShowNotifyParam param}) {
-    requireActiveGeneration();
+    final generation = requireActiveGeneration();
+    validateCommandRoute(
+      generation: generation,
+      bindToRoute: false,
+      backType: param.backType,
+      onBack: param.onBack,
+      operation: 'SuperOverlay notification',
+    );
     CustomNotify? notify;
     final entry = SuperOverlayEntry(builder: (_) => notify!.getWidget());
     notify = CustomNotify(overlayEntry: entry);
@@ -386,6 +433,7 @@ class OverlayManager {
       onBack: param.onBack,
     );
     _notifyQueue.addLast(record);
+    _syncBackDispositionForGeneration(generation);
     _scheduleNotifyTimer(record, param.displayTime);
     final loadingEntry = host.entryLoading;
     ViewUtils.addSafeUse(() {
@@ -394,6 +442,7 @@ class OverlayManager {
           record.displayTimer?.cancel();
           record.overlay.mainOverlay.disposeImmediately();
           record.overlay.overlayEntry.remove();
+          _syncBackDispositionForGeneration(generation);
         }
         return;
       }
@@ -465,13 +514,21 @@ class OverlayManager {
       tag: effectiveTag,
       businessTag: businessTag,
       permanent: permanent,
-      route: host.routeRecord.currentRoute,
+      route:
+          bindPage
+              ? NavigatorScopeRegistry.instance.requireRootModalRoute(
+                ownerIdentity: host.ownerIdentity,
+                generation: generation,
+                operation: 'SuperOverlay route binding',
+              )
+              : host.routeRecord.currentRoute,
       bindPage: bindPage,
       bindWidget: bindWidget,
       backType: backType,
       onBack: onBack,
     );
     _dialogQueue.addLast(record);
+    _syncBackDispositionForGeneration(generation);
     _scheduleDisplayTimer(record, displayTime);
 
     final loadingEntry = host.entryLoading;
@@ -481,6 +538,7 @@ class OverlayManager {
           record.displayTimer?.cancel();
           record.overlay.mainOverlay.disposeImmediately();
           record.overlay.overlayEntry.remove();
+          _syncBackDispositionForGeneration(generation);
         }
         return;
       }
@@ -665,6 +723,7 @@ class OverlayManager {
         record.overlay.hide();
       }
     }
+    _syncBackDispositionForGeneration(host.generation);
   }
 
   void handleRoutePopped({
@@ -692,6 +751,7 @@ class OverlayManager {
         record.overlay.appear();
       }
     }
+    _syncBackDispositionForGeneration(host.generation);
   }
 
   void handleRouteRemoved({
@@ -777,7 +837,25 @@ class OverlayManager {
   }
 
   Future<bool> handleBackEvent() {
-    return _handleBackEvent();
+    final generation = _activeHost?.generation;
+    if (generation == null) {
+      return Future<bool>.value(false);
+    }
+    return handleBackEventForGeneration(generation);
+  }
+
+  Future<bool> handleBackEventForGeneration(int generation) {
+    if (!ownsGeneration(generation)) {
+      return Future<bool>.value(false);
+    }
+    if (!_backAttemptsInProgress.add(generation)) {
+      return Future<bool>.value(true);
+    }
+    _syncBackDispositionForGeneration(generation);
+    return _handleBackEvent(generation).whenComplete(() {
+      _backAttemptsInProgress.remove(generation);
+      _syncBackDispositionForGeneration(generation);
+    });
   }
 
   void handleWidgetBindingFrame() {
@@ -801,13 +879,89 @@ class OverlayManager {
     } else if (!ownsGeneration(effectiveGeneration)) {
       return Future<void>.value();
     }
-    return _dismiss<T>(
+    final resolvedGeneration = effectiveGeneration ?? _activeHost!.generation;
+    final dismissal = _dismiss<T>(
       status: status,
       tag: tag,
       result: result,
       force: force,
       closeType: closeType,
-      generation: effectiveGeneration ?? _activeHost!.generation,
+      generation: resolvedGeneration,
     );
+    _syncBackDispositionForGeneration(resolvedGeneration);
+    return dismissal.whenComplete(
+      () => _syncBackDispositionForGeneration(resolvedGeneration),
+    );
+  }
+
+  void validateCommandRoute({
+    required int generation,
+    required bool bindToRoute,
+    required BackType backType,
+    required SuperOverlayOnBack? onBack,
+    required String operation,
+  }) {
+    if (!bindToRoute && backType == BackType.ignore && onBack == null) {
+      return;
+    }
+    requireActiveGenerationMatch(generation);
+    final host = _hostFor(generation);
+    NavigatorScopeRegistry.instance.requireRootModalRoute(
+      ownerIdentity: host.ownerIdentity,
+      generation: generation,
+      operation: operation,
+    );
+  }
+
+  void _syncBackDispositionForGeneration(int generation) {
+    final host = _hosts[generation];
+    if (host == null || host.resourcesDisposed) {
+      return;
+    }
+    NavigatorScopeRegistry.instance.updateBackDisposition(
+      ownerIdentity: host.ownerIdentity,
+      generation: generation,
+      blocked: ownsGeneration(generation) && _generationBlocksBack(generation),
+    );
+  }
+
+  bool _generationBlocksBack(int generation) {
+    if (_backAttemptsInProgress.contains(generation)) {
+      return true;
+    }
+    final loading = _hosts[generation]?.loadingOverlay;
+    if (loading != null &&
+        (loading.isVisible || loading.isDismissPending) &&
+        _canConsumeBack(loading.backType, loading.onBack)) {
+      return true;
+    }
+    if (_notifyQueue.any(
+          (record) =>
+              record.generation == generation &&
+              _canConsumeBack(record.backType, record.onBack),
+        ) ||
+        _inFlightNotifyRecords.any(
+          (record) =>
+              record.generation == generation &&
+              _canConsumeBack(record.backType, record.onBack),
+        )) {
+      return true;
+    }
+    return _dialogQueue.any(
+          (record) =>
+              record.generation == generation &&
+              !record.permanent &&
+              record.overlay.mainOverlay.visible &&
+              _canConsumeBack(record.backType, record.onBack),
+        ) ||
+        _inFlightDialogRecords.any(
+          (record) =>
+              record.generation == generation &&
+              _canConsumeBack(record.backType, record.onBack),
+        );
+  }
+
+  bool _canConsumeBack(BackType backType, SuperOverlayOnBack? onBack) {
+    return backType != BackType.ignore || onBack != null;
   }
 }

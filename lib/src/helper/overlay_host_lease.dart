@@ -23,6 +23,8 @@ class OverlayHostLease {
   final int _generation;
   bool _disposed = false;
 
+  int get generation => _generation;
+
   SuperOverlayEntry get entryLoading =>
       OverlayManager.instance.entryForHost(_generation);
 

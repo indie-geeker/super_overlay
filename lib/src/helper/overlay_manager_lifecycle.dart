@@ -1,9 +1,14 @@
 part of 'overlay_manager.dart';
 
 extension _OverlayManagerLifecycle on OverlayManager {
-  Future<bool> _handleBackEvent() async {
-    final initialHost = _commandHost;
-    final generation = initialHost.generation;
+  Future<bool> _handleBackEvent(int generation) async {
+    if (!ownsGeneration(generation)) {
+      return false;
+    }
+    final initialHost = _hosts[generation];
+    if (initialHost == null || initialHost.resourcesDisposed) {
+      return false;
+    }
     final generationLoading = initialHost.loadingOverlay;
     final loadingBackType = generationLoading.backType;
     final loadingOnBack = generationLoading.onBack;

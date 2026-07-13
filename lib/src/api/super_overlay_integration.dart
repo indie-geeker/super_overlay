@@ -116,11 +116,11 @@ class SuperOverlayIntegration {
 class SuperOverlayNavigatorObserver extends SuperOverlayObserver {
   SuperOverlayNavigatorObserver._root(this._ownerIdentity)
     : _allowPublicDispose = false,
-      super(ownerIdentity: _ownerIdentity);
+      super(ownerIdentity: _ownerIdentity, isRoot: true);
 
   SuperOverlayNavigatorObserver._scoped(this._ownerIdentity, {super.onDispose})
     : _allowPublicDispose = true,
-      super(ownerIdentity: _ownerIdentity);
+      super(ownerIdentity: _ownerIdentity, isRoot: false);
 
   final Object _ownerIdentity;
   final bool _allowPublicDispose;
