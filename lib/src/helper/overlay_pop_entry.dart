@@ -50,6 +50,15 @@ class OverlayPopEntry implements PopEntry<Object?> {
   Future<void> _requestBack() async {
     try {
       await _onBackRequested(generation);
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'super_overlay',
+          context: ErrorDescription('while handling a route back request'),
+        ),
+      );
     } finally {
       _backAttemptInProgress = false;
     }

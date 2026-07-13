@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_overlay/super_overlay.dart';
 import 'package:super_overlay/src/config/enum_config.dart';
 import 'package:super_overlay/src/data/show_param.dart';
+import 'package:super_overlay/src/helper/navigator_scope_registry.dart';
 import 'package:super_overlay/src/helper/overlay_manager.dart';
+import 'package:super_overlay/src/helper/overlay_pop_entry.dart';
 
 class _BackHarness {
   const _BackHarness({required this.integration, required this.navigatorKey});
@@ -96,6 +100,109 @@ Future<void> _closeCaptured(
 }
 
 void main() {
+  test(
+    'OverlayPopEntry reports a synchronous back error and resets its latch',
+    () async {
+      final reported = <FlutterErrorDetails>[];
+      final uncaught = <Object>[];
+      final previousErrorHandler = FlutterError.onError;
+      var attempts = 0;
+      final entry = OverlayPopEntry(
+        generation: 1,
+        onBackRequested: (_) {
+          attempts++;
+          if (attempts == 1) {
+            throw StateError('synchronous back failure');
+          }
+          return Future<bool>.value(true);
+        },
+      );
+      entry.updateCanPop(false);
+      FlutterError.onError = reported.add;
+
+      try {
+        final execution = runZonedGuarded<Future<void>>(() async {
+          entry.onPopInvokedWithResult(false, null);
+          await Future<void>.delayed(Duration.zero);
+          entry.onPopInvokedWithResult(false, null);
+          await Future<void>.delayed(Duration.zero);
+        }, (error, _) => uncaught.add(error));
+        expect(execution, isNotNull);
+        await execution!;
+
+        expect(attempts, 2);
+        expect(reported, hasLength(1));
+        expect(reported.single.exception, isA<StateError>());
+        expect(uncaught, isEmpty);
+      } finally {
+        FlutterError.onError = previousErrorHandler;
+        entry.dispose();
+      }
+    },
+  );
+
+  test(
+    'OverlayPopEntry reports an asynchronous back error and resets its latch',
+    () async {
+      final reported = <FlutterErrorDetails>[];
+      final uncaught = <Object>[];
+      final previousErrorHandler = FlutterError.onError;
+      var attempts = 0;
+      final entry = OverlayPopEntry(
+        generation: 1,
+        onBackRequested: (_) {
+          attempts++;
+          if (attempts == 1) {
+            return Future<bool>.error(StateError('asynchronous back failure'));
+          }
+          return Future<bool>.value(true);
+        },
+      );
+      entry.updateCanPop(false);
+      FlutterError.onError = reported.add;
+
+      try {
+        final execution = runZonedGuarded<Future<void>>(() async {
+          entry.onPopInvokedWithResult(false, null);
+          await Future<void>.delayed(Duration.zero);
+          entry.onPopInvokedWithResult(false, null);
+          await Future<void>.delayed(Duration.zero);
+        }, (error, _) => uncaught.add(error));
+        expect(execution, isNotNull);
+        await execution!;
+
+        expect(attempts, 2);
+        expect(reported, hasLength(1));
+        expect(reported.single.exception, isA<StateError>());
+        expect(uncaught, isEmpty);
+      } finally {
+        FlutterError.onError = previousErrorHandler;
+        entry.dispose();
+      }
+    },
+  );
+
+  test(
+    'OverlayPopEntry ignores a failed pop vetoed by another PopEntry',
+    () async {
+      var attempts = 0;
+      final entry = OverlayPopEntry(
+        generation: 1,
+        onBackRequested: (_) async {
+          attempts++;
+          return true;
+        },
+      );
+
+      entry.onPopInvokedWithResult(false, null);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(entry.canPopNotifier.value, isTrue);
+      expect(attempts, 0);
+      entry.dispose();
+    },
+  );
+
   testWidgets('cold start dismiss closes overlay before page', (tester) async {
     final integration = SuperOverlay.integration();
 
@@ -669,5 +776,136 @@ void main() {
     await tester.pumpAndSettle();
     first.dispose();
     second.dispose();
+  });
+
+  testWidgets(
+    'disposed root observer still hands routes to an unkeyed replacement',
+    (tester) async {
+      final first = SuperOverlay.integration();
+      final second = SuperOverlay.integration();
+      final navigatorKey = GlobalKey<NavigatorState>();
+
+      Widget app(SuperOverlayIntegration integration) {
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          builder: integration.builder,
+          navigatorObservers: [integration.observer],
+          home: const Scaffold(body: Text('Disposed observer first page')),
+          routes: {
+            '/second':
+                (_) =>
+                    const Scaffold(body: Text('Disposed observer second page')),
+          },
+        );
+      }
+
+      await tester.pumpWidget(app(first));
+      navigatorKey.currentState!.pushNamed('/second');
+      await tester.pumpAndSettle();
+
+      first.dispose();
+      await tester.pumpWidget(app(second));
+      await tester.pump();
+      await tester.idle();
+
+      final active = SuperOverlay.dialog.show<void>(
+        builder: (_) => const Text('Disposed observer replacement dialog'),
+      );
+      await tester.pumpAndSettle();
+
+      expect(await _dispatchBack(tester), isTrue);
+      await active.closed;
+      expect(find.text('Disposed observer replacement dialog'), findsNothing);
+      expect(find.text('Disposed observer second page'), findsOneWidget);
+
+      expect(await _dispatchBack(tester), isTrue);
+      expect(find.text('Disposed observer first page'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      second.dispose();
+    },
+  );
+
+  testWidgets(
+    'unkeyed replacement does not transfer routes to a different Navigator',
+    (tester) async {
+      final first = SuperOverlay.integration();
+      final second = SuperOverlay.integration();
+      final firstNavigatorKey = GlobalKey<NavigatorState>();
+      final secondNavigatorKey = GlobalKey<NavigatorState>();
+
+      Widget app(
+        SuperOverlayIntegration integration,
+        GlobalKey<NavigatorState> navigatorKey,
+      ) {
+        return MaterialApp(
+          navigatorKey: navigatorKey,
+          builder: integration.builder,
+          navigatorObservers: [integration.observer],
+          home: const Scaffold(body: Text('Different navigator first page')),
+          routes: {
+            '/second':
+                (_) => const Scaffold(
+                  body: Text('Different navigator second page'),
+                ),
+          },
+        );
+      }
+
+      await tester.pumpWidget(app(first, firstNavigatorKey));
+      firstNavigatorKey.currentState!.pushNamed('/second');
+      await tester.pumpAndSettle();
+
+      first.dispose();
+      await tester.pumpWidget(app(second, secondNavigatorKey));
+      await tester.pump();
+      await tester.idle();
+
+      expect(NavigatorScopeRegistry.instance.debugTrackedRouteCount, 1);
+      final active = SuperOverlay.dialog.show<void>(
+        builder: (_) => const Text('Different navigator dialog'),
+      );
+      await tester.pumpAndSettle();
+      expect(await _dispatchBack(tester), isTrue);
+      await active.closed;
+      expect(find.text('Different navigator dialog'), findsNothing);
+      expect(find.text('Different navigator first page'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+      second.dispose();
+    },
+  );
+
+  testWidgets('host retirement releases an untransferred root route snapshot', (
+    tester,
+  ) async {
+    final integration = SuperOverlay.integration();
+    final navigatorKey = GlobalKey<NavigatorState>();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        builder: integration.builder,
+        navigatorObservers: [integration.observer],
+        home: const Scaffold(body: Text('Snapshot cleanup first page')),
+        routes: {
+          '/second':
+              (_) => const Scaffold(body: Text('Snapshot cleanup second page')),
+        },
+      ),
+    );
+    navigatorKey.currentState!.pushNamed('/second');
+    await tester.pumpAndSettle();
+
+    expect(NavigatorScopeRegistry.instance.debugRetainedRootSnapshotCount, 0);
+    integration.dispose();
+    expect(NavigatorScopeRegistry.instance.debugRetainedRootSnapshotCount, 1);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+
+    expect(NavigatorScopeRegistry.instance.debugRetainedRootSnapshotCount, 0);
   });
 }

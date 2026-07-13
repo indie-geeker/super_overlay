@@ -14,7 +14,7 @@ class SuperOverlayObserver extends NavigatorObserver {
       ownerIdentity: ownerIdentity,
       scopeIdentity: _scopeIdentity,
       isRoot: isRoot,
-      isAttached: () => navigator != null,
+      navigatorState: () => navigator,
       onBackRequested: OverlayManager.instance.handleBackEventForGeneration,
     );
   }

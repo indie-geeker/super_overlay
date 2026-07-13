@@ -18,12 +18,24 @@ class NavigatorScopeRegistry {
   final Map<Object, Set<int>> _hostGenerations =
       HashMap<Object, Set<int>>.identity();
   final Map<Object, bool> _backBlocked = HashMap<Object, bool>.identity();
+  final Map<Object, Map<int, _WeakRootRouteSnapshot>> _retainedRootSnapshots =
+      HashMap<Object, Map<int, _WeakRootRouteSnapshot>>.identity();
+
+  @visibleForTesting
+  int get debugRetainedRootSnapshotCount => _retainedRootSnapshots.values
+      .fold<int>(0, (count, snapshots) => count + snapshots.length);
+
+  @visibleForTesting
+  int get debugTrackedRouteCount => _scopes.values.fold<int>(
+    0,
+    (count, scope) => count + scope._routes.length,
+  );
 
   void registerObserver({
     required Object ownerIdentity,
     required Object scopeIdentity,
     required bool isRoot,
-    required bool Function() isAttached,
+    required NavigatorState? Function() navigatorState,
     required OverlayBackRequest onBackRequested,
   }) {
     if (_scopes.containsKey(scopeIdentity)) {
@@ -32,7 +44,7 @@ class NavigatorScopeRegistry {
     final scope = _NavigatorScope(
       ownerIdentity: ownerIdentity,
       isRoot: isRoot,
-      isAttached: isAttached,
+      navigatorState: navigatorState,
       onBackRequested: onBackRequested,
     );
     _scopes[scopeIdentity] = scope;
@@ -43,7 +55,24 @@ class NavigatorScopeRegistry {
   }
 
   void unregisterObserver(Object scopeIdentity) {
-    _scopes.remove(scopeIdentity)?.dispose();
+    final scope = _scopes.remove(scopeIdentity);
+    if (scope == null) {
+      return;
+    }
+    final generation = scope.generation;
+    if (scope.isRoot &&
+        generation != null &&
+        _hostGenerations[scope.ownerIdentity]?.contains(generation) == true) {
+      final snapshot = scope.takeWeakRouteSnapshot();
+      if (snapshot != null) {
+        _retainedRootSnapshots.putIfAbsent(
+              scope.ownerIdentity,
+              () => <int, _WeakRootRouteSnapshot>{},
+            )[generation] =
+            snapshot;
+      }
+    }
+    scope.dispose();
   }
 
   void attachHost({required Object ownerIdentity, required int generation}) {
@@ -62,6 +91,7 @@ class NavigatorScopeRegistry {
     if (generations == null || !generations.remove(generation)) {
       return;
     }
+    _removeRetainedRootSnapshot(ownerIdentity, generation);
     for (final scope in _scopesForOwner(ownerIdentity)) {
       scope.unbindGeneration(generation);
     }
@@ -159,14 +189,41 @@ class NavigatorScopeRegistry {
     final toRoots = _scopesForOwner(toOwnerIdentity)
         .where((scope) => scope.isRoot && scope.generation == toGeneration)
         .toList(growable: false);
-    if (fromRoots.length != 1 || toRoots.length != 1) {
+    if (toRoots.length != 1) {
       return;
     }
-    final snapshot = fromRoots.single.takeRouteSnapshot();
-    toRoots.single.restoreRouteSnapshot(
-      snapshot,
-      _backBlocked[toOwnerIdentity] == true,
+    final _WeakRootRouteSnapshot? snapshot;
+    if (fromRoots.length == 1) {
+      _removeRetainedRootSnapshot(fromOwnerIdentity, fromGeneration);
+      snapshot = fromRoots.single.takeWeakRouteSnapshot();
+    } else if (fromRoots.isEmpty) {
+      snapshot = _takeRetainedRootSnapshot(fromOwnerIdentity, fromGeneration);
+    } else {
+      return;
+    }
+    if (snapshot == null) {
+      return;
+    }
+    final target = toRoots.single;
+    final token = target.stageRootTransfer(snapshot);
+    if (token == null) {
+      return;
+    }
+    final attempt = target.tryCommitRootTransfer(
+      token,
+      blocked: _backBlocked[toOwnerIdentity] == true,
+      finalAttempt: false,
     );
+    if (attempt != _RootTransferAttempt.pending) {
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      target.tryCommitRootTransfer(
+        token,
+        blocked: _backBlocked[toOwnerIdentity] == true,
+        finalAttempt: true,
+      );
+    });
   }
 
   void pruneDetachedRoot({
@@ -226,19 +283,35 @@ class NavigatorScopeRegistry {
     final scope = _scopes[scopeIdentity];
     return scope != null && _backBlocked[scope.ownerIdentity] == true;
   }
+
+  _WeakRootRouteSnapshot? _takeRetainedRootSnapshot(
+    Object ownerIdentity,
+    int generation,
+  ) {
+    final snapshots = _retainedRootSnapshots[ownerIdentity];
+    final snapshot = snapshots?.remove(generation);
+    if (snapshots?.isEmpty == true) {
+      _retainedRootSnapshots.remove(ownerIdentity);
+    }
+    return snapshot;
+  }
+
+  void _removeRetainedRootSnapshot(Object ownerIdentity, int generation) {
+    _takeRetainedRootSnapshot(ownerIdentity, generation);
+  }
 }
 
 class _NavigatorScope {
   _NavigatorScope({
     required this.ownerIdentity,
     required this.isRoot,
-    required this.isAttached,
+    required this.navigatorState,
     required this.onBackRequested,
   });
 
   final Object ownerIdentity;
   final bool isRoot;
-  final bool Function() isAttached;
+  final NavigatorState? Function() navigatorState;
   final OverlayBackRequest onBackRequested;
   final List<Route<dynamic>> _routes = <Route<dynamic>>[];
   final Map<ModalRoute<dynamic>, OverlayPopEntry> _entries =
@@ -246,12 +319,17 @@ class _NavigatorScope {
 
   int? generation;
   Route<dynamic>? currentRoute;
+  _WeakRootRouteSnapshot? _pendingRootTransfer;
+  Object? _pendingRootTransferToken;
   bool _disposed = false;
+
+  bool isAttached() => navigatorState() != null;
 
   void bindGeneration(int value) {
     if (_disposed || generation == value) {
       return;
     }
+    _clearPendingRootTransfer();
     _clearRoutes();
     generation = value;
   }
@@ -260,6 +338,7 @@ class _NavigatorScope {
     if (_disposed || generation != value) {
       return;
     }
+    _clearPendingRootTransfer();
     _clearRoutes();
     generation = null;
   }
@@ -353,39 +432,113 @@ class _NavigatorScope {
     }
   }
 
-  _NavigatorRouteSnapshot takeRouteSnapshot() {
-    final snapshot = _NavigatorRouteSnapshot(
-      routes: List<Route<dynamic>>.of(_routes),
-      currentRoute: currentRoute,
-    );
+  _WeakRootRouteSnapshot? takeWeakRouteSnapshot() {
+    final pending = _pendingRootTransfer;
+    if (pending != null) {
+      _clearPendingRootTransfer();
+      _clearRoutes();
+      return pending;
+    }
+    final sourceNavigator = navigatorState();
+    final current = currentRoute;
+    final snapshot =
+        sourceNavigator == null || current == null || _routes.isEmpty
+            ? null
+            : _WeakRootRouteSnapshot(
+              sourceNavigator: WeakReference<NavigatorState>(sourceNavigator),
+              routes: <WeakReference<Route<dynamic>>>[
+                for (final route in _routes)
+                  WeakReference<Route<dynamic>>(route),
+              ],
+              currentRoute: WeakReference<Route<dynamic>>(current),
+            );
     _clearRoutes();
     return snapshot;
+  }
+
+  Object? stageRootTransfer(_WeakRootRouteSnapshot snapshot) {
+    if (_disposed || generation == null) {
+      return null;
+    }
+    final token = Object();
+    _pendingRootTransfer = snapshot;
+    _pendingRootTransferToken = token;
+    return token;
+  }
+
+  _RootTransferAttempt tryCommitRootTransfer(
+    Object token, {
+    required bool blocked,
+    required bool finalAttempt,
+  }) {
+    if (!identical(_pendingRootTransferToken, token)) {
+      return _RootTransferAttempt.complete;
+    }
+    if (_disposed || generation == null) {
+      _clearPendingRootTransfer();
+      return _RootTransferAttempt.complete;
+    }
+    final destinationNavigator = navigatorState();
+    if (destinationNavigator == null && !finalAttempt) {
+      return _RootTransferAttempt.pending;
+    }
+    final snapshot = _pendingRootTransfer;
+    _clearPendingRootTransfer();
+    if (snapshot == null ||
+        destinationNavigator == null ||
+        !identical(snapshot.sourceNavigator.target, destinationNavigator)) {
+      return _RootTransferAttempt.complete;
+    }
+    final routes = <Route<dynamic>>[];
+    for (final routeReference in snapshot.routes) {
+      final route = routeReference.target;
+      if (route == null) {
+        return _RootTransferAttempt.complete;
+      }
+      routes.add(route);
+    }
+    final restoredCurrentRoute = snapshot.currentRoute.target;
+    if (restoredCurrentRoute == null ||
+        !routes.any((route) => identical(route, restoredCurrentRoute))) {
+      return _RootTransferAttempt.complete;
+    }
+    _restoreResolvedRouteSnapshot(routes, restoredCurrentRoute, blocked);
+    return _RootTransferAttempt.complete;
   }
 
   void clearDetachedRoutes() {
     if (_disposed || isAttached()) {
       return;
     }
+    _clearPendingRootTransfer();
     _clearRoutes();
   }
 
-  void restoreRouteSnapshot(
-    _NavigatorRouteSnapshot snapshot,
+  void _restoreResolvedRouteSnapshot(
+    List<Route<dynamic>> routes,
+    Route<dynamic> restoredCurrentRoute,
     bool backBlocked,
   ) {
     if (_disposed || generation == null) {
       return;
     }
-    _clearRoutes();
-    for (final route in snapshot.routes) {
+    final observedRoutes = List<Route<dynamic>>.of(_routes);
+    final observedCurrentRoute = currentRoute;
+    _routes.clear();
+    for (final route in <Route<dynamic>>[...routes, ...observedRoutes]) {
       if (_routes.any((candidate) => identical(candidate, route))) {
         continue;
       }
       _routes.add(route);
       _register(route);
     }
-    currentRoute = snapshot.currentRoute;
+    currentRoute = observedCurrentRoute ?? restoredCurrentRoute;
     updateBackDisposition(backBlocked);
+  }
+
+  void _clearPendingRootTransfer() {
+    _pendingRootTransfer = null;
+    _pendingRootTransferToken = null;
   }
 
   void _register(Route<dynamic> route) {
@@ -428,18 +581,23 @@ class _NavigatorScope {
     if (_disposed) {
       return;
     }
+    _clearPendingRootTransfer();
     _clearRoutes();
     generation = null;
     _disposed = true;
   }
 }
 
-class _NavigatorRouteSnapshot {
-  const _NavigatorRouteSnapshot({
+enum _RootTransferAttempt { pending, complete }
+
+class _WeakRootRouteSnapshot {
+  const _WeakRootRouteSnapshot({
+    required this.sourceNavigator,
     required this.routes,
     required this.currentRoute,
   });
 
-  final List<Route<dynamic>> routes;
-  final Route<dynamic>? currentRoute;
+  final WeakReference<NavigatorState> sourceNavigator;
+  final List<WeakReference<Route<dynamic>>> routes;
+  final WeakReference<Route<dynamic>> currentRoute;
 }
