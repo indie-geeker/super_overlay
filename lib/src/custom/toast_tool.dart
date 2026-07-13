@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 
 import '../config/enum_config.dart';
 import '../data/show_param.dart';
+import '../helper/overlay_manager.dart';
 import '../kit/debounce_utils.dart';
 import '../kit/overlay_runtime_result.dart';
 import 'custom_toast.dart';
@@ -16,25 +17,45 @@ class ToastTool {
 
   final Queue<_ToastRequest> _normalQueue = ListQueue<_ToastRequest>();
   final List<_ActiveToast> _activeToasts = <_ActiveToast>[];
+  final Set<_ActiveToast> _inFlightToasts = <_ActiveToast>{};
 
-  bool _normalShowing = false;
+  int? _normalLaneGeneration;
   _ActiveToast? _onlyRefreshToast;
 
-  bool get isExist => _activeToasts.isNotEmpty || _normalQueue.isNotEmpty;
-  bool hasTag(String tag) {
-    return _normalQueue.any((request) => request.matchesTag(tag)) ||
-        _activeToasts.any((active) => active.matchesTag(tag));
+  bool isExist(int generation) {
+    return _normalQueue.any((request) => request.generation == generation) ||
+        _activeToasts.any((active) => active.generation == generation) ||
+        _inFlightToasts.any((active) => active.generation == generation);
   }
 
-  bool isActiveTag(String tag) {
-    return _activeToasts.any((active) => active.matchesTag(tag));
+  bool hasTag(String tag, {required int generation}) {
+    return _normalQueue.any(
+          (request) =>
+              request.generation == generation && request.matchesTag(tag),
+        ) ||
+        _activeToasts.any(
+          (active) => active.generation == generation && active.matchesTag(tag),
+        ) ||
+        _inFlightToasts.any(
+          (active) => active.generation == generation && active.matchesTag(tag),
+        );
   }
 
-  Future<T?> show<T>(ShowToastParam param) {
-    return showCommand<T>(param).closed;
+  bool isActiveTag(String tag, {required int generation}) {
+    return _activeToasts.any(
+      (active) => active.generation == generation && active.matchesTag(tag),
+    );
   }
 
-  OverlayRuntimeResult<T> showCommand<T>(ShowToastParam param) {
+  Future<T?> show<T>(ShowToastParam param, {required int generation}) {
+    return showCommand<T>(param, generation: generation).closed;
+  }
+
+  OverlayRuntimeResult<T> showCommand<T>(
+    ShowToastParam param, {
+    required int generation,
+  }) {
+    OverlayManager.instance.requireActiveGenerationMatch(generation);
     if (DebounceUtils.instance.banContinue(
       OverlayDebounceType.toast,
       debounce: param.debounce,
@@ -52,8 +73,12 @@ class ToastTool {
         final visible = Completer<void>();
         final closed = () async {
           try {
-            await dismiss(tag: lookupTag);
-            final result = _show<T>(param);
+            await dismiss(generation: generation, tag: lookupTag);
+            if (!OverlayManager.instance.ownsGeneration(generation)) {
+              _failBeforeFirstFrame(visible);
+              return null;
+            }
+            final result = _show<T>(param, generation);
             unawaited(
               result.visible.then(
                 (_) {
@@ -78,7 +103,7 @@ class ToastTool {
         }();
         return OverlayRuntimeResult<T>(visible: visible.future, closed: closed);
       } else if (param.keepSingle) {
-        final existing = _findTaggedRequest(lookupTag);
+        final existing = _findTaggedRequest(lookupTag, generation);
         if (existing != null) {
           return OverlayRuntimeResult<T>(
             visible: existing.visible,
@@ -89,20 +114,21 @@ class ToastTool {
       }
     }
 
-    return _show<T>(param);
+    return _show<T>(param, generation);
   }
 
-  OverlayRuntimeResult<T> _show<T>(ShowToastParam param) {
-    final request = _ToastRequest(param);
+  OverlayRuntimeResult<T> _show<T>(ShowToastParam param, int generation) {
+    OverlayManager.instance.requireActiveGenerationMatch(generation);
+    final request = _ToastRequest(param, generation);
     switch (param.displayType) {
       case ToastDisplayType.normal:
         _normalQueue.addLast(request);
-        if (!_normalShowing) {
-          _showNextNormal();
+        if (_normalLaneGeneration == null) {
+          _showNextNormal(generation);
         }
         break;
       case ToastDisplayType.last:
-        dismiss(closeAll: true);
+        reset(generation: generation);
         _showStandalone(request);
         break;
       case ToastDisplayType.onlyRefresh:
@@ -119,45 +145,79 @@ class ToastTool {
     );
   }
 
-  Future<void> dismiss({bool closeAll = false, String? tag}) async {
+  Future<void> dismiss({
+    required int generation,
+    bool closeAll = false,
+    String? tag,
+  }) async {
     if (closeAll) {
-      reset();
+      reset(generation: generation);
       return;
     }
 
     if (tag != null) {
-      await _dismissTagged(tag);
+      await _dismissTagged(tag, generation);
       return;
     }
 
-    if (_activeToasts.isEmpty) {
+    _ActiveToast? active;
+    for (final candidate in _activeToasts) {
+      if (candidate.generation == generation) {
+        active = candidate;
+        break;
+      }
+    }
+    if (active == null) {
       return;
     }
 
-    final active = _activeToasts.removeAt(0);
-    active.timer.cancel();
-    await active.toast.dismiss();
-    active.completeDismiss();
+    // Preserve the existing untagged-close behavior: it does not advance the
+    // normal queue automatically.
+    await _dismissActive(active, advanceLane: false);
   }
 
-  void reset() {
-    for (final active in _activeToasts) {
+  void reset({int? generation}) {
+    bool matchesGeneration(int candidate) {
+      return generation == null || candidate == generation;
+    }
+
+    final activeToasts = <_ActiveToast>{
+      ..._activeToasts.where((active) => matchesGeneration(active.generation)),
+      ..._inFlightToasts.where(
+        (active) => matchesGeneration(active.generation),
+      ),
+    };
+    for (final active in activeToasts) {
+      _activeToasts.remove(active);
+      _inFlightToasts.remove(active);
+      active.invalidate();
       active.timer.cancel();
       active.toast.disposeImmediately();
       active.completeDismiss();
     }
-    for (final request in _normalQueue) {
+
+    final queued = _normalQueue
+        .where((request) => matchesGeneration(request.generation))
+        .toList(growable: false);
+    for (final request in queued) {
+      _normalQueue.remove(request);
       request.completeDismiss();
     }
-    _activeToasts.clear();
-    _normalQueue.clear();
-    _normalShowing = false;
-    _onlyRefreshToast = null;
+
+    if (generation == null || _normalLaneGeneration == generation) {
+      _normalLaneGeneration = null;
+    }
+    if (generation == null || _onlyRefreshToast?.generation == generation) {
+      _onlyRefreshToast = null;
+    }
   }
 
-  Future<void> _dismissTagged(String tag) async {
+  Future<void> _dismissTagged(String tag, int generation) async {
     final queued = _normalQueue
-        .where((request) => request.matchesTag(tag))
+        .where(
+          (request) =>
+              request.generation == generation && request.matchesTag(tag),
+        )
         .toList(growable: false);
     for (final request in queued) {
       _normalQueue.remove(request);
@@ -165,24 +225,35 @@ class ToastTool {
     }
 
     final activeToasts = _activeToasts
-        .where((active) => active.matchesTag(tag))
+        .where(
+          (active) => active.generation == generation && active.matchesTag(tag),
+        )
         .toList(growable: false);
     for (final active in activeToasts) {
-      if (!_activeToasts.remove(active)) {
-        continue;
-      }
       if (_onlyRefreshToast == active) {
         _onlyRefreshToast = null;
       }
-      active.timer.cancel();
-      await active.toast.dismiss();
-      active.completeDismiss();
-      active.onDismissed?.call();
+      await _dismissActive(active, advanceLane: true);
+    }
+
+    final inFlightToasts = _inFlightToasts
+        .where(
+          (active) => active.generation == generation && active.matchesTag(tag),
+        )
+        .toList(growable: false);
+    for (final active in inFlightToasts) {
+      final dismissal = active.dismissal;
+      if (dismissal != null) {
+        await dismissal;
+      }
     }
   }
 
-  _ToastRequest? _findTaggedRequest(String tag) {
+  _ToastRequest? _findTaggedRequest(String tag, int generation) {
     for (final active in _activeToasts.reversed) {
+      if (active.generation != generation) {
+        continue;
+      }
       final request = active.requestForTag(tag);
       if (request != null) {
         return request;
@@ -191,34 +262,52 @@ class ToastTool {
     final queued = _normalQueue.toList(growable: false);
     for (var index = queued.length - 1; index >= 0; index--) {
       final request = queued[index];
-      if (request.matchesTag(tag)) {
+      if (request.generation == generation && request.matchesTag(tag)) {
         return request;
       }
     }
     return null;
   }
 
-  void _showNextNormal() {
-    if (_normalQueue.isEmpty) {
-      _normalShowing = false;
+  void _showNextNormal(int generation) {
+    if (!OverlayManager.instance.ownsGeneration(generation)) {
       return;
     }
 
-    _normalShowing = true;
-    final request = _normalQueue.removeFirst();
-    final active = _showStandalone(
+    _ToastRequest? request;
+    for (final candidate in _normalQueue) {
+      if (candidate.generation == generation) {
+        request = candidate;
+        break;
+      }
+    }
+    if (request == null) {
+      if (_normalLaneGeneration == generation) {
+        _normalLaneGeneration = null;
+      }
+      return;
+    }
+
+    _normalQueue.remove(request);
+    _normalLaneGeneration = generation;
+    _showStandalone(
       request,
       onDismissed: () {
-        _normalShowing = false;
-        _showNextNormal();
+        if (_normalLaneGeneration != generation ||
+            !OverlayManager.instance.ownsGeneration(generation)) {
+          return;
+        }
+        _normalLaneGeneration = null;
+        _showNextNormal(generation);
       },
     );
-    _onlyRefreshToast = active == _onlyRefreshToast ? null : _onlyRefreshToast;
   }
 
   void _showOnlyRefresh(_ToastRequest request) {
     final active = _onlyRefreshToast;
-    if (active != null && _activeToasts.contains(active)) {
+    if (active != null &&
+        active.generation == request.generation &&
+        _activeToasts.contains(active)) {
       active.timer.cancel();
       active.toast.show(request.param);
       active.attach(request);
@@ -226,7 +315,7 @@ class ToastTool {
       return;
     }
 
-    dismiss(closeAll: true);
+    reset(generation: request.generation);
     _onlyRefreshToast = _showStandalone(request);
   }
 
@@ -234,13 +323,53 @@ class ToastTool {
     _ToastRequest request, {
     VoidCallback? onDismissed,
   }) {
-    final toast = CustomToast.create();
+    OverlayManager.instance.requireActiveGenerationMatch(request.generation);
+    final toast = CustomToast.create(generation: request.generation);
     toast.show(_stackedParam(request.param, _activeToasts.length));
-    final active = _ActiveToast(toast: toast, onDismissed: onDismissed);
+    final active = _ActiveToast(
+      generation: request.generation,
+      toast: toast,
+      onDismissed: onDismissed,
+    );
     active.attach(request);
     active.timer = _autoDismissTimer(active, request.param.displayTime);
     _activeToasts.add(active);
     return active;
+  }
+
+  Future<void> _dismissActive(
+    _ActiveToast active, {
+    required bool advanceLane,
+  }) {
+    final existing = active.dismissal;
+    if (existing != null) {
+      return existing;
+    }
+    final dismissal = _runDismissActive(active, advanceLane: advanceLane);
+    active.dismissal = dismissal;
+    return dismissal;
+  }
+
+  Future<void> _runDismissActive(
+    _ActiveToast active, {
+    required bool advanceLane,
+  }) async {
+    if (!_activeToasts.remove(active)) {
+      return;
+    }
+    _inFlightToasts.add(active);
+    active.timer.cancel();
+    try {
+      await active.toast.dismiss();
+    } finally {
+      _inFlightToasts.remove(active);
+      active.completeDismiss();
+      if (advanceLane &&
+          !active.invalidated &&
+          OverlayManager.instance.ownsGeneration(active.generation)) {
+        active.onDismissed?.call();
+      }
+    }
   }
 
   ShowToastParam _stackedParam(ShowToastParam param, int stackIndex) {
@@ -291,16 +420,15 @@ class ToastTool {
   }
 
   Timer _autoDismissTimer(_ActiveToast active, Duration displayTime) {
-    return Timer(displayTime, () async {
-      if (!_activeToasts.remove(active)) {
+    return Timer(displayTime, () {
+      if (!_activeToasts.contains(active) ||
+          !OverlayManager.instance.ownsGeneration(active.generation)) {
         return;
       }
       if (_onlyRefreshToast == active) {
         _onlyRefreshToast = null;
       }
-      await active.toast.dismiss();
-      active.completeDismiss();
-      active.onDismissed?.call();
+      unawaited(_dismissActive(active, advanceLane: true));
     });
   }
 
@@ -311,19 +439,43 @@ class ToastTool {
     }
     return param.animationTime;
   }
+
+  void _failBeforeFirstFrame(Completer<void> visible) {
+    if (!visible.isCompleted) {
+      visible.completeError(
+        StateError('The overlay closed before its first rendered frame.'),
+      );
+    }
+  }
 }
 
 class _ActiveToast {
-  _ActiveToast({required this.toast, required this.onDismissed});
+  _ActiveToast({
+    required this.generation,
+    required this.toast,
+    required this.onDismissed,
+  });
 
+  final int generation;
   final CustomToast toast;
   late Timer timer;
   final VoidCallback? onDismissed;
   final List<_ToastRequest> _requests = <_ToastRequest>[];
+  Future<void>? dismissal;
+  bool invalidated = false;
 
   void attach(_ToastRequest request) {
+    if (request.generation != generation) {
+      throw StateError(
+        'Cannot attach a toast request from another generation.',
+      );
+    }
     _requests.add(request);
     request.completeAppear();
+  }
+
+  void invalidate() {
+    invalidated = true;
   }
 
   void completeDismiss() {
@@ -348,9 +500,10 @@ class _ActiveToast {
 }
 
 class _ToastRequest {
-  _ToastRequest(this.param);
+  _ToastRequest(this.param, this.generation);
 
   final ShowToastParam param;
+  final int generation;
   final Completer<void> _appearCompleter = Completer<void>();
   final Completer<void> _dismissCompleter = Completer<void>();
 

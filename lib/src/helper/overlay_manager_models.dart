@@ -1,7 +1,72 @@
 part of 'overlay_manager.dart';
 
+enum _OverlayHostTopology { empty, active, pending, conflict }
+
+class _OverlayHostDefaults {
+  const _OverlayHostDefaults({
+    required this.toastBuilder,
+    required this.loadingBuilder,
+    required this.notifyStyle,
+  });
+
+  final SuperOverlayToastBuilder? toastBuilder;
+  final SuperOverlayLoadingBuilder? loadingBuilder;
+  final NotifyStyle? notifyStyle;
+}
+
+class _OverlayHostState {
+  _OverlayHostState({
+    required this.generation,
+    required this.ownerIdentity,
+    required this.defaults,
+  }) {
+    CustomLoading? loading;
+    entryLoading = SuperOverlayEntry(builder: (_) => loading!.getWidget());
+    loading = CustomLoading(overlayEntry: entryLoading);
+    loadingOverlay = loading;
+  }
+
+  final int generation;
+  final Object ownerIdentity;
+  _OverlayHostDefaults defaults;
+  late final SuperOverlayEntry entryLoading;
+  late final CustomLoading loadingOverlay;
+  BuildContext? contextCustom;
+  BuildContext? contextAttach;
+  BuildContext? contextNotify;
+  BuildContext? contextToast;
+  final RouteRecord routeRecord = RouteRecord();
+  Object? view;
+  bool mounted = true;
+  bool resourcesDisposed = false;
+
+  void captureContexts(BuildContext context) {
+    contextCustom = context;
+    contextAttach = context;
+    contextNotify = context;
+    contextToast = context;
+    view = View.maybeOf(context);
+  }
+
+  void disposeResources() {
+    if (resourcesDisposed) {
+      return;
+    }
+    resourcesDisposed = true;
+    loadingOverlay.disposeHost();
+    entryLoading.remove();
+    contextCustom = null;
+    contextAttach = null;
+    contextNotify = null;
+    contextToast = null;
+    routeRecord.reset();
+    view = null;
+  }
+}
+
 class _OverlayRecord {
   _OverlayRecord({
+    required this.generation,
     required this.overlay,
     required this.type,
     required this.tag,
@@ -14,6 +79,7 @@ class _OverlayRecord {
     required this.onBack,
   });
 
+  final int generation;
   final CustomOverlay overlay;
   final OverlayType type;
   final String tag;
@@ -31,6 +97,7 @@ class _OverlayRecord {
 
 class _NotifyRecord {
   _NotifyRecord({
+    required this.generation,
     required this.overlay,
     required this.tag,
     required this.businessTag,
@@ -38,6 +105,7 @@ class _NotifyRecord {
     required this.onBack,
   });
 
+  final int generation;
   final CustomNotify overlay;
   final String tag;
   final String? businessTag;
@@ -50,11 +118,13 @@ class _NotifyRecord {
 
 class CustomPushResult {
   const CustomPushResult({
+    required this.generation,
     required this.tag,
     required this.overlay,
     required this.reused,
   });
 
+  final int generation;
   final String tag;
   final CustomOverlay overlay;
   final bool reused;
@@ -62,11 +132,13 @@ class CustomPushResult {
 
 class NotifyPushResult {
   const NotifyPushResult({
+    required this.generation,
     required this.tag,
     required this.overlay,
     required this.reused,
   });
 
+  final int generation;
   final String tag;
   final CustomNotify overlay;
   final bool reused;

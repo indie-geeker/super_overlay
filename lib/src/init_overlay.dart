@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'helper/monitor_widget_helper.dart';
 import 'helper/overlay_host_lease.dart';
-import 'helper/overlay_manager.dart';
 import 'helper/pop_route_monitor.dart';
 import 'kit/super_overlay_entry.dart';
 import 'kit/typedef.dart';
 import 'data/notify_style.dart';
-import 'config/overlay_config.dart';
 
 typedef SuperOverlayStyleBuilder = Widget Function(Widget child);
 
@@ -58,22 +56,34 @@ class SuperOverlayInit extends StatefulWidget {
 }
 
 class _SuperOverlayInitState extends State<SuperOverlayInit> {
-  late final SuperOverlayEntry _appEntry;
-  late final OverlayHostLease _hostLease;
+  late SuperOverlayEntry _appEntry;
+  late OverlayHostLease _hostLease;
 
   @override
   void initState() {
     super.initState();
-    _hostLease = OverlayHostLease.acquire(ownerIdentity: widget.ownerIdentity);
+    _hostLease = _acquireLease(widget);
     PopRouteMonitor.instance.ensureRegistered();
     MonitorWidgetHelper.instance.ensureRegistered();
-    _applyDefaultBuilders();
-    _appEntry = SuperOverlayEntry(
+    _appEntry = _createAppEntry(_hostLease, widget.ownerIdentity);
+  }
+
+  OverlayHostLease _acquireLease(SuperOverlayInit configuration) {
+    return OverlayHostLease.acquire(
+      ownerIdentity: configuration.ownerIdentity,
+      toastBuilder: configuration.toastBuilder,
+      loadingBuilder: configuration.loadingBuilder,
+      notifyStyle: configuration.notifyStyle,
+    );
+  }
+
+  SuperOverlayEntry _createAppEntry(
+    OverlayHostLease lease,
+    Object ownerIdentity,
+  ) {
+    return SuperOverlayEntry(
       builder: (context) {
-        _hostLease.captureContexts(
-          ownerIdentity: widget.ownerIdentity,
-          context: context,
-        );
+        lease.captureContexts(ownerIdentity: ownerIdentity, context: context);
         return widget.child ?? const SizedBox.shrink();
       },
     );
@@ -82,26 +92,27 @@ class _SuperOverlayInitState extends State<SuperOverlayInit> {
   @override
   void didUpdateWidget(covariant SuperOverlayInit oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.ownerIdentity, widget.ownerIdentity)) {
+      final oldLease = _hostLease;
+      _hostLease = _acquireLease(widget);
+      _appEntry = _createAppEntry(_hostLease, widget.ownerIdentity);
+      oldLease.dispose(ownerIdentity: oldWidget.ownerIdentity);
+      return;
+    }
     if (oldWidget.toastBuilder != widget.toastBuilder ||
         oldWidget.loadingBuilder != widget.loadingBuilder ||
         oldWidget.notifyStyle != widget.notifyStyle) {
-      _applyDefaultBuilders();
+      _hostLease.updateDefaults(
+        ownerIdentity: widget.ownerIdentity,
+        toastBuilder: widget.toastBuilder,
+        loadingBuilder: widget.loadingBuilder,
+        notifyStyle: widget.notifyStyle,
+      );
     }
-  }
-
-  void _applyDefaultBuilders() {
-    overlayConfig.toast = overlayConfig.toast.withBuilder(widget.toastBuilder);
-    overlayConfig.loading = overlayConfig.loading.withBuilder(
-      widget.loadingBuilder,
-    );
-    overlayConfig.notify = overlayConfig.notify.withStyle(widget.notifyStyle);
   }
 
   @override
   void dispose() {
-    overlayConfig.toast = overlayConfig.toast.withBuilder(null);
-    overlayConfig.loading = overlayConfig.loading.withBuilder(null);
-    overlayConfig.notify = overlayConfig.notify.withStyle(null);
     _hostLease.dispose(ownerIdentity: widget.ownerIdentity);
     super.dispose();
   }
@@ -109,7 +120,8 @@ class _SuperOverlayInitState extends State<SuperOverlayInit> {
   @override
   Widget build(BuildContext context) {
     final overlay = Overlay(
-      initialEntries: [_appEntry, OverlayManager.instance.entryLoading],
+      key: ObjectKey(_hostLease),
+      initialEntries: [_appEntry, _hostLease.entryLoading],
     );
     return widget.styleBuilder?.call(overlay) ??
         Material(color: Colors.transparent, child: overlay);

@@ -84,8 +84,11 @@ class _SuperToastOverlayBuilder {
     return OverlayManager.instance.showToast<T>(param: _buildParam());
   }
 
-  OverlayRuntimeResult<T> _fireCommand<T>() {
-    final result = ToastTool.instance.showCommand<T>(_buildParam());
+  OverlayRuntimeResult<T> _fireCommand<T>(int generation) {
+    final result = ToastTool.instance.showCommand<T>(
+      _buildParam(),
+      generation: generation,
+    );
     final controller = _controller;
     if (controller == null ||
         (result.identityTag != null && result.identityTag != _tag)) {

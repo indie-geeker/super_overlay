@@ -10,8 +10,16 @@ class OverlayLoadingService {
     WidgetBuilder? builder,
     OverlayLoadingOptions options = const OverlayLoadingOptions(),
   }) {
+    final manager = OverlayManager.instance;
+    final generation = manager.requireActiveGeneration();
+    final hostBuilder = manager.loadingBuilderFor(generation);
     final controller = SuperOverlayController();
-    final command = SuperOverlay._loading(message: message, builder: builder)
+    final command = SuperOverlay._loading(
+          message: message,
+          builder:
+              builder ??
+              (hostBuilder == null ? null : (_) => hostBuilder(message)),
+        )
         .withMask(dismissible: options.dismissOnMaskTap)
         .withLeastLoadingTime(options.minimumVisibleDuration)
         .withController(controller)
@@ -33,18 +41,21 @@ class OverlayLoadingService {
       identityTag: effectiveTag,
     );
     return _overlayHandle<void>(
+      generation: generation,
       visible: runtime.visible,
       closed: runtime.closed,
       status: DismissStatus.loading,
       tag: runtime.identityTag,
       close:
-          ([void result]) => SuperOverlay._dismiss<void>(
+          ([void result]) => manager.dismiss<void>(
             status: DismissStatus.loading,
             tag: effectiveTag,
+            generation: generation,
           ),
       isVisible:
-          () => OverlayManager.instance.checkExist(
+          () => manager.checkExist(
             tag: effectiveTag,
+            generation: generation,
             types: const {OverlayType.loading},
           ),
     );
@@ -52,6 +63,7 @@ class OverlayLoadingService {
 
   /// Closes the active loading overlay.
   Future<void> close() {
+    OverlayManager.instance.requireActiveGeneration();
     return SuperOverlay._dismiss(status: DismissStatus.loading);
   }
 }
@@ -65,6 +77,8 @@ class OverlayDialogService {
     required WidgetBuilder builder,
     OverlayDialogOptions options = const OverlayDialogOptions(),
   }) {
+    final manager = OverlayManager.instance;
+    final generation = manager.requireActiveGeneration();
     final controller = SuperOverlayController();
     final command = SuperOverlay._custom(builder: builder)
         .withAlignment(options.alignment)
@@ -88,6 +102,7 @@ class OverlayDialogService {
     command.withTag(identityTag)._withBusinessTag(tag);
 
     final existing = _existingOverlayHandle<T>(
+      generation: generation,
       status: DismissStatus.custom,
       tag: tag,
       strategy: options.strategy,
@@ -104,6 +119,7 @@ class OverlayDialogService {
     }
 
     final lifecycle = _CommandOverlayLifecycle<T>(
+      generation: generation,
       fire:
           () => OverlayRuntimeResult<T>(
             visible: controller.visible,
@@ -116,6 +132,7 @@ class OverlayDialogService {
     );
     lifecycle.start();
     return _overlayHandle<T>(
+      generation: generation,
       visible: lifecycle.visible,
       closed: lifecycle.closed,
       status: DismissStatus.custom,
@@ -123,8 +140,9 @@ class OverlayDialogService {
       close: lifecycle.close,
       refresh: controller.refresh,
       isVisible:
-          () => OverlayManager.instance.checkExist(
+          () => manager.checkExist(
             tag: identityTag,
+            generation: generation,
             types: const {OverlayType.custom},
           ),
     );
@@ -141,6 +159,8 @@ class OverlayPopupService {
     required WidgetBuilder builder,
     OverlayPopupOptions options = const OverlayPopupOptions(),
   }) {
+    final manager = OverlayManager.instance;
+    final generation = manager.requireActiveGeneration();
     final controller = SuperOverlayController();
     final command = SuperOverlay._popup(
           targetContext: targetContext,
@@ -183,6 +203,7 @@ class OverlayPopupService {
     command.withTag(identityTag)._withBusinessTag(tag);
 
     final existing = _existingOverlayHandle<T>(
+      generation: generation,
       status: DismissStatus.attach,
       tag: tag,
       strategy: options.strategy,
@@ -209,6 +230,7 @@ class OverlayPopupService {
     }
 
     final lifecycle = _CommandOverlayLifecycle<T>(
+      generation: generation,
       fire:
           () => OverlayRuntimeResult<T>(
             visible: controller.visible,
@@ -221,6 +243,7 @@ class OverlayPopupService {
     );
     lifecycle.start();
     return _overlayHandle<T>(
+      generation: generation,
       visible: lifecycle.visible,
       closed: lifecycle.closed,
       status: DismissStatus.attach,
@@ -228,8 +251,9 @@ class OverlayPopupService {
       close: lifecycle.close,
       refresh: controller.refresh,
       isVisible:
-          () => OverlayManager.instance.checkExist(
+          () => manager.checkExist(
             tag: identityTag,
+            generation: generation,
             types: const {OverlayType.attach},
           ),
     );
@@ -291,11 +315,16 @@ class OverlayNotifyService {
     WidgetBuilder? builder,
     OverlayNotifyOptions options,
   ) {
+    final manager = OverlayManager.instance;
+    final generation = manager.requireActiveGeneration();
+    final hostStyle = manager.notifyStyleFor(generation);
+    final styledWidget = hostStyle?.build(_notificationTypeFor(type), message);
     final controller = SuperOverlayController();
     final command = SuperOverlay._notification(
           message: message,
           type: type,
-          builder: builder,
+          builder:
+              builder ?? (styledWidget == null ? null : (_) => styledWidget),
         )
         .withAlignment(options.alignment)
         .withController(controller)
@@ -307,6 +336,7 @@ class OverlayNotifyService {
     command.withTag(identityTag)._withBusinessTag(tag);
 
     final existing = _existingOverlayHandle<void>(
+      generation: generation,
       status: DismissStatus.notify,
       tag: tag,
       strategy: options.strategy,
@@ -321,6 +351,7 @@ class OverlayNotifyService {
     }
 
     final lifecycle = _CommandOverlayLifecycle<void>(
+      generation: generation,
       fire:
           () => OverlayRuntimeResult<void>(
             visible: controller.visible,
@@ -333,14 +364,16 @@ class OverlayNotifyService {
     );
     lifecycle.start();
     return _overlayHandle<void>(
+      generation: generation,
       visible: lifecycle.visible,
       closed: lifecycle.closed,
       status: DismissStatus.notify,
       tag: identityTag,
       close: lifecycle.close,
       isVisible:
-          () => OverlayManager.instance.checkExist(
+          () => manager.checkExist(
             tag: identityTag,
+            generation: generation,
             types: const {OverlayType.notify},
           ),
     );
@@ -355,8 +388,16 @@ class _OverlayToastService {
     WidgetBuilder? builder,
     OverlayToastOptions options = const OverlayToastOptions(),
   }) {
+    final manager = OverlayManager.instance;
+    final generation = manager.requireActiveGeneration();
+    final hostBuilder = manager.toastBuilderFor(generation);
     final controller = SuperOverlayController();
-    final command = SuperOverlay._toastCommand(message, builder: builder)
+    final command = SuperOverlay._toastCommand(
+          message,
+          builder:
+              builder ??
+              (hostBuilder == null ? null : (_) => hostBuilder(message)),
+        )
         .withAlignment(options.alignment)
         .withDisplayTime(options.displayDuration)
         .withDisplayType(_toastDisplayTypeFor(options.displayPolicy))
@@ -378,7 +419,8 @@ class _OverlayToastService {
     }
 
     final lifecycle = _CommandOverlayLifecycle<void>(
-      fire: command._fireCommand<void>,
+      generation: generation,
+      fire: () => command._fireCommand<void>(generation),
       status: DismissStatus.toast,
       tag: identityTag,
       replaceTag: tag,
@@ -386,6 +428,7 @@ class _OverlayToastService {
     );
     lifecycle.start();
     return _overlayHandle<void>(
+      generation: generation,
       visible: lifecycle.visible,
       closed: lifecycle.closed,
       status: DismissStatus.toast,
@@ -395,7 +438,10 @@ class _OverlayToastService {
       isVisible:
           () =>
               !lifecycle.isQueued &&
-              ToastTool.instance.isActiveTag(lifecycle.activeTag),
+              ToastTool.instance.isActiveTag(
+                lifecycle.activeTag,
+                generation: generation,
+              ),
     );
   }
 }
@@ -407,6 +453,7 @@ String _commandTag(String kind) {
 }
 
 OverlayHandle<T> _overlayHandle<T>({
+  required int generation,
   Future<void>? visible,
   required Future<T?> closed,
   required DismissStatus status,
@@ -426,8 +473,12 @@ OverlayHandle<T> _overlayHandle<T>({
 
     final closeOverlay =
         close ??
-        ([T? result]) =>
-            SuperOverlay._dismiss<T>(status: status, tag: tag, result: result);
+        ([T? result]) => OverlayManager.instance.dismiss<T>(
+          status: status,
+          tag: tag,
+          result: result,
+          generation: generation,
+        );
     return closeOverlay(result);
   }
 
@@ -435,13 +486,22 @@ OverlayHandle<T> _overlayHandle<T>({
     visible: visible ?? Future<void>.value(),
     closed: trackedClosed,
     close: requestClose,
-    refresh: refresh ?? () {},
-    isVisible: () => !isClosed && isVisible(),
+    refresh:
+        () => OverlayManager.instance.refreshForGeneration(
+          generation,
+          refresh ?? () {},
+        ),
+    isVisible:
+        () =>
+            !isClosed &&
+            OverlayManager.instance.ownsGeneration(generation) &&
+            isVisible(),
   );
 }
 
 class _CommandOverlayLifecycle<T> {
   _CommandOverlayLifecycle({
+    required this.generation,
     required this.fire,
     required this.status,
     required this.tag,
@@ -450,6 +510,7 @@ class _CommandOverlayLifecycle<T> {
   }) : replaceTag = replaceTag ?? tag;
 
   final OverlayRuntimeResult<T> Function() fire;
+  final int generation;
   final DismissStatus status;
   final String tag;
   final String replaceTag;
@@ -478,10 +539,11 @@ class _CommandOverlayLifecycle<T> {
       return _closed.future.then((_) {});
     }
 
-    return SuperOverlay._dismiss<T>(
+    return OverlayManager.instance.dismiss<T>(
       status: status,
       tag: _identityTag,
       result: result,
+      generation: generation,
     );
   }
 
@@ -490,7 +552,7 @@ class _CommandOverlayLifecycle<T> {
       final fired =
           strategy == OverlayStrategy.replaceExisting
               ? await _replacementQueue.run(
-                '$status::$replaceTag',
+                '$generation::$status::$replaceTag',
                 _replaceAndFire,
               )
               : _fireIfOpen();
@@ -533,7 +595,12 @@ class _CommandOverlayLifecycle<T> {
     if (_closeRequested) {
       return _fireIfOpen();
     }
-    await SuperOverlay._dismiss(status: status, tag: replaceTag, force: true);
+    await OverlayManager.instance.dismiss(
+      status: status,
+      tag: replaceTag,
+      force: true,
+      generation: generation,
+    );
     return _fireIfOpen();
   }
 
@@ -548,7 +615,16 @@ class _CommandOverlayLifecycle<T> {
       return null;
     }
 
+    if (!OverlayManager.instance.ownsGeneration(generation)) {
+      _failVisible();
+      if (!_closed.isCompleted) {
+        _closed.complete(_closeResult);
+      }
+      return null;
+    }
+
     _fireStarted = true;
+    OverlayManager.instance.requireActiveGenerationMatch(generation);
     return fire();
   }
 
@@ -587,6 +663,7 @@ class _OverlayOperationQueue {
 }
 
 OverlayHandle<T>? _existingOverlayHandle<T>({
+  required int generation,
   required DismissStatus status,
   required String? tag,
   required OverlayStrategy strategy,
@@ -600,6 +677,7 @@ OverlayHandle<T>? _existingOverlayHandle<T>({
   final closed = OverlayManager.instance.existingClosedFuture<T>(
     tag: tag,
     type: type,
+    generation: generation,
   );
   if (closed == null) {
     return null;
@@ -608,21 +686,28 @@ OverlayHandle<T>? _existingOverlayHandle<T>({
   final visible = OverlayManager.instance.existingVisibleFuture(
     tag: tag,
     type: type,
+    generation: generation,
   );
 
   final existingRefresh = OverlayManager.instance.existingRefresh(
     tag: tag,
     type: type,
+    generation: generation,
   );
 
   return _overlayHandle<T>(
+    generation: generation,
     visible: visible,
     closed: closed,
     status: status,
     tag: tag,
     refresh: existingRefresh ?? refresh,
     isVisible:
-        () => OverlayManager.instance.checkExist(tag: tag, types: {type}),
+        () => OverlayManager.instance.checkExist(
+          tag: tag,
+          generation: generation,
+          types: {type},
+        ),
   );
 }
 

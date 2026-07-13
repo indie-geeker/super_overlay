@@ -38,6 +38,7 @@ class CustomOverlay extends BaseOverlay {
           status: DismissStatus.custom,
           tag: push.tag,
           closeType: OverlayCloseType.mask,
+          generation: push.generation,
         );
       },
     );
@@ -71,6 +72,7 @@ class CustomOverlay extends BaseOverlay {
           status: DismissStatus.attach,
           tag: push.tag,
           closeType: OverlayCloseType.mask,
+          generation: push.generation,
         );
       },
       onTargetUnavailable:
@@ -78,6 +80,7 @@ class CustomOverlay extends BaseOverlay {
             status: DismissStatus.attach,
             tag: push.tag,
             force: true,
+            generation: push.generation,
           ),
     );
   }

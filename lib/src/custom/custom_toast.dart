@@ -5,15 +5,19 @@ import '../kit/super_overlay_entry.dart';
 import '../kit/view_utils.dart';
 import '../widget/helper/toast_helper.dart';
 import 'base_overlay.dart';
-import 'toast_tool.dart';
 
 class CustomToast extends BaseOverlay {
-  CustomToast({required SuperOverlayEntry overlayEntry}) : super(overlayEntry);
+  CustomToast({
+    required SuperOverlayEntry overlayEntry,
+    required this.generation,
+  }) : super(overlayEntry);
 
-  factory CustomToast.create() {
+  final int generation;
+
+  factory CustomToast.create({required int generation}) {
     CustomToast? toast;
     final entry = SuperOverlayEntry(builder: (_) => toast!.getWidget());
-    toast = CustomToast(overlayEntry: entry);
+    toast = CustomToast(overlayEntry: entry, generation: generation);
     return toast;
   }
 
@@ -26,9 +30,12 @@ class CustomToast extends BaseOverlay {
     }
 
     if (!overlayEntry.mounted) {
-      ViewUtils.addSafeUse(
-        () => overlayOf(overlayContext).insert(overlayEntry),
-      );
+      ViewUtils.addSafeUse(() {
+        if (!OverlayManager.instance.ownsGeneration(generation)) {
+          return;
+        }
+        overlayOf(overlayContext).insert(overlayEntry);
+      });
     }
 
     mainOverlay.show<void>(
@@ -38,7 +45,10 @@ class CustomToast extends BaseOverlay {
         if (!param.clickMaskDismiss) {
           return;
         }
-        ToastTool.instance.dismiss();
+        OverlayManager.instance.dismiss<void>(
+          status: DismissStatus.toast,
+          generation: generation,
+        );
       },
     );
   }

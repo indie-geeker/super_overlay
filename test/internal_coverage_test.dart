@@ -4,6 +4,7 @@ import 'package:super_overlay/super_overlay.dart';
 import 'package:super_overlay/src/custom/custom_loading.dart';
 import 'package:super_overlay/src/custom/toast_tool.dart';
 import 'package:super_overlay/src/data/show_param.dart';
+import 'package:super_overlay/src/helper/overlay_manager.dart';
 import 'package:super_overlay/src/kit/overlay_controller.dart';
 import 'package:super_overlay/src/kit/super_overlay_entry.dart';
 import 'package:super_overlay/src/kit/view_utils.dart';
@@ -347,6 +348,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(builder: SuperOverlay.init(), home: const SizedBox.shrink()),
     );
+    final generation = OverlayManager.instance.requireActiveGeneration();
 
     final direct = ToastTool.instance.show<void>(
       _toastParam(
@@ -354,19 +356,25 @@ void main() {
         tag: 'direct',
         awaitCompletion: AwaitCompletion.none,
       ),
+      generation: generation,
     );
     await direct;
     await tester.pump();
 
-    expect(ToastTool.instance.isExist, isTrue);
-    expect(ToastTool.instance.hasTag('direct'), isTrue);
-    expect(ToastTool.instance.isActiveTag('direct'), isTrue);
+    expect(ToastTool.instance.isExist(generation), isTrue);
+    expect(ToastTool.instance.hasTag('direct', generation: generation), isTrue);
+    expect(
+      ToastTool.instance.isActiveTag('direct', generation: generation),
+      isTrue,
+    );
 
     final debounced = ToastTool.instance.showCommand<void>(
       _toastParam('debounced toast', tag: 'debounced', debounce: true),
+      generation: generation,
     );
     final blocked = ToastTool.instance.showCommand<void>(
       _toastParam('blocked toast', tag: 'blocked', debounce: true),
+      generation: generation,
     );
     await debounced.visible;
     await blocked.visible;
@@ -375,6 +383,7 @@ void main() {
 
     final replacing = ToastTool.instance.showCommand<void>(
       _toastParam('replacement toast', tag: 'direct', replaceExisting: true),
+      generation: generation,
     );
     await replacing.visible;
     await tester.pumpAndSettle();
@@ -383,6 +392,7 @@ void main() {
 
     final kept = ToastTool.instance.showCommand<void>(
       _toastParam('ignored keep toast', tag: 'direct', keepSingle: true),
+      generation: generation,
     );
     await kept.visible;
     await tester.pump();
@@ -394,9 +404,10 @@ void main() {
         tag: 'queued',
         displayType: ToastDisplayType.normal,
       ),
+      generation: generation,
     );
-    expect(ToastTool.instance.hasTag('queued'), isTrue);
-    await ToastTool.instance.dismiss(tag: 'queued');
+    expect(ToastTool.instance.hasTag('queued', generation: generation), isTrue);
+    await ToastTool.instance.dismiss(generation: generation, tag: 'queued');
     await queued.closed;
 
     final auto = ToastTool.instance.showCommand<void>(
@@ -405,15 +416,16 @@ void main() {
         tag: 'auto',
         displayTime: const Duration(milliseconds: 10),
       ),
+      generation: generation,
     );
     await auto.visible;
     await tester.pump(const Duration(milliseconds: 20));
     await auto.closed;
-    expect(ToastTool.instance.hasTag('auto'), isFalse);
+    expect(ToastTool.instance.hasTag('auto', generation: generation), isFalse);
 
-    await ToastTool.instance.dismiss();
+    await ToastTool.instance.dismiss(generation: generation);
     ToastTool.instance.reset();
-    expect(ToastTool.instance.isExist, isFalse);
+    expect(ToastTool.instance.isExist(generation), isFalse);
   });
 }
 

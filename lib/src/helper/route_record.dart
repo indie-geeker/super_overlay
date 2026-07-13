@@ -3,15 +3,25 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 
 class RouteRecord {
-  RouteRecord._();
+  RouteRecord();
 
-  static final RouteRecord instance = RouteRecord._();
+  static final RouteRecord instance = RouteRecord();
 
   final Queue<Route<dynamic>> _routes = DoubleLinkedQueue<Route<dynamic>>();
 
   Route<dynamic>? currentRoute;
 
   Iterable<Route<dynamic>> get routes => _routes;
+
+  void replaceWith(RouteRecord source) {
+    if (identical(this, source)) {
+      return;
+    }
+    _routes
+      ..clear()
+      ..addAll(source._routes);
+    currentRoute = source.currentRoute;
+  }
 
   void reset() {
     _routes.clear();

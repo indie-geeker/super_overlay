@@ -142,39 +142,17 @@ class SuperOverlay {
     String? tag,
     T? result,
     bool force = false,
-  }) async {
+  }) {
+    final generation = OverlayManager.instance.globalCommandGeneration(
+      allowEmpty: true,
+    );
     if (target == OverlayCloseTarget.all) {
-      await _dismiss<T>(
-        status: DismissStatus.loading,
+      return _closeAll<T>(
         tag: tag,
         result: result,
         force: force,
+        generation: generation,
       );
-      await _dismiss<T>(
-        status: DismissStatus.allNotify,
-        tag: tag,
-        result: result,
-        force: force,
-      );
-      await _dismiss<T>(
-        status: DismissStatus.allAttach,
-        tag: tag,
-        result: result,
-        force: force,
-      );
-      await _dismiss<T>(
-        status: DismissStatus.allCustom,
-        tag: tag,
-        result: result,
-        force: force,
-      );
-      await _dismiss<T>(
-        status: DismissStatus.allToast,
-        tag: tag,
-        result: result,
-        force: force,
-      );
-      return;
     }
 
     return _dismiss<T>(
@@ -182,6 +160,50 @@ class SuperOverlay {
       tag: tag,
       result: result,
       force: force,
+      generation: generation,
+    );
+  }
+
+  static Future<void> _closeAll<T>({
+    required String? tag,
+    required T? result,
+    required bool force,
+    required int? generation,
+  }) async {
+    await _dismiss<T>(
+      status: DismissStatus.loading,
+      tag: tag,
+      result: result,
+      force: force,
+      generation: generation,
+    );
+    await _dismiss<T>(
+      status: DismissStatus.allNotify,
+      tag: tag,
+      result: result,
+      force: force,
+      generation: generation,
+    );
+    await _dismiss<T>(
+      status: DismissStatus.allAttach,
+      tag: tag,
+      result: result,
+      force: force,
+      generation: generation,
+    );
+    await _dismiss<T>(
+      status: DismissStatus.allCustom,
+      tag: tag,
+      result: result,
+      force: force,
+      generation: generation,
+    );
+    await _dismiss<T>(
+      status: DismissStatus.allToast,
+      tag: tag,
+      result: result,
+      force: force,
+      generation: generation,
     );
   }
 
@@ -207,12 +229,14 @@ class SuperOverlay {
     String? tag,
     T? result,
     bool force = false,
+    int? generation,
   }) {
     return OverlayManager.instance.dismiss<T>(
       status: status,
       tag: tag,
       result: result,
       force: force,
+      generation: generation,
     );
   }
 

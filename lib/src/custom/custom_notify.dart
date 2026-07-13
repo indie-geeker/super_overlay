@@ -33,6 +33,7 @@ class CustomNotify extends BaseOverlay {
           status: DismissStatus.notify,
           tag: push.tag,
           closeType: OverlayCloseType.mask,
+          generation: push.generation,
         );
       },
     );

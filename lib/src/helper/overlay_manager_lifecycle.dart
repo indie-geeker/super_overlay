@@ -2,25 +2,38 @@ part of 'overlay_manager.dart';
 
 extension _OverlayManagerLifecycle on OverlayManager {
   Future<bool> _handleBackEvent() async {
-    if (loadingOverlay.isVisible) {
+    final initialHost = _commandHost;
+    final generation = initialHost.generation;
+    final generationLoading = initialHost.loadingOverlay;
+    final loadingBackType = generationLoading.backType;
+    final loadingOnBack = generationLoading.onBack;
+    if (generationLoading.isVisible) {
       final handled = await _handleBackConfig(
-        backType: loadingOverlay.backType,
-        onBack: loadingOverlay.onBack,
+        generation: generation,
+        backType: loadingBackType,
+        onBack: loadingOnBack,
         close:
             () => dismiss<void>(
               status: DismissStatus.loading,
               closeType: OverlayCloseType.back,
+              generation: generation,
             ),
       );
+      if (!ownsGeneration(generation)) {
+        return false;
+      }
       if (handled != null) {
         return handled;
       }
     }
 
-    final notifyRecords = _notifyQueue.toList(growable: false);
+    final notifyRecords = _notifyQueue
+        .where((record) => record.generation == generation)
+        .toList(growable: false);
     for (var index = notifyRecords.length - 1; index >= 0; index--) {
       final record = notifyRecords[index];
       final handled = await _handleBackConfig(
+        generation: generation,
         backType: record.backType,
         onBack: record.onBack,
         close:
@@ -28,19 +41,24 @@ extension _OverlayManagerLifecycle on OverlayManager {
               status: DismissStatus.notify,
               tag: record.tag,
               closeType: OverlayCloseType.back,
+              generation: generation,
             ),
       );
+      if (!ownsGeneration(generation)) {
+        return false;
+      }
       if (handled != null) {
         return handled;
       }
     }
 
-    final record = _lastBackRecord();
+    final record = _lastBackRecord(generation: generation);
     if (record == null) {
       return false;
     }
 
     final handled = await _handleBackConfig(
+      generation: generation,
       backType: record.backType,
       onBack: record.onBack,
       close:
@@ -51,8 +69,12 @@ extension _OverlayManagerLifecycle on OverlayManager {
                     : DismissStatus.custom,
             tag: record.tag,
             closeType: OverlayCloseType.back,
+            generation: generation,
           ),
     );
+    if (!ownsGeneration(generation)) {
+      return false;
+    }
     return handled ?? false;
   }
 
@@ -92,24 +114,34 @@ extension _OverlayManagerLifecycle on OverlayManager {
           force: true,
           type: record.type,
           closeType: OverlayCloseType.normal,
+          generation: record.generation,
         ),
       );
     }
   }
 
   Future<bool?> _handleBackConfig({
+    required int generation,
     required BackType backType,
     required SuperOverlayOnBack? onBack,
     required Future<void> Function() close,
   }) async {
-    if (await onBack?.call() == true) {
+    if (!ownsGeneration(generation)) {
+      return false;
+    }
+
+    final callbackHandled = await onBack?.call();
+    if (!ownsGeneration(generation)) {
+      return false;
+    }
+    if (callbackHandled == true) {
       return true;
     }
 
     return switch (backType) {
       BackType.normal => () async {
         await close();
-        return true;
+        return ownsGeneration(generation);
       }(),
       BackType.block => true,
       BackType.ignore => null,

@@ -7,24 +7,38 @@ extension _OverlayManagerDismiss on OverlayManager {
     T? result,
     bool force = false,
     OverlayCloseType closeType = OverlayCloseType.normal,
+    required int generation,
   }) async {
+    final host = _hosts[generation];
+    if (host == null || host.resourcesDisposed) {
+      return;
+    }
+    final generationLoading = host.loadingOverlay;
     if (status == DismissStatus.auto) {
-      if (loadingOverlay.isVisible &&
-          (tag == null || loadingOverlay.matchesTag(tag))) {
-        await loadingOverlay.dismiss(closeType: closeType);
+      if (generationLoading.isVisible &&
+          (tag == null || generationLoading.matchesTag(tag))) {
+        await generationLoading.dismiss(closeType: closeType);
         return;
       }
 
       final hasMatchingNotify = _notifyQueue.any(
-        (record) => tag == null || record.matchesTag(tag),
+        (record) =>
+            record.generation == generation &&
+            (tag == null || record.matchesTag(tag)),
       );
       if (hasMatchingNotify) {
-        await _closeNotify<T>(tag: tag, result: result, closeType: closeType);
+        await _closeNotify<T>(
+          tag: tag,
+          result: result,
+          closeType: closeType,
+          generation: generation,
+        );
         return;
       }
 
       final hasMatchingDialog = _dialogQueue.any(
         (record) =>
+            record.generation == generation &&
             (tag == null || record.matchesTag(tag)) &&
             (force || !record.permanent),
       );
@@ -35,12 +49,14 @@ extension _OverlayManagerDismiss on OverlayManager {
           force: force,
           type: null,
           closeType: closeType,
+          generation: generation,
         );
         return;
       }
 
-      if (tag == null || ToastTool.instance.hasTag(tag)) {
-        await ToastTool.instance.dismiss(tag: tag);
+      if (tag == null ||
+          ToastTool.instance.hasTag(tag, generation: generation)) {
+        await ToastTool.instance.dismiss(generation: generation, tag: tag);
       }
       return;
     }
@@ -58,6 +74,7 @@ extension _OverlayManagerDismiss on OverlayManager {
           _ => null,
         },
         closeType: closeType,
+        generation: generation,
       );
       return;
     }
@@ -75,17 +92,24 @@ extension _OverlayManagerDismiss on OverlayManager {
           _ => null,
         },
         closeType: closeType,
+        generation: generation,
       );
       return;
     }
 
     if (status == DismissStatus.notify) {
-      await _closeNotify<T>(tag: tag, result: result, closeType: closeType);
+      await _closeNotify<T>(
+        tag: tag,
+        result: result,
+        closeType: closeType,
+        generation: generation,
+      );
       return;
     }
 
     if (status == DismissStatus.allNotify) {
       final records = _notifyQueue
+          .where((record) => record.generation == generation)
           .where((record) => tag == null || record.matchesTag(tag))
           .toList(growable: false);
       for (final record in records.reversed) {
@@ -93,25 +117,30 @@ extension _OverlayManagerDismiss on OverlayManager {
           tag: record.tag,
           result: result,
           closeType: closeType,
+          generation: generation,
         );
       }
       return;
     }
 
     if (status == DismissStatus.loading) {
-      if (tag == null || loadingOverlay.matchesTag(tag)) {
-        await loadingOverlay.dismiss(closeType: closeType);
+      if (tag == null || generationLoading.matchesTag(tag)) {
+        await generationLoading.dismiss(closeType: closeType);
       }
       return;
     }
 
     if (status == DismissStatus.toast) {
-      await ToastTool.instance.dismiss(tag: tag);
+      await ToastTool.instance.dismiss(generation: generation, tag: tag);
       return;
     }
 
     if (status == DismissStatus.allToast) {
-      await ToastTool.instance.dismiss(closeAll: tag == null, tag: tag);
+      await ToastTool.instance.dismiss(
+        generation: generation,
+        closeAll: tag == null,
+        tag: tag,
+      );
     }
   }
 
@@ -121,8 +150,10 @@ extension _OverlayManagerDismiss on OverlayManager {
     required bool force,
     required OverlayType? type,
     required OverlayCloseType closeType,
+    required int generation,
   }) async {
     final records = _dialogQueue
+        .where((record) => record.generation == generation)
         .where((record) => type == null || record.type == type)
         .where((record) => tag == null || record.matchesTag(tag))
         .where((record) => force || !record.permanent)
@@ -135,6 +166,7 @@ extension _OverlayManagerDismiss on OverlayManager {
         force: force,
         type: record.type,
         closeType: closeType,
+        generation: generation,
       );
     }
   }
@@ -144,17 +176,28 @@ extension _OverlayManagerDismiss on OverlayManager {
     required bool force,
     required OverlayType? type,
     required OverlayCloseType closeType,
+    required int generation,
     String? tag,
   }) async {
-    final record = _findRecord(type: type, tag: tag, force: force);
+    final record = _findRecord(
+      type: type,
+      tag: tag,
+      force: force,
+      generation: generation,
+    );
     if (record == null || (record.permanent && !force)) {
       return;
     }
 
     _dialogQueue.remove(record);
+    _inFlightDialogRecords.add(record);
     record.displayTimer?.cancel();
-    await record.overlay.dismiss<T>(result: result, closeType: closeType);
-    record.overlay.overlayEntry.remove();
+    try {
+      await record.overlay.dismiss<T>(result: result, closeType: closeType);
+    } finally {
+      _inFlightDialogRecords.remove(record);
+      record.overlay.overlayEntry.remove();
+    }
   }
 
   void _scheduleDisplayTimer(_OverlayRecord record, Duration? displayTime) {
@@ -170,6 +213,7 @@ extension _OverlayManagerDismiss on OverlayManager {
                 ? DismissStatus.attach
                 : DismissStatus.custom,
         tag: record.tag,
+        generation: record.generation,
       );
     });
   }
@@ -181,7 +225,11 @@ extension _OverlayManagerDismiss on OverlayManager {
       return;
     }
     record.displayTimer = Timer(displayTime, () {
-      dismiss<void>(status: DismissStatus.notify, tag: record.tag);
+      dismiss<void>(
+        status: DismissStatus.notify,
+        tag: record.tag,
+        generation: record.generation,
+      );
     });
   }
 
@@ -189,15 +237,21 @@ extension _OverlayManagerDismiss on OverlayManager {
     String? tag,
     T? result,
     OverlayCloseType closeType = OverlayCloseType.normal,
+    required int generation,
   }) async {
-    final record = _findNotify(tag: tag);
+    final record = _findNotify(tag: tag, generation: generation);
     if (record == null) {
       return;
     }
 
     _notifyQueue.remove(record);
+    _inFlightNotifyRecords.add(record);
     record.displayTimer?.cancel();
-    await record.overlay.dismiss<T>(result: result, closeType: closeType);
-    record.overlay.overlayEntry.remove();
+    try {
+      await record.overlay.dismiss<T>(result: result, closeType: closeType);
+    } finally {
+      _inFlightNotifyRecords.remove(record);
+      record.overlay.overlayEntry.remove();
+    }
   }
 }

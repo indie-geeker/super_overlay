@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
 import 'overlay_manager.dart';
-import 'route_record.dart';
 
 class SuperOverlayObserver extends NavigatorObserver {
-  SuperOverlayObserver({VoidCallback? onDispose}) : _onDispose = onDispose;
+  SuperOverlayObserver({required Object ownerIdentity, VoidCallback? onDispose})
+    : _ownerIdentity = ownerIdentity,
+      _onDispose = onDispose;
 
+  final Object _ownerIdentity;
   VoidCallback? _onDispose;
   bool _disposed = false;
 
@@ -14,8 +16,8 @@ class SuperOverlayObserver extends NavigatorObserver {
     if (_disposed) {
       return;
     }
-    RouteRecord.instance.push(route);
     OverlayManager.instance.handleRoutePushed(
+      ownerIdentity: _ownerIdentity,
       route: route,
       previousRoute: previousRoute,
     );
@@ -26,8 +28,8 @@ class SuperOverlayObserver extends NavigatorObserver {
     if (_disposed) {
       return;
     }
-    RouteRecord.instance.pop(route, previousRoute);
     OverlayManager.instance.handleRoutePopped(
+      ownerIdentity: _ownerIdentity,
       route: route,
       previousRoute: previousRoute,
     );
@@ -38,8 +40,10 @@ class SuperOverlayObserver extends NavigatorObserver {
     if (_disposed) {
       return;
     }
-    RouteRecord.instance.remove(route);
-    OverlayManager.instance.handleRouteRemoved(route);
+    OverlayManager.instance.handleRouteRemoved(
+      ownerIdentity: _ownerIdentity,
+      route: route,
+    );
   }
 
   @override
@@ -47,16 +51,11 @@ class SuperOverlayObserver extends NavigatorObserver {
     if (_disposed) {
       return;
     }
-    RouteRecord.instance.replace(oldRoute: oldRoute, newRoute: newRoute);
-    if (oldRoute != null) {
-      OverlayManager.instance.handleRouteRemoved(oldRoute);
-    }
-    if (newRoute != null) {
-      OverlayManager.instance.handleRoutePushed(
-        route: newRoute,
-        previousRoute: null,
-      );
-    }
+    OverlayManager.instance.handleRouteReplaced(
+      ownerIdentity: _ownerIdentity,
+      oldRoute: oldRoute,
+      newRoute: newRoute,
+    );
   }
 
   void dispose() {

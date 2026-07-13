@@ -115,10 +115,12 @@ class SuperOverlayIntegration {
 /// removed. Root observers are released only by disposing their integration.
 class SuperOverlayNavigatorObserver extends SuperOverlayObserver {
   SuperOverlayNavigatorObserver._root(this._ownerIdentity)
-    : _allowPublicDispose = false;
+    : _allowPublicDispose = false,
+      super(ownerIdentity: _ownerIdentity);
 
   SuperOverlayNavigatorObserver._scoped(this._ownerIdentity, {super.onDispose})
-    : _allowPublicDispose = true;
+    : _allowPublicDispose = true,
+      super(ownerIdentity: _ownerIdentity);
 
   final Object _ownerIdentity;
   final bool _allowPublicDispose;
