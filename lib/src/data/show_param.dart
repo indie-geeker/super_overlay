@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/enum_config.dart';
 import '../kit/overlay_controller.dart';
 import '../kit/typedef.dart';
+import '../helper/overlay_route_owner.dart';
 
 class HighlightConfig {
   const HighlightConfig({
@@ -80,6 +81,7 @@ class ShowCustomParam extends ShowParamBase {
     required super.controller,
     required this.backType,
     required this.onBack,
+    this.routeOwner,
   });
 
   final bool debounce;
@@ -95,6 +97,7 @@ class ShowCustomParam extends ShowParamBase {
   final MaskTriggerType maskTriggerType;
   final BackType backType;
   final SuperOverlayOnBack? onBack;
+  final OverlayRouteOwner? routeOwner;
 
   ShowCustomParam copyWith({
     WidgetBuilder? builder,
@@ -125,6 +128,7 @@ class ShowCustomParam extends ShowParamBase {
     SuperOverlayController? controller,
     BackType? backType,
     SuperOverlayOnBack? onBack,
+    OverlayRouteOwner? routeOwner,
   }) {
     return ShowCustomParam(
       builder: builder ?? this.builder,
@@ -155,6 +159,7 @@ class ShowCustomParam extends ShowParamBase {
       controller: controller ?? this.controller,
       backType: backType ?? this.backType,
       onBack: onBack ?? this.onBack,
+      routeOwner: routeOwner ?? this.routeOwner,
     );
   }
 }
@@ -189,6 +194,7 @@ class ShowAttachParam extends ShowCustomParam {
     required super.controller,
     required super.backType,
     required super.onBack,
+    super.routeOwner,
     required this.targetContext,
     required this.targetRectBuilder,
     required this.targetPointBuilder,

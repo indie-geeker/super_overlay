@@ -86,18 +86,24 @@ extension _OverlayManagerLookup on OverlayManager {
     return null;
   }
 
-  bool _isRouteBoundRecord(_OverlayRecord record, Route<dynamic> route) {
+  bool _isRouteBoundRecord(
+    _OverlayRecord record,
+    Object scopeIdentity,
+    Route<dynamic> route,
+  ) {
+    final owner = record.routeOwner;
     return record.bindPage &&
-        identical(record.route, route) &&
-        record.route is! PopupRoute;
+        owner != null &&
+        identical(owner.scopeIdentity, scopeIdentity) &&
+        identical(owner.route, route) &&
+        owner.route is! PopupRoute;
   }
 
   bool _isRecordOnCurrentRoute(_OverlayRecord record) {
-    final currentRoute = _hosts[record.generation]?.routeRecord.currentRoute;
-    return currentRoute == null ||
-        identical(record.route, currentRoute) ||
-        currentRoute is PopupRoute ||
-        !record.bindPage;
+    final owner = record.routeOwner;
+    return !record.bindPage ||
+        owner == null ||
+        NavigatorScopeRegistry.instance.isOwnerCurrent(owner);
   }
 
   _OverlayRecord? _lastBackRecord({required int generation}) {
@@ -106,7 +112,10 @@ extension _OverlayManagerLookup on OverlayManager {
       final record = records[index];
       if (record.generation != generation ||
           record.permanent ||
-          !record.overlay.mainOverlay.visible) {
+          !record.overlay.mainOverlay.visible ||
+          record.presentationState == _OverlayPresentationState.suspended ||
+          record.presentationState ==
+              _OverlayPresentationState.suspendedBeforeVisible) {
         continue;
       }
       return record;

@@ -11,6 +11,7 @@ class SuperOverlayController {
 
   VoidCallback? _callback;
   final Completer<void> _visible = Completer<void>();
+  bool _presentationEnabled = true;
 
   Future<void> get visible => _visible.future;
 
@@ -29,9 +30,16 @@ class SuperOverlayController {
   }
 
   void markVisible() {
+    if (!_presentationEnabled) {
+      return;
+    }
     if (!_visible.isCompleted) {
       _visible.complete();
     }
+  }
+
+  void setPresentationEnabled(bool enabled) {
+    _presentationEnabled = enabled;
   }
 
   void failVisible(String message) {

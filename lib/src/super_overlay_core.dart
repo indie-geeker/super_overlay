@@ -11,6 +11,7 @@ import 'custom/toast_tool.dart';
 import 'data/notify_style.dart';
 import 'data/show_param.dart';
 import 'helper/overlay_manager.dart';
+import 'helper/overlay_route_owner.dart';
 import 'helper/navigator_observer.dart';
 import 'init_overlay.dart';
 import 'kit/overlay_controller.dart';
@@ -30,6 +31,7 @@ part 'builder/super_notify_overlay_builder.dart';
 part 'builder/super_popup_overlay_builder.dart';
 part 'builder/super_toast_overlay_builder.dart';
 part 'api/overlay_services.dart';
+part 'api/scoped_super_overlay.dart';
 part 'api/super_overlay_integration.dart';
 
 class SuperOverlay {
@@ -40,6 +42,20 @@ class SuperOverlay {
   static final OverlayDialogService dialog = OverlayDialogService();
   static final OverlayPopupService popup = OverlayPopupService();
   static final OverlayNotifyService notify = OverlayNotifyService();
+
+  /// Captures the exact observed Navigator route containing [context].
+  ///
+  /// Dialogs and popups created through the returned facade are owned by that
+  /// route. The matching Navigator must install an observer created by the
+  /// active [SuperOverlayIntegration].
+  static ScopedSuperOverlay of(BuildContext context) {
+    return ScopedSuperOverlay._(
+      OverlayManager.instance.captureRouteOwner(
+        context,
+        operation: 'SuperOverlay.of(context)',
+      ),
+    );
+  }
 
   /// The stable root observer used by the legacy [init] integration.
   static SuperOverlayNavigatorObserver get observer =>
@@ -79,8 +95,11 @@ class SuperOverlay {
     );
   }
 
-  static _SuperCustomOverlayBuilder _custom({required WidgetBuilder builder}) {
-    return _SuperCustomOverlayBuilder(builder: builder);
+  static _SuperCustomOverlayBuilder _custom({
+    required WidgetBuilder builder,
+    OverlayRouteOwner? routeOwner,
+  }) {
+    return _SuperCustomOverlayBuilder(builder: builder, routeOwner: routeOwner);
   }
 
   static _SuperLoadingOverlayBuilder _loading({
@@ -113,10 +132,12 @@ class SuperOverlay {
   static _SuperPopupOverlayBuilder _popup({
     BuildContext? targetContext,
     required WidgetBuilder builder,
+    OverlayRouteOwner? routeOwner,
   }) {
     return _SuperPopupOverlayBuilder(
       targetContext: targetContext,
       builder: builder,
+      routeOwner: routeOwner,
     );
   }
 

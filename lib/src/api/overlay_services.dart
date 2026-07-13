@@ -84,18 +84,38 @@ class OverlayDialogService {
     required WidgetBuilder builder,
     OverlayDialogOptions options = const OverlayDialogOptions(),
   }) {
+    return _show<T>(builder: builder, options: options);
+  }
+
+  OverlayHandle<T> _show<T>({
+    required WidgetBuilder builder,
+    required OverlayDialogOptions options,
+    OverlayRouteOwner? routeOwner,
+  }) {
     final manager = OverlayManager.instance;
     final generation = manager.requireActiveGeneration();
     final backType = _backTypeFor(options.backBehavior);
+    final capturedOwner =
+        routeOwner ??
+        (options.bindToRoute
+            ? manager.captureRootRouteOwner(
+              generation: generation,
+              operation: 'SuperOverlay dialog',
+            )
+            : null);
     manager.validateCommandRoute(
       generation: generation,
       bindToRoute: options.bindToRoute,
       backType: backType,
       onBack: null,
       operation: 'SuperOverlay dialog',
+      routeOwner: capturedOwner,
     );
     final controller = SuperOverlayController();
-    final command = SuperOverlay._custom(builder: builder)
+    final command = SuperOverlay._custom(
+          builder: builder,
+          routeOwner: capturedOwner,
+        )
         .withAlignment(options.alignment)
         .withMask(
           color: options.barrierColor,
@@ -155,10 +175,10 @@ class OverlayDialogService {
       close: lifecycle.close,
       refresh: controller.refresh,
       isVisible:
-          () => manager.checkExist(
+          () => manager.isDialogVisible(
             tag: identityTag,
             generation: generation,
-            types: const {OverlayType.custom},
+            type: OverlayType.custom,
           ),
     );
   }
@@ -174,20 +194,43 @@ class OverlayPopupService {
     required WidgetBuilder builder,
     OverlayPopupOptions options = const OverlayPopupOptions(),
   }) {
+    return _show<T>(
+      targetContext: targetContext,
+      builder: builder,
+      options: options,
+    );
+  }
+
+  OverlayHandle<T> _show<T>({
+    BuildContext? targetContext,
+    required WidgetBuilder builder,
+    required OverlayPopupOptions options,
+    OverlayRouteOwner? routeOwner,
+  }) {
     final manager = OverlayManager.instance;
     final generation = manager.requireActiveGeneration();
     final backType = _backTypeFor(options.backBehavior);
+    final capturedOwner =
+        routeOwner ??
+        (options.bindToRoute
+            ? manager.captureRootRouteOwner(
+              generation: generation,
+              operation: 'SuperOverlay popup',
+            )
+            : null);
     manager.validateCommandRoute(
       generation: generation,
       bindToRoute: options.bindToRoute,
       backType: backType,
       onBack: null,
       operation: 'SuperOverlay popup',
+      routeOwner: capturedOwner,
     );
     final controller = SuperOverlayController();
     final command = SuperOverlay._popup(
           targetContext: targetContext,
           builder: builder,
+          routeOwner: capturedOwner,
         )
         .withAlignment(options.alignment)
         .withMask(dismissible: options.dismissOnMaskTap)
@@ -274,10 +317,10 @@ class OverlayPopupService {
       close: lifecycle.close,
       refresh: controller.refresh,
       isVisible:
-          () => manager.checkExist(
+          () => manager.isDialogVisible(
             tag: identityTag,
             generation: generation,
-            types: const {OverlayType.attach},
+            type: OverlayType.attach,
           ),
     );
   }
@@ -734,11 +777,15 @@ OverlayHandle<T>? _existingOverlayHandle<T>({
     tag: tag,
     refresh: existingRefresh ?? refresh,
     isVisible:
-        () => OverlayManager.instance.checkExist(
-          tag: tag,
-          generation: generation,
-          types: {type},
-        ),
+        () => switch (type) {
+          OverlayType.custom || OverlayType.attach => OverlayManager.instance
+              .isDialogVisible(tag: tag, generation: generation, type: type),
+          _ => OverlayManager.instance.checkExist(
+            tag: tag,
+            generation: generation,
+            types: {type},
+          ),
+        },
   );
 }
 

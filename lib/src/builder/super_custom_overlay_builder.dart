@@ -1,10 +1,14 @@
 part of '../super_overlay_core.dart';
 
 class _SuperCustomOverlayBuilder {
-  _SuperCustomOverlayBuilder({required WidgetBuilder builder})
-    : _builder = builder;
+  _SuperCustomOverlayBuilder({
+    required WidgetBuilder builder,
+    OverlayRouteOwner? routeOwner,
+  }) : _builder = builder,
+       _routeOwner = routeOwner;
 
   WidgetBuilder _builder;
+  final OverlayRouteOwner? _routeOwner;
   Color? _maskColor;
   Widget? _maskWidget;
   bool _clickMaskDismiss = overlayConfig.custom.clickMaskDismiss;
@@ -161,6 +165,7 @@ class _SuperCustomOverlayBuilder {
         controller: _controller,
         backType: _backType,
         onBack: _onBack,
+        routeOwner: _routeOwner,
       ),
     );
   }

@@ -45,6 +45,11 @@ void main() {
     expect(OverlaySurface.dialog, isA<OverlaySurface>());
     expect(SuperOverlay.close, isA<Function>());
     expect(SuperOverlay.exists, isA<Function>());
+    expect(SuperOverlay.of, isA<ScopedSuperOverlay Function(BuildContext)>());
+    ScopedOverlayDialogService? scopedDialog;
+    ScopedOverlayPopupService? scopedPopup;
+    expect(scopedDialog, isNull);
+    expect(scopedPopup, isNull);
   });
 
   test('package entrypoint hides legacy fluent and config surface', () {

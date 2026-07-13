@@ -11,11 +11,12 @@ import '../custom/toast_tool.dart';
 import '../data/show_param.dart';
 import '../data/notify_style.dart';
 import '../kit/debounce_utils.dart';
+import '../kit/overlay_controller.dart';
 import '../kit/super_overlay_entry.dart';
 import '../kit/typedef.dart';
 import '../kit/view_utils.dart';
 import 'navigator_scope_registry.dart';
-import 'route_record.dart';
+import 'overlay_route_owner.dart';
 
 part 'overlay_manager_dismiss.dart';
 part 'overlay_manager_lifecycle.dart';
@@ -135,6 +136,32 @@ class OverlayManager {
 
   int requireActiveGeneration() => _commandHost.generation;
 
+  OverlayRouteOwner captureRouteOwner(
+    BuildContext context, {
+    required String operation,
+  }) {
+    final host = _commandHost;
+    return NavigatorScopeRegistry.instance.captureOwnerForContext(
+      ownerIdentity: host.ownerIdentity,
+      generation: host.generation,
+      context: context,
+      operation: operation,
+    );
+  }
+
+  OverlayRouteOwner captureRootRouteOwner({
+    required int generation,
+    required String operation,
+  }) {
+    requireActiveGenerationMatch(generation);
+    final host = _hostFor(generation);
+    return NavigatorScopeRegistry.instance.captureRootOwner(
+      ownerIdentity: host.ownerIdentity,
+      generation: generation,
+      operation: operation,
+    );
+  }
+
   int? globalCommandGeneration({bool allowEmpty = false}) {
     if (allowEmpty && _topology == _OverlayHostTopology.empty) {
       return null;
@@ -235,7 +262,6 @@ class OverlayManager {
       // surviving candidate accept commands or expose its defaults.
       final promoted = _candidates.removeAt(0);
       _activeHost = promoted;
-      RouteRecord.instance.replaceWith(promoted.routeRecord);
       _nextTagId = 0;
       _topology = _OverlayHostTopology.active;
       _syncBackDispositionForGeneration(promoted.generation);
@@ -285,7 +311,6 @@ class OverlayManager {
     host.loadingOverlay.disposeHost();
     ToastTool.instance.reset(generation: host.generation);
     DebounceUtils.instance.reset();
-    RouteRecord.instance.reset();
     _backAttemptsInProgress.remove(generation);
     _nextTagId = 0;
     _syncBackDispositionForGeneration(generation);
@@ -308,6 +333,7 @@ class OverlayManager {
       backType: param.backType,
       onBack: param.onBack,
       operation: 'SuperOverlay dialog',
+      routeOwner: param.routeOwner,
     );
     CustomOverlay? overlay;
     final entry = SuperOverlayEntry(builder: (_) => overlay!.getWidget());
@@ -323,6 +349,7 @@ class OverlayManager {
       backType: param.backType,
       onBack: param.onBack,
       operation: 'SuperOverlay popup',
+      routeOwner: param.routeOwner,
     );
     CustomOverlay? overlay;
     final entry = SuperOverlayEntry(builder: (_) => overlay!.getWidget());
@@ -377,6 +404,8 @@ class OverlayManager {
       bindWidget: param.bindWidget,
       backType: param.backType,
       onBack: param.onBack,
+      routeOwner: param.routeOwner,
+      controller: param.controller,
     );
   }
 
@@ -393,6 +422,8 @@ class OverlayManager {
       bindWidget: param.bindWidget,
       backType: param.backType,
       onBack: param.onBack,
+      routeOwner: param.routeOwner,
+      controller: param.controller,
     );
   }
 
@@ -470,6 +501,8 @@ class OverlayManager {
     required BuildContext? bindWidget,
     required BackType backType,
     required SuperOverlayOnBack? onBack,
+    required OverlayRouteOwner? routeOwner,
+    required SuperOverlayController? controller,
   }) {
     final host = _commandHost;
     final generation = host.generation;
@@ -514,20 +547,31 @@ class OverlayManager {
       tag: effectiveTag,
       businessTag: businessTag,
       permanent: permanent,
-      route:
-          bindPage
-              ? NavigatorScopeRegistry.instance.requireRootModalRoute(
-                ownerIdentity: host.ownerIdentity,
-                generation: generation,
-                operation: 'SuperOverlay route binding',
-              )
-              : host.routeRecord.currentRoute,
+      routeOwner: routeOwner,
       bindPage: bindPage,
       bindWidget: bindWidget,
       backType: backType,
       onBack: onBack,
     );
+    if (bindPage &&
+        routeOwner != null &&
+        !NavigatorScopeRegistry.instance.isOwnerCurrent(routeOwner)) {
+      record.presentationState =
+          _OverlayPresentationState.suspendedBeforeVisible;
+      record.overlay.hide();
+    }
     _dialogQueue.addLast(record);
+    final visible = controller?.visible;
+    if (visible != null) {
+      unawaited(
+        visible.then<void>((_) {
+          if (_dialogQueue.contains(record) &&
+              record.presentationState == _OverlayPresentationState.showing) {
+            record.presentationState = _OverlayPresentationState.visible;
+          }
+        }, onError: (Object _, StackTrace __) {}),
+      );
+    }
     _syncBackDispositionForGeneration(generation);
     _scheduleDisplayTimer(record, displayTime);
 
@@ -623,6 +667,26 @@ class OverlayManager {
     return false;
   }
 
+  bool isDialogVisible({
+    required String tag,
+    required int generation,
+    required OverlayType type,
+  }) {
+    if (!ownsGeneration(generation)) {
+      return false;
+    }
+    final record = _findRecord(
+      type: type,
+      tag: tag,
+      force: true,
+      generation: generation,
+    );
+    return record != null &&
+        record.overlay.mainOverlay.visible &&
+        (record.presentationState == _OverlayPresentationState.showing ||
+            record.presentationState == _OverlayPresentationState.visible);
+  }
+
   Future<T?>? existingClosedFuture<T>({
     required String tag,
     required OverlayType type,
@@ -695,32 +759,32 @@ class OverlayManager {
     return record?.overlay.mainOverlay.currentRefresh;
   }
 
-  bool get hasWidgetBoundOverlays {
-    return _dialogQueue.any((record) => record.bindWidget != null);
+  bool get hasMonitoredOverlays {
+    return _dialogQueue.any(
+      (record) =>
+          record.bindWidget != null ||
+          (record.bindPage && record.routeOwner != null),
+    );
   }
 
   void handleRoutePushed({
     required Object ownerIdentity,
+    required Object scopeIdentity,
     required Route<dynamic> route,
     required Route<dynamic>? previousRoute,
   }) {
     final host = _routeHostForOwner(ownerIdentity);
-    if (host == null) {
+    if (host == null || !_isActiveRouteHost(host)) {
       return;
     }
-    host.routeRecord.push(route);
-    if (!_isActiveRouteHost(host)) {
-      return;
-    }
-    RouteRecord.instance.replaceWith(host.routeRecord);
     if (route is PopupRoute || previousRoute == null) {
       return;
     }
 
     for (final record in _dialogQueue) {
       if (record.generation == host.generation &&
-          _isRouteBoundRecord(record, previousRoute)) {
-        record.overlay.hide();
+          _isRouteBoundRecord(record, scopeIdentity, previousRoute)) {
+        _suspendRecord(record);
       }
     }
     _syncBackDispositionForGeneration(host.generation);
@@ -728,27 +792,23 @@ class OverlayManager {
 
   void handleRoutePopped({
     required Object ownerIdentity,
+    required Object scopeIdentity,
     required Route<dynamic> route,
     required Route<dynamic>? previousRoute,
   }) {
     final host = _routeHostForOwner(ownerIdentity);
-    if (host == null) {
+    if (host == null || !_isActiveRouteHost(host)) {
       return;
     }
-    host.routeRecord.pop(route, previousRoute);
-    if (!_isActiveRouteHost(host)) {
-      return;
-    }
-    RouteRecord.instance.replaceWith(host.routeRecord);
-    _closeRouteBoundRecords(host.generation, route);
+    _closeRouteBoundRecords(host.generation, scopeIdentity, route);
     if (route is PopupRoute || previousRoute == null) {
       return;
     }
 
     for (final record in _dialogQueue) {
       if (record.generation == host.generation &&
-          _isRouteBoundRecord(record, previousRoute)) {
-        record.overlay.appear();
+          _isRouteBoundRecord(record, scopeIdentity, previousRoute)) {
+        _resumeRecord(record);
       }
     }
     _syncBackDispositionForGeneration(host.generation);
@@ -756,37 +816,51 @@ class OverlayManager {
 
   void handleRouteRemoved({
     required Object ownerIdentity,
+    required Object scopeIdentity,
     required Route<dynamic> route,
   }) {
     final host = _routeHostForOwner(ownerIdentity);
-    if (host == null) {
+    if (host == null || !_isActiveRouteHost(host)) {
       return;
     }
-    host.routeRecord.remove(route);
-    if (!_isActiveRouteHost(host)) {
-      return;
-    }
-    RouteRecord.instance.replaceWith(host.routeRecord);
-    _closeRouteBoundRecords(host.generation, route);
+    _closeRouteBoundRecords(host.generation, scopeIdentity, route);
   }
 
   void handleRouteReplaced({
     required Object ownerIdentity,
+    required Object scopeIdentity,
     required Route<dynamic>? oldRoute,
     required Route<dynamic>? newRoute,
   }) {
     final host = _routeHostForOwner(ownerIdentity);
-    if (host == null) {
+    if (host == null || !_isActiveRouteHost(host)) {
       return;
     }
-    host.routeRecord.replace(oldRoute: oldRoute, newRoute: newRoute);
-    if (!_isActiveRouteHost(host)) {
-      return;
-    }
-    RouteRecord.instance.replaceWith(host.routeRecord);
     if (oldRoute != null) {
-      _closeRouteBoundRecords(host.generation, oldRoute);
+      _closeRouteBoundRecords(host.generation, scopeIdentity, oldRoute);
     }
+  }
+
+  void handleObserverDisposed({
+    required Object ownerIdentity,
+    required Object scopeIdentity,
+  }) {
+    final host = _routeHostForOwner(ownerIdentity);
+    if (host == null || !_isActiveRouteHost(host)) {
+      return;
+    }
+    final records = _dialogQueue
+        .where(
+          (record) =>
+              record.generation == host.generation &&
+              record.bindPage &&
+              identical(record.routeOwner?.scopeIdentity, scopeIdentity),
+        )
+        .toList(growable: false);
+    for (final record in records.reversed) {
+      _closeRouteBoundRecord(record);
+    }
+    _syncBackDispositionForGeneration(host.generation);
   }
 
   _OverlayHostState? _routeHostForOwner(Object ownerIdentity) {
@@ -810,7 +884,11 @@ class OverlayManager {
     return identical(host, _activeHost) && !host.resourcesDisposed;
   }
 
-  void _closeRouteBoundRecords(int generation, Route<dynamic> route) {
+  void _closeRouteBoundRecords(
+    int generation,
+    Object scopeIdentity,
+    Route<dynamic> route,
+  ) {
     if (route is PopupRoute) {
       return;
     }
@@ -819,21 +897,67 @@ class OverlayManager {
         .where(
           (record) =>
               record.generation == generation &&
-              _isRouteBoundRecord(record, route),
+              _isRouteBoundRecord(record, scopeIdentity, route),
         )
         .toList(growable: false);
     for (final record in removeList.reversed) {
-      unawaited(
-        _closeSingle<void>(
-          tag: record.tag,
-          result: null,
-          force: true,
-          type: record.type,
-          closeType: OverlayCloseType.route,
-          generation: record.generation,
-        ),
-      );
+      _closeRouteBoundRecord(record);
     }
+  }
+
+  void _closeRouteBoundRecord(_OverlayRecord record) {
+    if (record.presentationState == _OverlayPresentationState.closing ||
+        record.presentationState == _OverlayPresentationState.closed) {
+      return;
+    }
+    record.presentationState = _OverlayPresentationState.closing;
+    unawaited(
+      _closeSingle<void>(
+        tag: record.tag,
+        result: null,
+        force: true,
+        type: record.type,
+        closeType: OverlayCloseType.route,
+        generation: record.generation,
+      ).whenComplete(() {
+        record.presentationState = _OverlayPresentationState.closed;
+      }),
+    );
+  }
+
+  void _suspendRecord(_OverlayRecord record) {
+    switch (record.presentationState) {
+      case _OverlayPresentationState.showing:
+        record.presentationState =
+            _OverlayPresentationState.suspendedBeforeVisible;
+        break;
+      case _OverlayPresentationState.visible:
+        record.presentationState = _OverlayPresentationState.suspended;
+        break;
+      case _OverlayPresentationState.suspendedBeforeVisible:
+      case _OverlayPresentationState.suspended:
+      case _OverlayPresentationState.closing:
+      case _OverlayPresentationState.closed:
+        return;
+    }
+    record.overlay.hide();
+  }
+
+  void _resumeRecord(_OverlayRecord record) {
+    switch (record.presentationState) {
+      case _OverlayPresentationState.suspendedBeforeVisible:
+        record.presentationState = _OverlayPresentationState.showing;
+        break;
+      case _OverlayPresentationState.suspended:
+        record.presentationState = _OverlayPresentationState.visible;
+        break;
+      case _OverlayPresentationState.showing:
+      case _OverlayPresentationState.visible:
+      case _OverlayPresentationState.closing:
+      case _OverlayPresentationState.closed:
+        return;
+    }
+    record.overlay.appear();
   }
 
   Future<bool> handleBackEvent() {
@@ -900,7 +1024,23 @@ class OverlayManager {
     required BackType backType,
     required SuperOverlayOnBack? onBack,
     required String operation,
+    OverlayRouteOwner? routeOwner,
   }) {
+    if (routeOwner != null) {
+      requireActiveGenerationMatch(generation);
+      final host = _hostFor(generation);
+      final invocationContext = routeOwner.invocationContext;
+      if (routeOwner.generation != generation ||
+          !identical(routeOwner.ownerIdentity, host.ownerIdentity) ||
+          !NavigatorScopeRegistry.instance.isOwnerTracked(routeOwner) ||
+          (invocationContext is Element && !invocationContext.mounted)) {
+        throw StateError(
+          '$operation route owner is no longer attached to the active '
+          'SuperOverlayIntegration.',
+        );
+      }
+      return;
+    }
     if (!bindToRoute && backType == BackType.ignore && onBack == null) {
       return;
     }

@@ -4,10 +4,13 @@ class _SuperPopupOverlayBuilder {
   _SuperPopupOverlayBuilder({
     required this.targetContext,
     required WidgetBuilder builder,
-  }) : _builder = builder;
+    OverlayRouteOwner? routeOwner,
+  }) : _builder = builder,
+       _routeOwner = routeOwner;
 
   final BuildContext? targetContext;
   WidgetBuilder _builder;
+  final OverlayRouteOwner? _routeOwner;
   Alignment _alignment = overlayConfig.attach.alignment;
   Color? _maskColor = Colors.transparent;
   Widget? _maskWidget;
@@ -176,6 +179,7 @@ class _SuperPopupOverlayBuilder {
         controller: _controller,
         backType: _backType,
         onBack: _onBack,
+        routeOwner: _routeOwner,
         targetContext: targetContext,
         targetRectBuilder: _targetRectBuilder,
         targetPointBuilder: _targetPointBuilder,

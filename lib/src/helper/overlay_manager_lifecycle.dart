@@ -86,6 +86,33 @@ extension _OverlayManagerLifecycle on OverlayManager {
   void _handleWidgetBindingFrame() {
     final removeList = <_OverlayRecord>[];
     for (final record in _dialogQueue.toList(growable: false)) {
+      final owner = record.routeOwner;
+      if (record.bindPage && owner != null) {
+        final scopeTracked = NavigatorScopeRegistry.instance.isOwnerTracked(
+          owner,
+        );
+        final invocationContext = owner.invocationContext;
+        final invocationMounted =
+            invocationContext is! Element || invocationContext.mounted;
+        if (scopeTracked && invocationMounted) {
+          record.detachedFrameCount = 0;
+        } else {
+          record.detachedFrameCount++;
+          if (record.detachedFrameCount == 1) {
+            widgetsBinding.ensureVisualUpdate();
+          }
+          if (record.detachedFrameCount >= 2) {
+            removeList.add(record);
+            if (!scopeTracked) {
+              NavigatorScopeRegistry.instance.pruneDetachedScope(
+                owner.scopeIdentity,
+              );
+            }
+          }
+          continue;
+        }
+      }
+
       final context = record.bindWidget;
       if (context == null) {
         continue;

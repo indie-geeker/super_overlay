@@ -189,6 +189,7 @@ extension _OverlayManagerDismiss on OverlayManager {
       return;
     }
 
+    record.presentationState = _OverlayPresentationState.closing;
     _dialogQueue.remove(record);
     _inFlightDialogRecords.add(record);
     _syncBackDispositionForGeneration(generation);
@@ -197,6 +198,7 @@ extension _OverlayManagerDismiss on OverlayManager {
       await record.overlay.dismiss<T>(result: result, closeType: closeType);
     } finally {
       _inFlightDialogRecords.remove(record);
+      record.presentationState = _OverlayPresentationState.closed;
       record.overlay.overlayEntry.remove();
       _syncBackDispositionForGeneration(generation);
     }

@@ -21,14 +21,14 @@ class MonitorWidgetHelper {
   void _handleFrame(Duration timeStamp) {
     if (_checking ||
         _scheduled ||
-        !OverlayManager.instance.hasWidgetBoundOverlays) {
+        !OverlayManager.instance.hasMonitoredOverlays) {
       return;
     }
 
     _scheduled = true;
     widgetsBinding.addPostFrameCallback((_) {
       _scheduled = false;
-      if (_checking || !OverlayManager.instance.hasWidgetBoundOverlays) {
+      if (_checking || !OverlayManager.instance.hasMonitoredOverlays) {
         return;
       }
 

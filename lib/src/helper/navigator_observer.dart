@@ -10,11 +10,12 @@ class SuperOverlayObserver extends NavigatorObserver {
     VoidCallback? onDispose,
   }) : _ownerIdentity = ownerIdentity,
        _onDispose = onDispose {
+    final weakObserver = WeakReference<SuperOverlayObserver>(this);
     NavigatorScopeRegistry.instance.registerObserver(
       ownerIdentity: ownerIdentity,
       scopeIdentity: _scopeIdentity,
       isRoot: isRoot,
-      navigatorState: () => navigator,
+      navigatorState: () => weakObserver.target?.navigator,
       onBackRequested: OverlayManager.instance.handleBackEventForGeneration,
     );
   }
@@ -35,6 +36,7 @@ class SuperOverlayObserver extends NavigatorObserver {
     );
     OverlayManager.instance.handleRoutePushed(
       ownerIdentity: _ownerIdentity,
+      scopeIdentity: _scopeIdentity,
       route: route,
       previousRoute: previousRoute,
     );
@@ -52,6 +54,7 @@ class SuperOverlayObserver extends NavigatorObserver {
     );
     OverlayManager.instance.handleRoutePopped(
       ownerIdentity: _ownerIdentity,
+      scopeIdentity: _scopeIdentity,
       route: route,
       previousRoute: previousRoute,
     );
@@ -69,6 +72,7 @@ class SuperOverlayObserver extends NavigatorObserver {
     );
     OverlayManager.instance.handleRouteRemoved(
       ownerIdentity: _ownerIdentity,
+      scopeIdentity: _scopeIdentity,
       route: route,
     );
   }
@@ -85,6 +89,7 @@ class SuperOverlayObserver extends NavigatorObserver {
     );
     OverlayManager.instance.handleRouteReplaced(
       ownerIdentity: _ownerIdentity,
+      scopeIdentity: _scopeIdentity,
       oldRoute: oldRoute,
       newRoute: newRoute,
     );
@@ -106,6 +111,10 @@ class SuperOverlayObserver extends NavigatorObserver {
       return;
     }
     _disposed = true;
+    OverlayManager.instance.handleObserverDisposed(
+      ownerIdentity: _ownerIdentity,
+      scopeIdentity: _scopeIdentity,
+    );
     NavigatorScopeRegistry.instance.unregisterObserver(_scopeIdentity);
     final onDispose = _onDispose;
     _onDispose = null;

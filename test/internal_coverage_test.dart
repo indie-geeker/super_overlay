@@ -122,12 +122,14 @@ void main() {
     expect(copy.controller, same(replacementController));
     expect(copy.backType, BackType.block);
     expect(copy.onBack?.call(), isFalse);
+    expect(copy.routeOwner, isNull);
     expect(backed, isTrue);
 
     final fallback = base.copyWith();
     expect(fallback.alignment, base.alignment);
     expect(fallback.controller, same(controller));
     expect(fallback.tag, 'base');
+    expect(fallback.routeOwner, isNull);
   });
 
   test('NotifyStyle routes every notification type to its builder', () {

@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/widgets.dart';
 
+import 'overlay_route_owner.dart';
 import 'overlay_pop_entry.dart';
 
 /// Tracks the route-level pop gates installed by SuperOverlay observers.
@@ -28,8 +29,11 @@ class NavigatorScopeRegistry {
   @visibleForTesting
   int get debugTrackedRouteCount => _scopes.values.fold<int>(
     0,
-    (count, scope) => count + scope._routes.length,
+    (count, scope) => count + scope.trackedRouteCount,
   );
+
+  @visibleForTesting
+  int get debugRegisteredScopeCount => _scopes.length;
 
   void registerObserver({
     required Object ownerIdentity,
@@ -42,6 +46,7 @@ class NavigatorScopeRegistry {
       return;
     }
     final scope = _NavigatorScope(
+      scopeIdentity: scopeIdentity,
       ownerIdentity: ownerIdentity,
       isRoot: isRoot,
       navigatorState: navigatorState,
@@ -239,6 +244,13 @@ class NavigatorScopeRegistry {
     }
   }
 
+  void pruneDetachedScope(Object scopeIdentity) {
+    final scope = _scopes[scopeIdentity];
+    if (scope != null && !scope.isAttached()) {
+      unregisterObserver(scopeIdentity);
+    }
+  }
+
   ModalRoute<dynamic> requireRootModalRoute({
     required Object ownerIdentity,
     required int generation,
@@ -263,6 +275,85 @@ class NavigatorScopeRegistry {
       );
     }
     return route;
+  }
+
+  OverlayRouteOwner captureRootOwner({
+    required Object ownerIdentity,
+    required int generation,
+    required String operation,
+  }) {
+    final route = requireRootModalRoute(
+      ownerIdentity: ownerIdentity,
+      generation: generation,
+      operation: operation,
+    );
+    final scope = _scopesForOwner(
+      ownerIdentity,
+    ).singleWhere((scope) => scope.isRoot && scope.generation == generation);
+    final navigator = scope.navigatorState();
+    if (navigator == null) {
+      throw StateError('$operation requires an attached root Navigator.');
+    }
+    return OverlayRouteOwner(
+      generation: generation,
+      ownerIdentity: ownerIdentity,
+      scopeIdentity: scope.scopeIdentity,
+      route: route,
+      invocationContext: route.subtreeContext ?? navigator.context,
+    );
+  }
+
+  OverlayRouteOwner captureOwnerForContext({
+    required Object ownerIdentity,
+    required int generation,
+    required BuildContext context,
+    required String operation,
+  }) {
+    final route = ModalRoute.of(context);
+    if (route == null) {
+      throw StateError(
+        '$operation requires a context below a ModalRoute observed by the '
+        'active SuperOverlayIntegration.',
+      );
+    }
+    final matches = _scopesForOwner(ownerIdentity)
+        .where(
+          (scope) =>
+              scope.generation == generation &&
+              scope.isAttached() &&
+              scope.ownsAttachedRoute(route),
+        )
+        .toList(growable: false);
+    if (matches.length != 1) {
+      throw StateError(
+        '$operation requires the exact Navigator containing the supplied '
+        'context to install an observer created by the active '
+        'SuperOverlayIntegration.',
+      );
+    }
+    final scope = matches.single;
+    return OverlayRouteOwner(
+      generation: generation,
+      ownerIdentity: ownerIdentity,
+      scopeIdentity: scope.scopeIdentity,
+      route: route,
+      invocationContext: context,
+    );
+  }
+
+  bool isOwnerTracked(OverlayRouteOwner owner) {
+    final scope = _scopes[owner.scopeIdentity];
+    return scope != null &&
+        identical(scope.ownerIdentity, owner.ownerIdentity) &&
+        scope.generation == owner.generation &&
+        scope.ownsAttachedRoute(owner.route);
+  }
+
+  bool isOwnerCurrent(OverlayRouteOwner owner) {
+    final scope = _scopes[owner.scopeIdentity];
+    return isOwnerTracked(owner) &&
+        scope != null &&
+        scope.isLifecycleCurrent(owner.route);
   }
 
   Iterable<_NavigatorScope> _scopesForOwner(Object ownerIdentity) {
@@ -303,27 +394,61 @@ class NavigatorScopeRegistry {
 
 class _NavigatorScope {
   _NavigatorScope({
+    required this.scopeIdentity,
     required this.ownerIdentity,
     required this.isRoot,
     required this.navigatorState,
     required this.onBackRequested,
   });
 
+  final Object scopeIdentity;
   final Object ownerIdentity;
   final bool isRoot;
   final NavigatorState? Function() navigatorState;
   final OverlayBackRequest onBackRequested;
-  final List<Route<dynamic>> _routes = <Route<dynamic>>[];
-  final Map<ModalRoute<dynamic>, OverlayPopEntry> _entries =
-      HashMap<ModalRoute<dynamic>, OverlayPopEntry>.identity();
+  final List<WeakReference<Route<dynamic>>> _routes =
+      <WeakReference<Route<dynamic>>>[];
+  final List<_WeakPopEntryRegistration> _entries =
+      <_WeakPopEntryRegistration>[];
 
   int? generation;
-  Route<dynamic>? currentRoute;
+  WeakReference<Route<dynamic>>? _currentRoute;
   _WeakRootRouteSnapshot? _pendingRootTransfer;
   Object? _pendingRootTransferToken;
   bool _disposed = false;
 
+  Route<dynamic>? get currentRoute => _currentRoute?.target;
+
+  set currentRoute(Route<dynamic>? route) {
+    _currentRoute = route == null ? null : WeakReference<Route<dynamic>>(route);
+  }
+
+  int get trackedRouteCount => _resolveRoutes().length;
+
   bool isAttached() => navigatorState() != null;
+
+  bool containsRoute(Route<dynamic> route) =>
+      _resolveRoutes().any((candidate) => identical(candidate, route));
+
+  bool ownsAttachedRoute(Route<dynamic> route) {
+    final navigator = navigatorState();
+    return navigator != null &&
+        identical(route.navigator, navigator) &&
+        containsRoute(route);
+  }
+
+  bool isLifecycleCurrent(Route<dynamic> route) {
+    if (route is PopupRoute<dynamic>) {
+      return identical(currentRoute, route);
+    }
+    for (final candidate in _resolveRoutes().reversed) {
+      if (candidate is PopupRoute<dynamic>) {
+        continue;
+      }
+      return identical(candidate, route);
+    }
+    return false;
+  }
 
   void bindGeneration(int value) {
     if (_disposed || generation == value) {
@@ -347,8 +472,8 @@ class _NavigatorScope {
     if (_disposed || generation == null) {
       return;
     }
-    if (!_routes.any((candidate) => identical(candidate, route))) {
-      _routes.add(route);
+    if (!_resolveRoutes().any((candidate) => identical(candidate, route))) {
+      _routes.add(WeakReference<Route<dynamic>>(route));
       _register(route);
     }
     currentRoute = route;
@@ -364,9 +489,10 @@ class _NavigatorScope {
       return;
     }
     _unregister(route);
-    _routes.removeWhere((candidate) => identical(candidate, route));
+    _routes.removeWhere((candidate) => identical(candidate.target, route));
     if (identical(currentRoute, route)) {
-      currentRoute = previousRoute ?? (_routes.isEmpty ? null : _routes.last);
+      final routes = _resolveRoutes();
+      currentRoute = previousRoute ?? (routes.isEmpty ? null : routes.last);
     }
     updateBackDisposition(backBlocked);
   }
@@ -387,24 +513,26 @@ class _NavigatorScope {
     if (_disposed) {
       return;
     }
+    final routes = _resolveRoutes();
     var index = -1;
     if (oldRoute != null) {
-      index = _routes.indexWhere((route) => identical(route, oldRoute));
+      index = routes.indexWhere((route) => identical(route, oldRoute));
       _unregister(oldRoute);
       if (index >= 0) {
-        _routes.removeAt(index);
+        routes.removeAt(index);
       }
     }
     if (newRoute != null && generation != null) {
-      if (index < 0 || index > _routes.length) {
-        _routes.add(newRoute);
+      if (index < 0 || index > routes.length) {
+        routes.add(newRoute);
       } else {
-        _routes.insert(index, newRoute);
+        routes.insert(index, newRoute);
       }
       _register(newRoute);
     }
+    _replaceResolvedRoutes(routes);
     if (oldRoute == null || identical(currentRoute, oldRoute)) {
-      currentRoute = newRoute ?? (_routes.isEmpty ? null : _routes.last);
+      currentRoute = newRoute ?? (routes.isEmpty ? null : routes.last);
     }
     updateBackDisposition(backBlocked);
   }
@@ -413,8 +541,8 @@ class _NavigatorScope {
     if (_disposed || generation == null) {
       return;
     }
-    if (!_routes.any((candidate) => identical(candidate, route))) {
-      _routes.add(route);
+    if (!_resolveRoutes().any((candidate) => identical(candidate, route))) {
+      _routes.add(WeakReference<Route<dynamic>>(route));
       _register(route);
     }
     currentRoute = route;
@@ -425,9 +553,10 @@ class _NavigatorScope {
     if (_disposed) {
       return;
     }
-    for (final entry in _entries.entries) {
-      entry.value.updateCanPop(
-        !(blocked && identical(entry.key, currentRoute)),
+    _pruneDeadReferences();
+    for (final registration in _entries) {
+      registration.entry.updateCanPop(
+        !(blocked && identical(registration.route.target, currentRoute)),
       );
     }
   }
@@ -441,13 +570,14 @@ class _NavigatorScope {
     }
     final sourceNavigator = navigatorState();
     final current = currentRoute;
+    final routes = _resolveRoutes();
     final snapshot =
-        sourceNavigator == null || current == null || _routes.isEmpty
+        sourceNavigator == null || current == null || routes.isEmpty
             ? null
             : _WeakRootRouteSnapshot(
               sourceNavigator: WeakReference<NavigatorState>(sourceNavigator),
               routes: <WeakReference<Route<dynamic>>>[
-                for (final route in _routes)
+                for (final route in routes)
                   WeakReference<Route<dynamic>>(route),
               ],
               currentRoute: WeakReference<Route<dynamic>>(current),
@@ -522,14 +652,14 @@ class _NavigatorScope {
     if (_disposed || generation == null) {
       return;
     }
-    final observedRoutes = List<Route<dynamic>>.of(_routes);
+    final observedRoutes = _resolveRoutes();
     final observedCurrentRoute = currentRoute;
     _routes.clear();
     for (final route in <Route<dynamic>>[...routes, ...observedRoutes]) {
-      if (_routes.any((candidate) => identical(candidate, route))) {
+      if (_resolveRoutes().any((candidate) => identical(candidate, route))) {
         continue;
       }
-      _routes.add(route);
+      _routes.add(WeakReference<Route<dynamic>>(route));
       _register(route);
     }
     currentRoute = observedCurrentRoute ?? restoredCurrentRoute;
@@ -542,7 +672,10 @@ class _NavigatorScope {
   }
 
   void _register(Route<dynamic> route) {
-    if (route is! ModalRoute<dynamic> || _entries.containsKey(route)) {
+    if (route is! ModalRoute<dynamic> ||
+        _entries.any(
+          (registration) => identical(registration.route.target, route),
+        )) {
       return;
     }
     final value = generation;
@@ -553,7 +686,12 @@ class _NavigatorScope {
       generation: value,
       onBackRequested: onBackRequested,
     );
-    _entries[route] = entry;
+    _entries.add(
+      _WeakPopEntryRegistration(
+        route: WeakReference<ModalRoute<dynamic>>(route),
+        entry: entry,
+      ),
+    );
     route.registerPopEntry(entry);
   }
 
@@ -561,20 +699,57 @@ class _NavigatorScope {
     if (route is! ModalRoute<dynamic>) {
       return;
     }
-    final entry = _entries.remove(route);
-    if (entry == null) {
+    final index = _entries.indexWhere(
+      (registration) => identical(registration.route.target, route),
+    );
+    if (index < 0) {
       return;
     }
+    final entry = _entries.removeAt(index).entry;
     route.unregisterPopEntry(entry);
     entry.dispose();
   }
 
   void _clearRoutes() {
-    for (final route in _entries.keys.toList(growable: false)) {
-      _unregister(route);
+    for (final registration in _entries.toList(growable: false)) {
+      final route = registration.route.target;
+      if (route == null) {
+        _entries.remove(registration);
+        registration.entry.dispose();
+      } else {
+        _unregister(route);
+      }
     }
     _routes.clear();
     currentRoute = null;
+  }
+
+  List<Route<dynamic>> _resolveRoutes() {
+    _pruneDeadReferences();
+    return <Route<dynamic>>[
+      for (final reference in _routes)
+        if (reference.target case final route?) route,
+    ];
+  }
+
+  void _replaceResolvedRoutes(List<Route<dynamic>> routes) {
+    _routes
+      ..clear()
+      ..addAll(routes.map(WeakReference<Route<dynamic>>.new));
+  }
+
+  void _pruneDeadReferences() {
+    _routes.removeWhere((reference) => reference.target == null);
+    final deadEntries = _entries
+        .where((registration) => registration.route.target == null)
+        .toList(growable: false);
+    for (final registration in deadEntries) {
+      _entries.remove(registration);
+      registration.entry.dispose();
+    }
+    if (_currentRoute?.target == null) {
+      _currentRoute = null;
+    }
   }
 
   void dispose() {
@@ -589,6 +764,13 @@ class _NavigatorScope {
 }
 
 enum _RootTransferAttempt { pending, complete }
+
+class _WeakPopEntryRegistration {
+  const _WeakPopEntryRegistration({required this.route, required this.entry});
+
+  final WeakReference<ModalRoute<dynamic>> route;
+  final OverlayPopEntry entry;
+}
 
 class _WeakRootRouteSnapshot {
   const _WeakRootRouteSnapshot({

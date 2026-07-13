@@ -17,7 +17,7 @@ class MainOverlay {
 
   final SuperOverlayEntry overlayEntry;
 
-  bool visible = true;
+  bool _visible = true;
   Widget _widget = const SizedBox.shrink();
   Completer<dynamic>? _completer;
   VoidCallback? _onDismiss;
@@ -25,6 +25,13 @@ class MainOverlay {
   SuperOverlayController? _controller;
   OverlayDialogWidgetController? _dialogController;
   Type? _resultType;
+
+  bool get visible => _visible;
+
+  set visible(bool value) {
+    _visible = value;
+    _controller?.setPresentationEnabled(value);
+  }
 
   Future<T?> show<T>({
     required ShowCustomParam param,
@@ -81,6 +88,7 @@ class MainOverlay {
       _controller?.dismiss();
     }
     _controller = controller;
+    controller?.setPresentationEnabled(visible);
   }
 
   Future<T?> _completionFuture<T>(ShowCustomParam param) {
@@ -174,5 +182,5 @@ class MainOverlay {
     _resultType = null;
   }
 
-  Widget getWidget() => Offstage(offstage: !visible, child: _widget);
+  Widget getWidget() => visible ? _widget : const SizedBox.shrink();
 }

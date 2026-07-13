@@ -39,7 +39,6 @@ class _OverlayHostState {
   BuildContext? contextAttach;
   BuildContext? contextNotify;
   BuildContext? contextToast;
-  final RouteRecord routeRecord = RouteRecord();
   Object? view;
   bool mounted = true;
   bool resourcesDisposed = false;
@@ -63,7 +62,6 @@ class _OverlayHostState {
     contextAttach = null;
     contextNotify = null;
     contextToast = null;
-    routeRecord.reset();
     view = null;
   }
 }
@@ -76,7 +74,7 @@ class _OverlayRecord {
     required this.tag,
     required this.businessTag,
     required this.permanent,
-    required this.route,
+    required this.routeOwner,
     required this.bindPage,
     required this.bindWidget,
     required this.backType,
@@ -88,15 +86,27 @@ class _OverlayRecord {
   final OverlayType type;
   final String tag;
   final String? businessTag;
-  final Route<dynamic>? route;
+  final OverlayRouteOwner? routeOwner;
   final bool bindPage;
   final BuildContext? bindWidget;
   final BackType backType;
   final SuperOverlayOnBack? onBack;
   bool permanent;
   Timer? displayTimer;
+  int detachedFrameCount = 0;
+  _OverlayPresentationState presentationState =
+      _OverlayPresentationState.showing;
 
   bool matchesTag(String value) => tag == value || businessTag == value;
+}
+
+enum _OverlayPresentationState {
+  showing,
+  suspendedBeforeVisible,
+  visible,
+  suspended,
+  closing,
+  closed,
 }
 
 class _NotifyRecord {

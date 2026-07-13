@@ -224,6 +224,7 @@ class _OverlayDialogWidgetState extends State<OverlayDialogWidget>
 
   @override
   void dispose() {
+    widget.controller._unbind(this);
     _maskController.dispose();
     _bodyController.dispose();
     super.dispose();
@@ -235,6 +236,12 @@ class OverlayDialogWidgetController {
 
   void _bind(_OverlayDialogWidgetState state) {
     _state = state;
+  }
+
+  void _unbind(_OverlayDialogWidgetState state) {
+    if (identical(_state, state)) {
+      _state = null;
+    }
   }
 
   Future<void> dismiss({OverlayCloseType closeType = OverlayCloseType.normal}) {
