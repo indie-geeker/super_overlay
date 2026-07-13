@@ -231,6 +231,7 @@ class ShowLoadingParam extends ShowParamBase {
     required this.displayTime,
     required this.leastLoadingTime,
     required this.tag,
+    this.businessTag,
     required this.backType,
     required this.onBack,
   });
@@ -238,6 +239,7 @@ class ShowLoadingParam extends ShowParamBase {
   final Duration? displayTime;
   final Duration leastLoadingTime;
   final String? tag;
+  final String? businessTag;
   final BackType backType;
   final SuperOverlayOnBack? onBack;
 }

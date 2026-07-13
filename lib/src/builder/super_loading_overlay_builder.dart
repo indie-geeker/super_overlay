@@ -14,6 +14,7 @@ class _SuperLoadingOverlayBuilder {
   Widget? _maskWidget;
   bool _clickMaskDismiss = overlayConfig.loading.clickMaskDismiss;
   String? _tag;
+  String? _businessTag;
   BackType _backType = overlayConfig.loading.backType;
   SuperOverlayOnBack? _onBack;
   SuperOverlayController? _controller;
@@ -47,6 +48,11 @@ class _SuperLoadingOverlayBuilder {
 
   _SuperLoadingOverlayBuilder withTag(String tag) {
     _tag = tag;
+    return this;
+  }
+
+  _SuperLoadingOverlayBuilder _withBusinessTag(String? tag) {
+    _businessTag = tag;
     return this;
   }
 
@@ -97,6 +103,7 @@ class _SuperLoadingOverlayBuilder {
         displayTime: _displayTime,
         leastLoadingTime: _leastLoadingTime,
         tag: _tag,
+        businessTag: _businessTag,
         backType: _backType,
         onBack: _onBack,
       ),

@@ -15,9 +15,9 @@ extension _OverlayManagerDismiss on OverlayManager {
     }
     final generationLoading = host.loadingOverlay;
     if (status == DismissStatus.auto) {
-      if (generationLoading.isVisible &&
-          (tag == null || generationLoading.matchesTag(tag))) {
-        await generationLoading.dismiss(closeType: closeType);
+      if ((generationLoading.isVisible || generationLoading.isDismissPending) &&
+          (tag == null || generationLoading.matchesDismissTag(tag))) {
+        await generationLoading.dismiss(closeType: closeType, tag: tag);
         return;
       }
 
@@ -124,8 +124,8 @@ extension _OverlayManagerDismiss on OverlayManager {
     }
 
     if (status == DismissStatus.loading) {
-      if (tag == null || generationLoading.matchesTag(tag)) {
-        await generationLoading.dismiss(closeType: closeType);
+      if (tag == null || generationLoading.matchesDismissTag(tag)) {
+        await generationLoading.dismiss(closeType: closeType, tag: tag);
       }
       return;
     }

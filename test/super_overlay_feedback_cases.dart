@@ -62,7 +62,11 @@ void registerFeedbackOverlayTests() {
     await tester.pump(const Duration(milliseconds: 250));
 
     final close = handle.close();
+    var closeCompleted = false;
+    close.then((_) => closeCompleted = true);
     await tester.pump(const Duration(milliseconds: 200));
+    await tester.idle();
+    expect(closeCompleted, isFalse);
     expect(find.text('Hold'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 100));

@@ -171,9 +171,7 @@ class ToastTool {
       return;
     }
 
-    // Preserve the existing untagged-close behavior: it does not advance the
-    // normal queue automatically.
-    await _dismissActive(active, advanceLane: false);
+    await _dismissActive(active);
   }
 
   void reset({int? generation}) {
@@ -188,12 +186,7 @@ class ToastTool {
       ),
     };
     for (final active in activeToasts) {
-      _activeToasts.remove(active);
-      _inFlightToasts.remove(active);
-      active.invalidate();
-      active.timer.cancel();
-      active.toast.disposeImmediately();
-      active.completeDismiss();
+      _finalizeImmediately(active);
     }
 
     final queued = _normalQueue
@@ -230,10 +223,7 @@ class ToastTool {
         )
         .toList(growable: false);
     for (final active in activeToasts) {
-      if (_onlyRefreshToast == active) {
-        _onlyRefreshToast = null;
-      }
-      await _dismissActive(active, advanceLane: true);
+      await _dismissActive(active);
     }
 
     final inFlightToasts = _inFlightToasts
@@ -337,38 +327,65 @@ class ToastTool {
     return active;
   }
 
-  Future<void> _dismissActive(
-    _ActiveToast active, {
-    required bool advanceLane,
-  }) {
+  Future<void> _dismissActive(_ActiveToast active) {
     final existing = active.dismissal;
     if (existing != null) {
       return existing;
     }
-    final dismissal = _runDismissActive(active, advanceLane: advanceLane);
-    active.dismissal = dismissal;
+    final dismissal = active.beginDismissal();
+    unawaited(_runDismissActive(active));
     return dismissal;
   }
 
-  Future<void> _runDismissActive(
-    _ActiveToast active, {
-    required bool advanceLane,
-  }) async {
-    if (!_activeToasts.remove(active)) {
+  Future<void> _runDismissActive(_ActiveToast active) async {
+    if (!active.beginFinalization()) {
       return;
     }
-    _inFlightToasts.add(active);
-    active.timer.cancel();
+    _prepareFinalization(active, trackInFlight: true);
     try {
       await active.toast.dismiss();
+    } catch (error, stackTrace) {
+      active.completeDismissalError(error, stackTrace);
     } finally {
+      _completeFinalization(active, advanceLane: true);
+    }
+  }
+
+  void _finalizeImmediately(_ActiveToast active) {
+    active.invalidate();
+    active.beginFinalization();
+    _prepareFinalization(active, trackInFlight: false);
+    active.toast.disposeImmediately();
+    _completeFinalization(active, advanceLane: false);
+  }
+
+  void _prepareFinalization(
+    _ActiveToast active, {
+    required bool trackInFlight,
+  }) {
+    _activeToasts.remove(active);
+    if (trackInFlight) {
+      _inFlightToasts.add(active);
+    } else {
       _inFlightToasts.remove(active);
-      active.completeDismiss();
-      if (advanceLane &&
-          !active.invalidated &&
-          OverlayManager.instance.ownsGeneration(active.generation)) {
-        active.onDismissed?.call();
-      }
+    }
+    if (identical(_onlyRefreshToast, active)) {
+      _onlyRefreshToast = null;
+    }
+    active.timer.cancel();
+  }
+
+  void _completeFinalization(_ActiveToast active, {required bool advanceLane}) {
+    _inFlightToasts.remove(active);
+    active.completeDismiss();
+    active.completeDismissal();
+    if (!active.finishFinalization()) {
+      return;
+    }
+    if (advanceLane &&
+        !active.invalidated &&
+        OverlayManager.instance.ownsGeneration(active.generation)) {
+      active.notifyDismissed();
     }
   }
 
@@ -425,10 +442,7 @@ class ToastTool {
           !OverlayManager.instance.ownsGeneration(active.generation)) {
         return;
       }
-      if (_onlyRefreshToast == active) {
-        _onlyRefreshToast = null;
-      }
-      unawaited(_dismissActive(active, advanceLane: true));
+      unawaited(_dismissActive(active));
     });
   }
 
@@ -461,8 +475,13 @@ class _ActiveToast {
   late Timer timer;
   final VoidCallback? onDismissed;
   final List<_ToastRequest> _requests = <_ToastRequest>[];
-  Future<void>? dismissal;
+  Completer<void>? _dismissCompleter;
   bool invalidated = false;
+  bool _finalizationStarted = false;
+  bool _finalized = false;
+  bool _dismissNotificationSent = false;
+
+  Future<void>? get dismissal => _dismissCompleter?.future;
 
   void attach(_ToastRequest request) {
     if (request.generation != generation) {
@@ -476,6 +495,48 @@ class _ActiveToast {
 
   void invalidate() {
     invalidated = true;
+  }
+
+  Future<void> beginDismissal() {
+    return (_dismissCompleter ??= Completer<void>()).future;
+  }
+
+  void completeDismissal() {
+    final completer = _dismissCompleter ??= Completer<void>();
+    if (!completer.isCompleted) {
+      completer.complete();
+    }
+  }
+
+  void completeDismissalError(Object error, StackTrace stackTrace) {
+    final completer = _dismissCompleter ??= Completer<void>();
+    if (!completer.isCompleted) {
+      completer.completeError(error, stackTrace);
+    }
+  }
+
+  bool beginFinalization() {
+    if (_finalizationStarted || _finalized) {
+      return false;
+    }
+    _finalizationStarted = true;
+    return true;
+  }
+
+  bool finishFinalization() {
+    if (_finalized) {
+      return false;
+    }
+    _finalized = true;
+    return true;
+  }
+
+  void notifyDismissed() {
+    if (_dismissNotificationSent) {
+      return;
+    }
+    _dismissNotificationSent = true;
+    onDismissed?.call();
   }
 
   void completeDismiss() {

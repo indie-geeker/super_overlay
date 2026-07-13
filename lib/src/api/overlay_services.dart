@@ -26,9 +26,8 @@ class OverlayLoadingService {
         .withBack(type: _backTypeFor(options.backBehavior))
         .withAwait(AwaitCompletion.dismiss);
 
-    final tag = options.tag;
-    final effectiveTag = tag ?? _commandTag('loading');
-    command.withTag(effectiveTag);
+    final identityTag = _commandTag('loading');
+    command.withTag(identityTag)._withBusinessTag(options.tag);
 
     final displayDuration = options.displayDuration;
     if (displayDuration != null) {
@@ -38,7 +37,7 @@ class OverlayLoadingService {
     final runtime = OverlayRuntimeResult<void>(
       visible: controller.visible,
       closed: command.fire<void>(),
-      identityTag: effectiveTag,
+      identityTag: identityTag,
     );
     return _overlayHandle<void>(
       generation: generation,
@@ -49,12 +48,12 @@ class OverlayLoadingService {
       close:
           ([void result]) => manager.dismiss<void>(
             status: DismissStatus.loading,
-            tag: effectiveTag,
+            tag: identityTag,
             generation: generation,
           ),
       isVisible:
           () => manager.checkExist(
-            tag: effectiveTag,
+            tag: identityTag,
             generation: generation,
             types: const {OverlayType.loading},
           ),
