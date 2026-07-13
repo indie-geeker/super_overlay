@@ -11,6 +11,7 @@ import 'custom/toast_tool.dart';
 import 'data/notify_style.dart';
 import 'data/show_param.dart';
 import 'helper/overlay_manager.dart';
+import 'helper/navigator_observer.dart';
 import 'init_overlay.dart';
 import 'kit/overlay_controller.dart';
 import 'kit/overlay_runtime_result.dart';
@@ -29,17 +30,39 @@ part 'builder/super_notify_overlay_builder.dart';
 part 'builder/super_popup_overlay_builder.dart';
 part 'builder/super_toast_overlay_builder.dart';
 part 'api/overlay_services.dart';
+part 'api/super_overlay_integration.dart';
 
 class SuperOverlay {
   static const _toastService = _OverlayToastService();
+  static final _defaultIntegration = SuperOverlayIntegration();
 
   static final OverlayLoadingService loading = OverlayLoadingService();
   static final OverlayDialogService dialog = OverlayDialogService();
   static final OverlayPopupService popup = OverlayPopupService();
   static final OverlayNotifyService notify = OverlayNotifyService();
 
-  static NavigatorObserver get observer => SuperOverlayInit.observer;
+  /// The stable root observer used by the legacy [init] integration.
+  static SuperOverlayNavigatorObserver get observer =>
+      _defaultIntegration.observer;
 
+  /// Creates an independently owned root integration.
+  static SuperOverlayIntegration integration({
+    TransitionBuilder? builder,
+    SuperOverlayStyleBuilder? styleBuilder,
+    SuperOverlayToastBuilder? toastBuilder,
+    SuperOverlayLoadingBuilder? loadingBuilder,
+    NotifyStyle? notifyStyle,
+  }) {
+    return SuperOverlayIntegration(
+      builder: builder,
+      styleBuilder: styleBuilder,
+      toastBuilder: toastBuilder,
+      loadingBuilder: loadingBuilder,
+      notifyStyle: notifyStyle,
+    );
+  }
+
+  /// Installs the legacy default integration in `MaterialApp.builder`.
   static TransitionBuilder init({
     TransitionBuilder? builder,
     SuperOverlayStyleBuilder? styleBuilder,
@@ -47,7 +70,7 @@ class SuperOverlay {
     SuperOverlayLoadingBuilder? loadingBuilder,
     NotifyStyle? notifyStyle,
   }) {
-    return SuperOverlayInit.init(
+    return _defaultIntegration._legacyBuilder(
       builder: builder,
       styleBuilder: styleBuilder,
       toastBuilder: toastBuilder,

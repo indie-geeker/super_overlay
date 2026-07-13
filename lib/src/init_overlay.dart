@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'helper/monitor_widget_helper.dart';
-import 'helper/navigator_observer.dart';
+import 'helper/overlay_host_lease.dart';
 import 'helper/overlay_manager.dart';
 import 'helper/pop_route_monitor.dart';
 import 'kit/super_overlay_entry.dart';
@@ -15,6 +15,7 @@ class SuperOverlayInit extends StatefulWidget {
   const SuperOverlayInit({
     super.key,
     required this.child,
+    required this.ownerIdentity,
     this.styleBuilder,
     this.toastBuilder,
     this.loadingBuilder,
@@ -22,14 +23,14 @@ class SuperOverlayInit extends StatefulWidget {
   });
 
   final Widget? child;
+  final Object ownerIdentity;
   final SuperOverlayStyleBuilder? styleBuilder;
   final SuperOverlayToastBuilder? toastBuilder;
   final SuperOverlayLoadingBuilder? loadingBuilder;
   final NotifyStyle? notifyStyle;
 
-  static final NavigatorObserver observer = SuperOverlayObserver();
-
   static TransitionBuilder init({
+    required Object ownerIdentity,
     TransitionBuilder? builder,
     SuperOverlayStyleBuilder? styleBuilder,
     SuperOverlayToastBuilder? toastBuilder,
@@ -38,6 +39,7 @@ class SuperOverlayInit extends StatefulWidget {
   }) {
     return (context, child) {
       final overlay = SuperOverlayInit(
+        ownerIdentity: ownerIdentity,
         styleBuilder: styleBuilder,
         toastBuilder: toastBuilder,
         loadingBuilder: loadingBuilder,
@@ -57,17 +59,21 @@ class SuperOverlayInit extends StatefulWidget {
 
 class _SuperOverlayInitState extends State<SuperOverlayInit> {
   late final SuperOverlayEntry _appEntry;
+  late final OverlayHostLease _hostLease;
 
   @override
   void initState() {
     super.initState();
-    OverlayManager.instance.initialize();
+    _hostLease = OverlayHostLease.acquire(ownerIdentity: widget.ownerIdentity);
     PopRouteMonitor.instance.ensureRegistered();
     MonitorWidgetHelper.instance.ensureRegistered();
     _applyDefaultBuilders();
     _appEntry = SuperOverlayEntry(
       builder: (context) {
-        OverlayManager.instance.captureContexts(context);
+        _hostLease.captureContexts(
+          ownerIdentity: widget.ownerIdentity,
+          context: context,
+        );
         return widget.child ?? const SizedBox.shrink();
       },
     );
@@ -96,7 +102,7 @@ class _SuperOverlayInitState extends State<SuperOverlayInit> {
     overlayConfig.toast = overlayConfig.toast.withBuilder(null);
     overlayConfig.loading = overlayConfig.loading.withBuilder(null);
     overlayConfig.notify = overlayConfig.notify.withStyle(null);
-    OverlayManager.instance.disposeHost();
+    _hostLease.dispose(ownerIdentity: widget.ownerIdentity);
     super.dispose();
   }
 

@@ -9,6 +9,24 @@ void main() {
     expect(SuperOverlay.init, isA<TransitionBuilder Function()>());
     expect(SuperOverlay.observer, isA<NavigatorObserver>());
 
+    final SuperOverlayIntegration integration = SuperOverlay.integration();
+    final SuperOverlayNavigatorObserver rootObserver = integration.observer;
+    final SuperOverlayNavigatorObserver scopedObserver =
+        integration.navigatorObserver();
+    expect(integration.builder, isA<TransitionBuilder>());
+    expect(rootObserver, isNot(same(scopedObserver)));
+    scopedObserver.dispose();
+    integration.dispose();
+
+    final OverlayLoadingService loading = SuperOverlay.loading;
+    final OverlayDialogService dialog = SuperOverlay.dialog;
+    final OverlayPopupService popup = SuperOverlay.popup;
+    final OverlayNotifyService notify = SuperOverlay.notify;
+    expect(loading, same(SuperOverlay.loading));
+    expect(dialog, same(SuperOverlay.dialog));
+    expect(popup, same(SuperOverlay.popup));
+    expect(notify, same(SuperOverlay.notify));
+
     const dialogOptions = OverlayDialogOptions(
       tag: 'dialog',
       strategy: OverlayStrategy.replaceExisting,
