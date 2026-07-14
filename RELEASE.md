@@ -9,20 +9,20 @@ is recorded.
 Version `0.3.0` is the current unpublished release candidate. It has not been
 tagged or published and is not release-complete.
 
-For historical context, the commercial-readiness branch passed the following
-local automated source baseline on 2026-07-13 with Flutter 3.41.6, before the
-current candidate metadata and subsequent hardening changes:
+The complete local automated RC gate passed on 2026-07-14 with Flutter 3.41.6
+and Dart 3.11.4:
 
-- 246 package tests passed with fixed and fresh randomized ordering;
-- line coverage was 91.138% (3507 of 3848 lines);
-- 26 example tests, the Web build, and the Android debug APK build passed;
-- publish dry-run reported zero warnings in the Git worktree and in a copied
-  archive without `.git`.
+- formatting, analysis, and dependency resolution completed successfully;
+- 292 package tests passed with fixed seed `20260713` and fresh seed
+  `2236481872`;
+- line coverage was 90.9157% (3773 of 4150 lines), above the 90% threshold;
+- dartdoc reported zero warnings and zero errors;
+- publish dry-run reported zero warnings;
+- 29 example tests, the Web build, and the Android debug APK build passed.
 
-This historical baseline is not evidence for the current RC gate. The
-candidate remains blocked until the full local gate is rerun, remote CI passes
-for the exact candidate commit (including Flutter 3.29), and a maintainer
-records the required Android and iOS results in the
+This candidate remains blocked until remote CI passes for the exact candidate
+commit (including Flutter 3.29) and a maintainer records the required Android
+and iOS results in the
 [device verification matrix](tool/verification/example_device_matrix.md).
 
 ## 1. Prepare The Candidate
@@ -69,6 +69,7 @@ dart format --output=none --set-exit-if-changed .
 flutter analyze
 flutter test
 flutter build web
+flutter build apk --debug
 cd ..
 ```
 
