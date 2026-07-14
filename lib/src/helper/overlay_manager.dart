@@ -1094,11 +1094,9 @@ class OverlayManager {
     if (routeOwner != null) {
       requireActiveGenerationMatch(generation);
       final host = _hostFor(generation);
-      final invocationContext = routeOwner.invocationContext;
       if (routeOwner.generation != generation ||
           !identical(routeOwner.ownerIdentity, host.ownerIdentity) ||
-          !NavigatorScopeRegistry.instance.isOwnerTracked(routeOwner) ||
-          (invocationContext is Element && !invocationContext.mounted)) {
+          !NavigatorScopeRegistry.instance.isOwnerTracked(routeOwner)) {
         throw StateError(
           '$operation route owner is no longer attached to the active '
           'SuperOverlayIntegration.',

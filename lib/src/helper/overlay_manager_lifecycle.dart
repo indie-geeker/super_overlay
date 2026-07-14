@@ -93,10 +93,7 @@ extension _OverlayManagerLifecycle on OverlayManager {
         final scopeTracked = NavigatorScopeRegistry.instance.isOwnerTracked(
           owner,
         );
-        final invocationContext = owner.invocationContext;
-        final invocationMounted =
-            invocationContext is! Element || invocationContext.mounted;
-        if (scopeTracked && invocationMounted) {
+        if (scopeTracked) {
           record.detachedFrameCount = 0;
           final previousState = record.presentationState;
           if (NavigatorScopeRegistry.instance.isOwnerCurrent(owner)) {
