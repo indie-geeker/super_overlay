@@ -25,6 +25,7 @@ class MainOverlay {
   VoidCallback? _refresh;
   SuperOverlayController? _controller;
   OverlayDialogWidgetController? _dialogController;
+  AttachDialogWidgetController? _attachController;
   ValueNotifier<Rect?>? _attachTargetRect;
   Type? _resultType;
   bool Function(Object? value)? _acceptsResult;
@@ -46,6 +47,7 @@ class MainOverlay {
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _dialogController = OverlayDialogWidgetController();
+    _attachController = null;
     _attachTargetRect = null;
     _widget = OverlayAccessibilityScope(
       mode: param.accessibilityMode,
@@ -92,6 +94,7 @@ class MainOverlay {
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _dialogController = null;
+    _attachController = AttachDialogWidgetController();
     final attachTargetRect = ValueNotifier<Rect?>(null);
     _attachTargetRect = attachTargetRect;
     _widget = OverlayAccessibilityScope(
@@ -101,6 +104,7 @@ class MainOverlay {
       handlesEscape: param.backType != BackType.ignore || param.onBack != null,
       child: AttachDialogWidget(
         param: param,
+        controller: _attachController!,
         targetRectListenable: attachTargetRect,
         onMask: onMask,
         onTargetUnavailable: onTargetUnavailable,
@@ -200,7 +204,9 @@ class MainOverlay {
     _onDismiss?.call();
     _onDismiss = null;
     await _dialogController?.dismiss(closeType: closeType);
+    await _attachController?.dismiss(closeType: closeType);
     _dialogController = null;
+    _attachController = null;
     _attachTargetRect = null;
     _refresh = null;
     _controller?.dismiss();
@@ -221,6 +227,7 @@ class MainOverlay {
     visible = false;
     _onDismiss = null;
     _dialogController = null;
+    _attachController = null;
     _attachTargetRect = null;
     _refresh = null;
     _controller?.dismiss();

@@ -12,9 +12,65 @@ Widget _buildOverlayApp(Widget child) {
   );
 }
 
+typedef _ShowReplacingOverlay =
+    OverlayHandle<void> Function({
+      required String label,
+      required OverlayStrategy strategy,
+    });
+
+Future<void> _expectReplacementWaitsForInFlightClose(
+  WidgetTester tester, {
+  required String surface,
+  required _ShowReplacingOverlay show,
+}) async {
+  final originalLabel = 'In-flight $surface';
+  final replacementLabel = 'Replacement after in-flight $surface';
+  final original = show(label: originalLabel, strategy: OverlayStrategy.stack);
+  await tester.pumpAndSettle();
+  await original.visible;
+
+  var originalClosed = false;
+  final originalClosedProbe = original.closed.then<void>((_) {
+    originalClosed = true;
+  });
+  final originalClose = original.close();
+  await tester.pump();
+
+  final replacement = show(
+    label: replacementLabel,
+    strategy: OverlayStrategy.replaceExisting,
+  );
+  var replacementVisible = false;
+  final replacementVisibleProbe = replacement.visible.then<void>((_) {
+    replacementVisible = true;
+  });
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+
+  expect(originalClosed, isFalse);
+  expect(replacementVisible, isFalse);
+  expect(find.text(replacementLabel), findsNothing);
+
+  await tester.pumpAndSettle();
+  await originalClose;
+  await originalClosedProbe;
+  await replacementVisibleProbe;
+
+  expect(originalClosed, isTrue);
+  expect(find.text(originalLabel), findsNothing);
+  expect(find.text(replacementLabel), findsOneWidget);
+  expect(replacement.isVisible, isTrue);
+
+  final replacementClose = replacement.close();
+  await tester.pumpAndSettle();
+  await replacementClose;
+}
+
 void main() {
   setUp(() {
     overlayConfig.custom = const CustomDialogConfig();
+    overlayConfig.attach = const AttachDialogConfig();
+    overlayConfig.notify = const NotifyConfig();
     overlayConfig.toast = const ToastConfig();
   });
 
@@ -98,6 +154,89 @@ void main() {
       await close;
     },
   );
+
+  testWidgets('dialog replacement awaits an already in-flight close', (
+    tester,
+  ) async {
+    overlayConfig.custom = const CustomDialogConfig(
+      animationTime: Duration(milliseconds: 500),
+      nonAnimationTypes: [NonAnimationType.routeClose],
+    );
+    await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
+
+    await _expectReplacementWaitsForInFlightClose(
+      tester,
+      surface: 'dialog',
+      show:
+          ({required label, required strategy}) =>
+              SuperOverlay.dialog.show<void>(
+                builder: (_) => Center(child: Text(label)),
+                options: OverlayDialogOptions(
+                  tag: 'in-flight-dialog',
+                  strategy: strategy,
+                ),
+              ),
+    );
+  });
+
+  testWidgets('popup replacement awaits an already in-flight close', (
+    tester,
+  ) async {
+    overlayConfig.attach = const AttachDialogConfig(
+      animationTime: Duration(milliseconds: 500),
+      nonAnimationTypes: [NonAnimationType.routeClose],
+    );
+    late BuildContext targetContext;
+    await tester.pumpWidget(
+      _buildOverlayApp(
+        Builder(
+          builder: (context) {
+            targetContext = context;
+            return const SizedBox(width: 80, height: 40);
+          },
+        ),
+      ),
+    );
+
+    await _expectReplacementWaitsForInFlightClose(
+      tester,
+      surface: 'popup',
+      show:
+          ({required label, required strategy}) =>
+              SuperOverlay.popup.show<void>(
+                targetContext: targetContext,
+                builder: (_) => Text(label),
+                options: OverlayPopupOptions(
+                  tag: 'in-flight-popup',
+                  strategy: strategy,
+                ),
+              ),
+    );
+  });
+
+  testWidgets('notification replacement awaits an already in-flight close', (
+    tester,
+  ) async {
+    overlayConfig.notify = const NotifyConfig(
+      animationTime: Duration(milliseconds: 500),
+      nonAnimationTypes: [],
+    );
+    await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
+
+    await _expectReplacementWaitsForInFlightClose(
+      tester,
+      surface: 'notification',
+      show:
+          ({required label, required strategy}) => SuperOverlay.notify.success(
+            label,
+            options: OverlayNotifyOptions(
+              tag: 'in-flight-notification',
+              strategy: strategy,
+              displayDuration: null,
+            ),
+          ),
+    );
+  });
 
   testWidgets(
     'toast replaceExisting waits for close animation before showing replacement',

@@ -93,12 +93,16 @@ class _OverlayRecord {
   final SuperOverlayOnBack? onBack;
   bool permanent;
   Timer? displayTimer;
+  Future<void>? dismissal;
   int detachedFrameCount = 0;
   Rect? lastRenderedAnchorRect;
   _OverlayPresentationState presentationState =
       _OverlayPresentationState.showing;
 
-  bool matchesTag(String value) => tag == value || businessTag == value;
+  bool matchesIdentityTag(String value) => tag == value;
+  bool matchesBusinessTag(String value) => businessTag == value;
+  bool matchesTag(String value) =>
+      matchesIdentityTag(value) || matchesBusinessTag(value);
 }
 
 enum _OverlayPresentationState {
@@ -127,8 +131,26 @@ class _NotifyRecord {
   final BackType backType;
   final SuperOverlayOnBack? onBack;
   Timer? displayTimer;
+  Future<void>? dismissal;
 
-  bool matchesTag(String value) => tag == value || businessTag == value;
+  bool matchesIdentityTag(String value) => tag == value;
+  bool matchesBusinessTag(String value) => businessTag == value;
+  bool matchesTag(String value) =>
+      matchesIdentityTag(value) || matchesBusinessTag(value);
+}
+
+class ExistingCommandOverlay<T> {
+  const ExistingCommandOverlay({
+    required this.identityTag,
+    required this.visible,
+    required this.closed,
+    required this.refresh,
+  });
+
+  final String identityTag;
+  final Future<void>? visible;
+  final Future<T?> closed;
+  final VoidCallback? refresh;
 }
 
 class CustomPushResult {

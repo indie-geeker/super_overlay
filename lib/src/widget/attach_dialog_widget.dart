@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../config/enum_config.dart';
 import '../data/animation_param.dart';
 import '../data/show_param.dart';
+import '../helper/overlay_manager.dart';
 import '../kit/typedef.dart';
 import 'animation/fade_animation.dart';
 import 'animation/highlight_mask_animation.dart';
@@ -21,12 +22,14 @@ class AttachDialogWidget extends StatefulWidget {
   const AttachDialogWidget({
     super.key,
     required this.param,
+    required this.controller,
     required this.targetRectListenable,
     required this.onMask,
     required this.onTargetUnavailable,
   });
 
   final ShowAttachParam param;
+  final AttachDialogWidgetController controller;
   final ValueListenable<Rect?> targetRectListenable;
   final VoidCallback onMask;
   final Future<void> Function() onTargetUnavailable;
@@ -50,6 +53,7 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
   void initState() {
     super.initState();
     _bodyController = AnimationController(vsync: this);
+    widget.controller._bind(this);
     widget.targetRectListenable.addListener(_handleTargetRectChanged);
     _forward();
   }
@@ -57,6 +61,10 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
   @override
   void didUpdateWidget(covariant AttachDialogWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.controller, widget.controller)) {
+      oldWidget.controller._unbind(this);
+    }
+    widget.controller._bind(this);
     if (!identical(
       oldWidget.targetRectListenable,
       widget.targetRectListenable,
@@ -74,6 +82,7 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
 
   @override
   void dispose() {
+    widget.controller._unbind(this);
     widget.targetRectListenable.removeListener(_handleTargetRectChanged);
     _bodyController.dispose();
     super.dispose();
@@ -261,6 +270,42 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
     return param.animationTime;
   }
 
+  Future<void> dismiss({
+    OverlayCloseType closeType = OverlayCloseType.normal,
+  }) async {
+    final duration = _closeDuration(closeType);
+    _bodyController.duration = duration;
+    _animationParam?.onDismiss?.call();
+    _bodyController.reverse();
+    if (duration > Duration.zero) {
+      await Future<void>.delayed(duration);
+    }
+  }
+
+  Duration _closeDuration(OverlayCloseType closeType) {
+    if (!param.useAnimation ||
+        param.nonAnimationTypes.contains(NonAnimationType.close) ||
+        _hasCloseTypeSkip(closeType)) {
+      return Duration.zero;
+    }
+    return param.animationTime;
+  }
+
+  bool _hasCloseTypeSkip(OverlayCloseType closeType) {
+    return switch (closeType) {
+      OverlayCloseType.normal => false,
+      OverlayCloseType.mask => param.nonAnimationTypes.contains(
+        NonAnimationType.maskClose,
+      ),
+      OverlayCloseType.route => param.nonAnimationTypes.contains(
+        NonAnimationType.routeClose,
+      ),
+      OverlayCloseType.back => param.nonAnimationTypes.contains(
+        NonAnimationType.backClose,
+      ),
+    };
+  }
+
   Widget _buildMask(Rect targetRect) {
     final highlight = param.highlight;
     final mask =
@@ -387,6 +432,24 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
         rect.bottom.isFinite &&
         rect.width.isFinite &&
         rect.height.isFinite;
+  }
+}
+
+class AttachDialogWidgetController {
+  _AttachDialogWidgetState? _state;
+
+  void _bind(_AttachDialogWidgetState state) {
+    _state = state;
+  }
+
+  void _unbind(_AttachDialogWidgetState state) {
+    if (identical(_state, state)) {
+      _state = null;
+    }
+  }
+
+  Future<void> dismiss({OverlayCloseType closeType = OverlayCloseType.normal}) {
+    return _state?.dismiss(closeType: closeType) ?? Future<void>.value();
   }
 }
 

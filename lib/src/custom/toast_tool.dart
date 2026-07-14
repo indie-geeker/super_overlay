@@ -10,6 +10,8 @@ import '../kit/debounce_utils.dart';
 import '../kit/overlay_runtime_result.dart';
 import 'custom_toast.dart';
 
+enum _ToastTagMatch { any, identity, business }
+
 class ToastTool {
   ToastTool._();
 
@@ -44,6 +46,14 @@ class ToastTool {
   bool isActiveTag(String tag, {required int generation}) {
     return _activeToasts.any(
       (active) => active.generation == generation && active.matchesTag(tag),
+    );
+  }
+
+  bool isActiveIdentityTag(String tag, {required int generation}) {
+    return _activeToasts.any(
+      (active) =>
+          active.generation == generation &&
+          active.matchesTag(tag, match: _ToastTagMatch.identity),
     );
   }
 
@@ -101,14 +111,26 @@ class ToastTool {
             rethrow;
           }
         }();
-        return OverlayRuntimeResult<T>(visible: visible.future, closed: closed);
+        return OverlayRuntimeResult<T>(
+          visible: visible.future,
+          closed: closed,
+          refresh: param.controller?.refresh,
+        );
       } else if (param.keepSingle) {
-        final existing = _findTaggedRequest(lookupTag, generation);
+        final existing = _findTaggedRequest(
+          lookupTag,
+          generation,
+          match:
+              param.businessTag == null
+                  ? _ToastTagMatch.any
+                  : _ToastTagMatch.business,
+        );
         if (existing != null) {
           return OverlayRuntimeResult<T>(
             visible: existing.visible,
             closed: existing.future<T>(),
             identityTag: existing.param.tag,
+            refresh: existing.param.controller?.refresh,
           );
         }
       }
@@ -142,6 +164,7 @@ class ToastTool {
       visible: request.visible,
       closed: request.future<T>(),
       identityTag: request.param.tag,
+      refresh: request.param.controller?.refresh,
     );
   }
 
@@ -172,6 +195,20 @@ class ToastTool {
     }
 
     await _dismissActive(active);
+  }
+
+  Future<void> dismissIdentityTag({
+    required int generation,
+    required String tag,
+  }) {
+    return _dismissTagged(tag, generation, match: _ToastTagMatch.identity);
+  }
+
+  Future<void> dismissBusinessTag({
+    required int generation,
+    required String tag,
+  }) {
+    return _dismissTagged(tag, generation, match: _ToastTagMatch.business);
   }
 
   void reset({int? generation}) {
@@ -205,11 +242,16 @@ class ToastTool {
     }
   }
 
-  Future<void> _dismissTagged(String tag, int generation) async {
+  Future<void> _dismissTagged(
+    String tag,
+    int generation, {
+    _ToastTagMatch match = _ToastTagMatch.any,
+  }) async {
     final queued = _normalQueue
         .where(
           (request) =>
-              request.generation == generation && request.matchesTag(tag),
+              request.generation == generation &&
+              request.matchesTag(tag, match: match),
         )
         .toList(growable: false);
     for (final request in queued) {
@@ -219,7 +261,9 @@ class ToastTool {
 
     final activeToasts = _activeToasts
         .where(
-          (active) => active.generation == generation && active.matchesTag(tag),
+          (active) =>
+              active.generation == generation &&
+              active.matchesTag(tag, match: match),
         )
         .toList(growable: false);
     for (final active in activeToasts) {
@@ -228,7 +272,9 @@ class ToastTool {
 
     final inFlightToasts = _inFlightToasts
         .where(
-          (active) => active.generation == generation && active.matchesTag(tag),
+          (active) =>
+              active.generation == generation &&
+              active.matchesTag(tag, match: match),
         )
         .toList(growable: false);
     for (final active in inFlightToasts) {
@@ -239,12 +285,16 @@ class ToastTool {
     }
   }
 
-  _ToastRequest? _findTaggedRequest(String tag, int generation) {
+  _ToastRequest? _findTaggedRequest(
+    String tag,
+    int generation, {
+    _ToastTagMatch match = _ToastTagMatch.any,
+  }) {
     for (final active in _activeToasts.reversed) {
       if (active.generation != generation) {
         continue;
       }
-      final request = active.requestForTag(tag);
+      final request = active.requestForTag(tag, match: match);
       if (request != null) {
         return request;
       }
@@ -252,7 +302,8 @@ class ToastTool {
     final queued = _normalQueue.toList(growable: false);
     for (var index = queued.length - 1; index >= 0; index--) {
       final request = queued[index];
-      if (request.generation == generation && request.matchesTag(tag)) {
+      if (request.generation == generation &&
+          request.matchesTag(tag, match: match)) {
         return request;
       }
     }
@@ -550,13 +601,16 @@ class _ActiveToast {
     _requests.clear();
   }
 
-  bool matchesTag(String tag) {
-    return _requests.any((request) => request.matchesTag(tag));
+  bool matchesTag(String tag, {_ToastTagMatch match = _ToastTagMatch.any}) {
+    return _requests.any((request) => request.matchesTag(tag, match: match));
   }
 
-  _ToastRequest? requestForTag(String tag) {
+  _ToastRequest? requestForTag(
+    String tag, {
+    _ToastTagMatch match = _ToastTagMatch.any,
+  }) {
     for (final request in _requests.reversed) {
-      if (request.matchesTag(tag)) {
+      if (request.matchesTag(tag, match: match)) {
         return request;
       }
     }
@@ -572,7 +626,14 @@ class _ToastRequest {
   final Completer<void> _appearCompleter = Completer<void>();
   final Completer<void> _dismissCompleter = Completer<void>();
 
-  bool matchesTag(String tag) => param.tag == tag || param.businessTag == tag;
+  bool matchesTag(String tag, {_ToastTagMatch match = _ToastTagMatch.any}) {
+    return switch (match) {
+      _ToastTagMatch.identity => param.tag == tag,
+      _ToastTagMatch.business => param.businessTag == tag,
+      _ToastTagMatch.any => param.tag == tag || param.businessTag == tag,
+    };
+  }
+
   Future<void> get visible =>
       param.controller?.visible ?? _appearCompleter.future;
 

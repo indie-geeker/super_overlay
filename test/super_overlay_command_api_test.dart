@@ -1288,6 +1288,51 @@ void main() {
     await first.close();
   });
 
+  testWidgets('toast keepExisting refreshes the retained toast', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
+
+    var version = 1;
+    final first = SuperOverlay.toast(
+      'Retained toast',
+      builder: (_) => Text('Retained toast v$version'),
+      options: const OverlayToastOptions(
+        tag: 'keep-refresh-toast',
+        displayPolicy: OverlayToastDisplayPolicy.stack,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+
+    final kept = SuperOverlay.toast(
+      'Ignored toast',
+      builder: (_) => const Text('Ignored toast content'),
+      options: const OverlayToastOptions(
+        tag: 'keep-refresh-toast',
+        strategy: OverlayStrategy.keepExisting,
+        displayPolicy: OverlayToastDisplayPolicy.stack,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Retained toast v1'), findsOneWidget);
+    expect(find.text('Ignored toast content'), findsNothing);
+
+    version = 2;
+    kept.refresh();
+    await tester.pump();
+
+    expect(find.text('Retained toast v1'), findsNothing);
+    expect(find.text('Retained toast v2'), findsOneWidget);
+
+    final close = kept.close();
+    await tester.pumpAndSettle();
+    await close;
+    expect(first.isVisible, isFalse);
+  });
+
   testWidgets('loading command exposes its tag to existence checks', (
     tester,
   ) async {

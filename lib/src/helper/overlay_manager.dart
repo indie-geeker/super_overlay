@@ -696,32 +696,38 @@ class OverlayManager {
             record.presentationState == _OverlayPresentationState.visible);
   }
 
-  Future<T?>? existingClosedFuture<T>({
-    required String tag,
+  bool isCommandIdentityVisible({
+    required String identityTag,
     required OverlayType type,
     required int generation,
   }) {
     if (!ownsGeneration(generation)) {
-      return null;
+      return false;
     }
     if (type == OverlayType.notify) {
       return _findNotify(
-        tag: tag,
-        generation: generation,
-      )?.overlay.mainOverlay.currentClosedFuture<T>(tag: tag);
+            tag: identityTag,
+            generation: generation,
+            identityTagOnly: true,
+          ) !=
+          null;
     }
 
     final record = _findRecord(
       type: type,
-      tag: tag,
+      tag: identityTag,
       force: true,
       generation: generation,
+      identityTagOnly: true,
     );
-    return record?.overlay.mainOverlay.currentClosedFuture<T>(tag: tag);
+    return record != null &&
+        record.overlay.mainOverlay.visible &&
+        (record.presentationState == _OverlayPresentationState.showing ||
+            record.presentationState == _OverlayPresentationState.visible);
   }
 
-  Future<void>? existingVisibleFuture({
-    required String tag,
+  ExistingCommandOverlay<T>? existingCommandOverlay<T>({
+    required String businessTag,
     required OverlayType type,
     required int generation,
   }) {
@@ -729,43 +735,41 @@ class OverlayManager {
       return null;
     }
     if (type == OverlayType.notify) {
-      return _findNotify(
-        tag: tag,
+      final record = _findNotifyByBusinessTag(
+        businessTag: businessTag,
         generation: generation,
-      )?.overlay.mainOverlay.currentVisibleFuture;
+      );
+      final closed = record?.overlay.mainOverlay.currentClosedFuture<T>(
+        tag: businessTag,
+      );
+      if (record == null || closed == null) {
+        return null;
+      }
+      return ExistingCommandOverlay<T>(
+        identityTag: record.tag,
+        visible: record.overlay.mainOverlay.currentVisibleFuture,
+        closed: closed,
+        refresh: record.overlay.mainOverlay.currentRefresh,
+      );
     }
 
-    final record = _findRecord(
+    final record = _findRecordByBusinessTag(
       type: type,
-      tag: tag,
-      force: true,
+      businessTag: businessTag,
       generation: generation,
     );
-    return record?.overlay.mainOverlay.currentVisibleFuture;
-  }
-
-  VoidCallback? existingRefresh({
-    required String tag,
-    required OverlayType type,
-    required int generation,
-  }) {
-    if (!ownsGeneration(generation)) {
+    final closed = record?.overlay.mainOverlay.currentClosedFuture<T>(
+      tag: businessTag,
+    );
+    if (record == null || closed == null) {
       return null;
     }
-    if (type == OverlayType.notify) {
-      return _findNotify(
-        tag: tag,
-        generation: generation,
-      )?.overlay.mainOverlay.currentRefresh;
-    }
-
-    final record = _findRecord(
-      type: type,
-      tag: tag,
-      force: true,
-      generation: generation,
+    return ExistingCommandOverlay<T>(
+      identityTag: record.tag,
+      visible: record.overlay.mainOverlay.currentVisibleFuture,
+      closed: closed,
+      refresh: record.overlay.mainOverlay.currentRefresh,
     );
-    return record?.overlay.mainOverlay.currentRefresh;
   }
 
   bool get hasMonitoredOverlays {
@@ -1080,6 +1084,94 @@ class OverlayManager {
     _syncBackDispositionForGeneration(resolvedGeneration);
     return dismissal.whenComplete(
       () => _syncBackDispositionForGeneration(resolvedGeneration),
+    );
+  }
+
+  Future<void> dismissCommandHandle<T>({
+    required DismissStatus status,
+    required String identityTag,
+    T? result,
+    required int generation,
+  }) {
+    if (!ownsGeneration(generation)) {
+      return Future<void>.value();
+    }
+    final dismissal = switch (status) {
+      DismissStatus.custom || DismissStatus.attach => _closeSingle<T>(
+        tag: identityTag,
+        result: result,
+        force: false,
+        type:
+            status == DismissStatus.attach
+                ? OverlayType.attach
+                : OverlayType.custom,
+        closeType: OverlayCloseType.normal,
+        generation: generation,
+        identityTagOnly: true,
+      ),
+      DismissStatus.notify => _closeNotify<T>(
+        tag: identityTag,
+        result: result,
+        generation: generation,
+        identityTagOnly: true,
+      ),
+      DismissStatus.toast => ToastTool.instance.dismissIdentityTag(
+        generation: generation,
+        tag: identityTag,
+      ),
+      _ =>
+        throw StateError(
+          'Dismiss status $status is not owned by a command lifecycle.',
+        ),
+    };
+    _syncBackDispositionForGeneration(generation);
+    return dismissal.whenComplete(
+      () => _syncBackDispositionForGeneration(generation),
+    );
+  }
+
+  Future<void> dismissReplacementMatches({
+    required DismissStatus status,
+    required String businessTag,
+    required int generation,
+  }) {
+    if (!ownsGeneration(generation)) {
+      return Future<void>.value();
+    }
+    final dismissal = switch (status) {
+      DismissStatus.custom || DismissStatus.attach => _closeAll<void>(
+        tag: businessTag,
+        result: null,
+        force: true,
+        type:
+            status == DismissStatus.attach
+                ? OverlayType.attach
+                : OverlayType.custom,
+        closeType: OverlayCloseType.normal,
+        generation: generation,
+        businessTagOnly: true,
+        includeInFlight: true,
+      ),
+      DismissStatus.notify => _closeAllNotify<void>(
+        tag: businessTag,
+        result: null,
+        closeType: OverlayCloseType.normal,
+        generation: generation,
+        businessTagOnly: true,
+        includeInFlight: true,
+      ),
+      DismissStatus.toast => ToastTool.instance.dismissBusinessTag(
+        generation: generation,
+        tag: businessTag,
+      ),
+      _ =>
+        throw StateError(
+          'Dismiss status $status does not support tagged replacement.',
+        ),
+    };
+    _syncBackDispositionForGeneration(generation);
+    return dismissal.whenComplete(
+      () => _syncBackDispositionForGeneration(generation),
     );
   }
 
