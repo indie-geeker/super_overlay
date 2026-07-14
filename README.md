@@ -301,6 +301,13 @@ const OverlayDialogOptions(
 );
 ```
 
+Dialogs with `consumeEvents: false` are non-modal for both pointer input and
+semantics: the underlying page remains interactive and discoverable, and focus
+traversal is not trapped inside the overlay. Set `requestFocus: false` when the
+page should also retain keyboard focus. In that case, overlay Escape handling
+is guaranteed only while focus is inside the overlay; SuperOverlay does not
+install a host-level keyboard dispatcher.
+
 Popup focus is non-modal by default. Toasts and notifications are live regions
 and do not steal focus. Application content remains responsible for semantic
 labels on its own buttons, fields, and custom controls.

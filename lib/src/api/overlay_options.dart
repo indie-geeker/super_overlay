@@ -77,8 +77,10 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
 
   /// Whether the dialog should capture focus after its first rendered frame.
   ///
-  /// Modal dialogs use closed-loop traversal and restore the previous focus
-  /// when possible. Escape follows [backBehavior].
+  /// Set this to false to keep keyboard focus on the underlying page. Overlay
+  /// Escape handling is then guaranteed only while focus is inside the dialog.
+  /// Modal dialogs that request focus use closed-loop traversal and restore the
+  /// previous focus when possible. Escape follows [backBehavior].
   final bool requestFocus;
 
   /// Optional semantic route label for the dialog content.
@@ -158,6 +160,7 @@ class OverlayPopupOptions extends OverlaySurfaceOptions {
   /// Whether the popup should capture focus.
   ///
   /// Popups are non-modal and preserve the current page focus by default.
+  /// Popup Escape handling is guaranteed only while focus is inside the popup.
   final bool requestFocus;
 }
 

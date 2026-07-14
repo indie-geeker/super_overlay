@@ -30,6 +30,8 @@ class OverlayAccessibilityScope extends StatefulWidget {
 class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
   late final FocusScopeNode _focusScopeNode = FocusScopeNode(
     debugLabel: 'SuperOverlay ${widget.mode.name} focus scope',
+    traversalEdgeBehavior: _traversalEdgeBehavior,
+    directionalTraversalEdgeBehavior: _directionalTraversalEdgeBehavior,
   );
   WeakReference<FocusNode>? _previousFocus;
   bool _hadFocus = false;
@@ -48,10 +50,26 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
   @override
   void didUpdateWidget(covariant OverlayAccessibilityScope oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.mode != widget.mode) {
+      _focusScopeNode
+        ..debugLabel = 'SuperOverlay ${widget.mode.name} focus scope'
+        ..traversalEdgeBehavior = _traversalEdgeBehavior
+        ..directionalTraversalEdgeBehavior = _directionalTraversalEdgeBehavior;
+    }
     if (!oldWidget.requestFocus && widget.requestFocus) {
       _scheduleFocusRequest();
     }
   }
+
+  TraversalEdgeBehavior get _traversalEdgeBehavior =>
+      widget.mode == OverlayAccessibilityMode.modal
+          ? TraversalEdgeBehavior.closedLoop
+          : TraversalEdgeBehavior.parentScope;
+
+  TraversalEdgeBehavior get _directionalTraversalEdgeBehavior =>
+      widget.mode == OverlayAccessibilityMode.modal
+          ? TraversalEdgeBehavior.stop
+          : TraversalEdgeBehavior.parentScope;
 
   void _scheduleFocusRequest() {
     if (!widget.requestFocus) {
@@ -69,7 +87,9 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
   }
 
   void _restorePreviousFocus() {
-    if (!_hadFocus) {
+    if (!_hadFocus ||
+        (widget.mode != OverlayAccessibilityMode.modal &&
+            !_focusScopeNode.hasFocus)) {
       return;
     }
     final previousFocus = _previousFocus?.target;
@@ -112,6 +132,7 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
       ),
       OverlayAccessibilityMode.popup => Semantics(
         container: true,
+        label: widget.semanticsLabel,
         child: result,
       ),
       OverlayAccessibilityMode.liveRegion => result,

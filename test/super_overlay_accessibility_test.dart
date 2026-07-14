@@ -51,7 +51,10 @@ bool _hasSemanticsFlag(SemanticsNode node, SemanticsFlag flag) {
   return node.getSemanticsData().hasFlag(flag);
 }
 
-Future<_AccessibilityHarness> _pumpApp(WidgetTester tester) async {
+Future<_AccessibilityHarness> _pumpApp(
+  WidgetTester tester, {
+  VoidCallback? onPagePressed,
+}) async {
   final integration = SuperOverlay.integration();
   final pageFocus = FocusNode(debugLabel: 'page control');
   late BuildContext targetContext;
@@ -67,7 +70,7 @@ Future<_AccessibilityHarness> _pumpApp(WidgetTester tester) async {
             return Center(
               child: TextButton(
                 focusNode: pageFocus,
-                onPressed: () {},
+                onPressed: onPagePressed ?? () {},
                 child: const Text('Page control'),
               ),
             );
@@ -186,6 +189,70 @@ void main() {
     firstFocus.dispose();
     secondFocus.dispose();
     await harness.dispose(tester);
+  });
+
+  testWidgets('non-modal dialog preserves newer page focus on close', (
+    tester,
+  ) async {
+    final integration = SuperOverlay.integration();
+    final firstPageFocus = FocusNode(debugLabel: 'first page control');
+    final secondPageFocus = FocusNode(debugLabel: 'second page control');
+    final dialogFocus = FocusNode(debugLabel: 'non-modal dialog control');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: <NavigatorObserver>[integration.observer],
+        home: Scaffold(
+          body: Column(
+            children: <Widget>[
+              TextButton(
+                focusNode: firstPageFocus,
+                onPressed: () {},
+                child: const Text('First page control'),
+              ),
+              TextButton(
+                focusNode: secondPageFocus,
+                onPressed: () {},
+                child: const Text('Second page control'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    firstPageFocus.requestFocus();
+    await tester.pump();
+
+    final handle = SuperOverlay.dialog.show<void>(
+      builder:
+          (_) => TextButton(
+            focusNode: dialogFocus,
+            onPressed: () {},
+            child: const Text('Non-modal dialog control'),
+          ),
+      options: const OverlayDialogOptions(consumeEvents: false),
+    );
+    await tester.pumpAndSettle();
+    dialogFocus.requestFocus();
+    await tester.pump();
+    secondPageFocus.requestFocus();
+    await tester.pump();
+
+    final close = handle.close();
+    await tester.pumpAndSettle();
+    await close;
+
+    expect(secondPageFocus.hasFocus, isTrue);
+    expect(firstPageFocus.hasFocus, isFalse);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+    firstPageFocus.dispose();
+    secondPageFocus.dispose();
+    dialogFocus.dispose();
   });
 
   testWidgets('Escape uses the same dismiss behavior as system back', (
@@ -368,6 +435,9 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     expect(requestedFocus.hasFocus, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(harness.pageFocus.hasFocus, isTrue);
 
     final closeRequestedPopup = requestedPopup.close();
     await tester.pumpAndSettle();
@@ -452,6 +522,39 @@ void main() {
     await tester.pumpAndSettle();
     await closeLoading;
 
+    semantics.dispose();
+    await harness.dispose(tester);
+  });
+
+  testWidgets('non-modal dialog preserves background semantics', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var pagePressCount = 0;
+    final harness = await _pumpApp(
+      tester,
+      onPagePressed: () => pagePressCount++,
+    );
+
+    final handle = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Text('Non-modal dialog content'),
+      options: const OverlayDialogOptions(
+        alignment: Alignment.topCenter,
+        consumeEvents: false,
+        semanticsLabel: 'Non-modal dialog',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(_semanticsNodeWithLabel(tester, 'Page control'), isNotNull);
+    expect(_semanticsNodeWithLabel(tester, 'Non-modal dialog'), isNotNull);
+    await tester.tap(find.text('Page control'));
+    await tester.pump();
+    expect(pagePressCount, 1);
+
+    final close = handle.close();
+    await tester.pumpAndSettle();
+    await close;
     semantics.dispose();
     await harness.dispose(tester);
   });
