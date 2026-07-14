@@ -255,7 +255,7 @@ void main() {
     dialogFocus.dispose();
   });
 
-  testWidgets('non-modal dialog allows directional focus to exit', (
+  testWidgets('non-modal dialog allows sequential focus to exit', (
     tester,
   ) async {
     final integration = SuperOverlay.integration();
@@ -296,7 +296,7 @@ void main() {
     dialogFocus.requestFocus();
     await tester.pump();
 
-    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
 
     expect(pageFocus.hasFocus, isTrue);
