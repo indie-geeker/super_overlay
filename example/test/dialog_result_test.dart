@@ -34,35 +34,87 @@ void main() {
   testWidgets(
     'confirmation dialog exposes modal semantics and keyboard close',
     (tester) async {
-      final semantics = tester.ensureSemantics();
+      await _withSemantics(tester, () async {
+        await tester.pumpWidget(const MyApp());
+
+        await tester.ensureVisible(find.text('打开确认弹窗'));
+        await tester.tap(find.text('打开确认弹窗'));
+        await tester.pumpAndSettle();
+
+        final routeNode = _semanticsNodeWithLabel(tester, '确认操作对话框');
+        expect(routeNode, isNotNull);
+        expect(
+          _hasSemanticsFlag(routeNode!, SemanticsFlag.scopesRoute),
+          isTrue,
+        );
+        final barrierNode = _semanticsNodeWithLabel(tester, '关闭确认操作对话框');
+        expect(barrierNode, isNotNull);
+        expect(
+          barrierNode!.getSemanticsData().hasAction(SemanticsAction.dismiss),
+          isTrue,
+        );
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.pump();
+        final cancelNode = _semanticsNodeWithLabel(tester, '取消');
+        expect(cancelNode, isNotNull);
+        expect(_hasSemanticsFlag(cancelNode!, SemanticsFlag.isFocused), isTrue);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pumpAndSettle();
+        expect(find.text('确认本次操作？'), findsNothing);
+      });
+    },
+  );
+
+  testWidgets('non-dismissible dialog exposes a descriptive barrier', (
+    tester,
+  ) async {
+    await _withSemantics(tester, () async {
       await tester.pumpWidget(const MyApp());
 
-      await tester.ensureVisible(find.text('打开确认弹窗'));
+      await tester.ensureVisible(find.text('点击弹窗外部允许关闭'));
+      await tester.tap(find.text('点击弹窗外部允许关闭'));
+      await tester.pump();
       await tester.tap(find.text('打开确认弹窗'));
       await tester.pumpAndSettle();
 
-      final routeNode = _semanticsNodeWithLabel(tester, '确认操作对话框');
-      expect(routeNode, isNotNull);
-      expect(_hasSemanticsFlag(routeNode!, SemanticsFlag.scopesRoute), isTrue);
-      final barrierNode = _semanticsNodeWithLabel(tester, '关闭确认操作对话框');
+      final barrierNode = _semanticsNodeWithLabel(tester, '确认操作对话框背景');
       expect(barrierNode, isNotNull);
       expect(
         barrierNode!.getSemanticsData().hasAction(SemanticsAction.dismiss),
-        isTrue,
+        isFalse,
       );
+      expect(_semanticsNodeWithLabel(tester, '关闭确认操作对话框'), isNull);
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
-      await tester.pump();
-      final cancelNode = _semanticsNodeWithLabel(tester, '取消');
-      expect(cancelNode, isNotNull);
-      expect(_hasSemanticsFlag(cancelNode!, SemanticsFlag.isFocused), isTrue);
-
-      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.tap(find.text('取消'));
       await tester.pumpAndSettle();
-      expect(find.text('确认本次操作？'), findsNothing);
-      semantics.dispose();
-    },
-  );
+    });
+  });
+}
+
+Future<void> _withSemantics(
+  WidgetTester tester,
+  Future<void> Function() body,
+) async {
+  final semantics = tester.ensureSemantics();
+  var disposed = false;
+
+  void disposeSemantics() {
+    if (disposed) {
+      return;
+    }
+    disposed = true;
+    semantics.dispose();
+  }
+
+  addTearDown(disposeSemantics);
+  try {
+    await body();
+  } finally {
+    // WidgetTester verifies handles before package:test runs addTearDown.
+    disposeSemantics();
+  }
 }
 
 SemanticsNode? _semanticsNodeWithLabel(WidgetTester tester, String label) {
