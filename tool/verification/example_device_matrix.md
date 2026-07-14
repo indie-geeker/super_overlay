@@ -30,9 +30,10 @@ complete any manual row:
 - publish dry-run from both the Git worktree and a copy without `.git`, with
   zero warnings.
 
-The current release candidate passed the refreshed local gates on 2026-07-14
-and still requires remote CI on the exact candidate commit with Flutter stable
-and Flutter 3.29, plus the required mobile evidence below.
+The current release candidate passed the refreshed local gates on 2026-07-14.
+Both Flutter stable and Flutter 3.29 passed in GitHub Actions run #8 for source
+commit `48447e884c6b27c98675013e400d389d35ea052e`. The required mobile evidence
+below remains pending and is the remaining release blocker.
 
 ## Required Mobile Release Blockers
 

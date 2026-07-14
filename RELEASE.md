@@ -13,16 +13,17 @@ The complete local automated RC gate passed on 2026-07-14 with Flutter 3.41.6
 and Dart 3.11.4:
 
 - formatting, analysis, and dependency resolution completed successfully;
-- 292 package tests passed with fixed seed `20260713` and fresh seed
-  `2236481872`;
+- 293 package tests passed with fixed seed `20260713` and fresh seed
+  `3347434202`;
 - line coverage was 90.9157% (3773 of 4150 lines), above the 90% threshold;
 - dartdoc reported zero warnings and zero errors;
 - publish dry-run reported zero warnings;
 - 29 example tests, the Web build, and the Android debug APK build passed.
 
-This candidate remains blocked until remote CI passes for the exact candidate
-commit (including Flutter 3.29) and a maintainer records the required Android
-and iOS results in the
+Both jobs in [GitHub Actions run #8](https://github.com/indie-geeker/super_overlay/actions/runs/29319573548)
+passed for source commit `48447e884c6b27c98675013e400d389d35ea052e`,
+covering Flutter stable and Flutter 3.29. The remaining release blocker is the
+required Android and iOS evidence that a maintainer must record in the
 [device verification matrix](tool/verification/example_device_matrix.md).
 
 ## 1. Prepare The Candidate
