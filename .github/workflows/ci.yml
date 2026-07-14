@@ -6,14 +6,22 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   flutter:
     name: Flutter stable release gate
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
           cache: true
@@ -26,6 +34,27 @@ jobs:
 
       - name: Analyze package
         run: flutter analyze
+
+      - name: Check patch whitespace
+        run: git diff --check
+
+      - name: Inspect dependency graph
+        run: flutter pub deps --style=compact
+
+      - name: Check repository contracts
+        run: flutter test test/repository_contract_test.dart
+
+      - name: Check back dispatch contract
+        run: flutter test test/super_overlay_back_dispatch_test.dart
+
+      - name: Check host ownership contract
+        run: flutter test test/super_overlay_host_ownership_test.dart
+
+      - name: Check ShellRoute contract
+        run: flutter test test/super_overlay_shell_route_test.dart
+
+      - name: Test package with reproducible randomized ordering
+        run: flutter test --test-randomize-ordering-seed=20260713
 
       - name: Test package with coverage
         run: flutter test --coverage
@@ -55,10 +84,11 @@ jobs:
   flutter-minimum:
     name: Flutter 3.29 compatibility
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
-      - uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
         with:
           channel: stable
           flutter-version: "3.29.0"
@@ -71,4 +101,16 @@ jobs:
         run: flutter analyze
 
       - name: Test package
+        run: flutter test
+
+      - name: Install example dependencies
+        working-directory: example
+        run: flutter pub get
+
+      - name: Analyze example
+        working-directory: example
+        run: flutter analyze
+
+      - name: Test example
+        working-directory: example
         run: flutter test

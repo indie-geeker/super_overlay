@@ -21,8 +21,16 @@ is recorded.
 From the repository root:
 
 ```bash
+git diff --check
 dart format --output=none --set-exit-if-changed .
 flutter analyze
+flutter pub deps --style=compact
+flutter test test/repository_contract_test.dart
+flutter test test/super_overlay_back_dispatch_test.dart
+flutter test test/super_overlay_host_ownership_test.dart
+flutter test test/super_overlay_shell_route_test.dart
+flutter test --test-randomize-ordering-seed=20260713
+flutter test --test-randomize-ordering-seed=random
 flutter test --coverage
 dart doc --dry-run
 flutter pub publish --dry-run
@@ -62,8 +70,13 @@ points to a reachable scenario and passing test.
 
 - Push the candidate branch and wait for every required GitHub Actions job.
 - Confirm stable Flutter and Flutter 3.29 compatibility jobs are green.
+- Confirm the workflow uses minimal read-only permissions, every job has a
+  timeout, and third-party Actions remain pinned to reviewed commit SHAs.
 - Confirm docs, coverage, publish dry run, example tests, and Web build ran in
   remote CI rather than relying only on local output.
+- Review Dependabot pull requests that update pinned GitHub Actions before
+  merging them; a version comment is not a substitute for reviewing the new
+  commit SHA.
 - Review dependency and security alerts before approval.
 
 ## 6. Tag And Publish
