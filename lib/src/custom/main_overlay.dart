@@ -30,7 +30,6 @@ class MainOverlay {
   final OverlayFocusLifecycle _focusLifecycle = OverlayFocusLifecycle();
   WeakReference<FocusNode>? _focusRestoreTarget;
   bool _focusRestoreTargetCaptured = false;
-  int _focusRestoreTargetToken = 0;
   Type? _resultType;
   bool Function(Object? value)? _acceptsResult;
 
@@ -136,7 +135,6 @@ class MainOverlay {
   }
 
   void _captureFocusRestoreTarget() {
-    _focusRestoreTargetToken++;
     if (_focusRestoreTargetCaptured) {
       return;
     }
@@ -146,19 +144,7 @@ class MainOverlay {
         primaryFocus == null ? null : WeakReference<FocusNode>(primaryFocus);
   }
 
-  void _scheduleFocusRestoreTargetClear() {
-    final token = ++_focusRestoreTargetToken;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (token != _focusRestoreTargetToken) {
-        return;
-      }
-      _focusRestoreTarget = null;
-      _focusRestoreTargetCaptured = false;
-    });
-  }
-
   void _clearFocusRestoreTarget() {
-    _focusRestoreTargetToken++;
     _focusRestoreTarget = null;
     _focusRestoreTargetCaptured = false;
   }
@@ -254,6 +240,7 @@ class MainOverlay {
     await _dialogController?.dismiss(closeType: closeType);
     await _attachController?.dismiss(closeType: closeType);
     _focusLifecycle.restoreFocusBeforeHide();
+    _clearFocusRestoreTarget();
     _dialogController = null;
     _attachController = null;
     _attachTargetRect = null;
@@ -262,7 +249,6 @@ class MainOverlay {
     _controller = null;
     _widget = const SizedBox.shrink();
     overlayEntry.markNeedsBuild();
-    _scheduleFocusRestoreTargetClear();
 
     final completer = _completer;
     if (completer != null && !completer.isCompleted) {
