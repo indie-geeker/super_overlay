@@ -27,6 +27,7 @@ class MainOverlay {
   OverlayDialogWidgetController? _dialogController;
   ValueNotifier<Rect?>? _attachTargetRect;
   Type? _resultType;
+  bool Function(Object? value)? _acceptsResult;
 
   bool get visible => _visible;
 
@@ -41,6 +42,7 @@ class MainOverlay {
   }) {
     _replaceController(param.controller);
     _resultType = T;
+    _acceptsResult = (value) => value is T;
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _dialogController = OverlayDialogWidgetController();
@@ -86,6 +88,7 @@ class MainOverlay {
   }) {
     _replaceController(param.controller);
     _resultType = T;
+    _acceptsResult = (value) => value is T;
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _dialogController = null;
@@ -169,7 +172,11 @@ class MainOverlay {
 
   void validateDismissResult<T>({required String? tag, required T? result}) {
     final resultType = _resultType;
-    if (result == null || resultType == null || resultType == T) {
+    final acceptsResult = _acceptsResult;
+    if (result == null ||
+        resultType == null ||
+        acceptsResult == null ||
+        acceptsResult(result)) {
       return;
     }
     throw StateError(
@@ -207,6 +214,7 @@ class MainOverlay {
     }
     _completer = null;
     _resultType = null;
+    _acceptsResult = null;
   }
 
   void disposeImmediately() {
@@ -225,6 +233,7 @@ class MainOverlay {
     }
     _completer = null;
     _resultType = null;
+    _acceptsResult = null;
   }
 
   Widget getWidget() => visible ? _widget : const SizedBox.shrink();

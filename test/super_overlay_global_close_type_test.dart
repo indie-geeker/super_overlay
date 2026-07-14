@@ -220,6 +220,132 @@ void main() {
     expect(find.text('Typed global dialog'), findsNothing);
   });
 
+  testWidgets('typed global close accepts an exact result type', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildOverlayApp((_) {}));
+
+    final handle = SuperOverlay.dialog.show<bool>(
+      builder: (_) => const Text('Exact result dialog'),
+    );
+    await tester.pumpAndSettle();
+
+    final close = SuperOverlay.close<bool>(
+      target: OverlayCloseTarget.dialog,
+      result: true,
+    );
+    await tester.pumpAndSettle();
+    await close;
+
+    await expectLater(handle.closed, completion(isTrue));
+    expect(handle.isVisible, isFalse);
+    expect(find.text('Exact result dialog'), findsNothing);
+  });
+
+  testWidgets('typed global close accepts a subtype value for a supertype', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildOverlayApp((_) {}));
+
+    final handle = SuperOverlay.dialog.show<num>(
+      builder: (_) => const Text('Supertype result dialog'),
+    );
+    await tester.pumpAndSettle();
+
+    final close = SuperOverlay.close(
+      target: OverlayCloseTarget.dialog,
+      result: 7,
+    );
+    await tester.pumpAndSettle();
+    await close;
+
+    await expectLater(handle.closed, completion(7));
+    expect(handle.isVisible, isFalse);
+    expect(find.text('Supertype result dialog'), findsNothing);
+  });
+
+  testWidgets('typed global close accepts a value for a nullable type', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildOverlayApp((_) {}));
+
+    final handle = SuperOverlay.dialog.show<String?>(
+      builder: (_) => const Text('Nullable result dialog'),
+    );
+    await tester.pumpAndSettle();
+
+    final close = SuperOverlay.close(
+      target: OverlayCloseTarget.dialog,
+      result: 'accepted',
+    );
+    await tester.pumpAndSettle();
+    await close;
+
+    await expectLater(handle.closed, completion('accepted'));
+    expect(handle.isVisible, isFalse);
+    expect(find.text('Nullable result dialog'), findsNothing);
+  });
+
+  testWidgets('typed global close accepts a concrete value for dynamic', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildOverlayApp((_) {}));
+
+    final handle = SuperOverlay.dialog.show<dynamic>(
+      builder: (_) => const Text('Dynamic result dialog'),
+    );
+    await tester.pumpAndSettle();
+    final result = <String, bool>{'accepted': true};
+
+    final close = SuperOverlay.close(
+      target: OverlayCloseTarget.dialog,
+      result: result,
+    );
+    await tester.pumpAndSettle();
+    await close;
+
+    await expectLater(handle.closed, completion(same(result)));
+    expect(handle.isVisible, isFalse);
+    expect(find.text('Dynamic result dialog'), findsNothing);
+  });
+
+  testWidgets('void global close accepts values like handle-owned close', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildOverlayApp((_) {}));
+
+    final handleOwned = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Text('Handle-owned void dialog'),
+    );
+    await tester.pumpAndSettle();
+
+    final handleClose =
+        Function.apply(handleOwned.close, const ['ignored by void'])
+            as Future<void>;
+    await tester.pumpAndSettle();
+    await handleClose;
+    await handleOwned.closed;
+
+    expect(handleOwned.isVisible, isFalse);
+    expect(find.text('Handle-owned void dialog'), findsNothing);
+
+    final global = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Text('Global void dialog'),
+    );
+    await tester.pumpAndSettle();
+
+    final globalClose = SuperOverlay.close(
+      target: OverlayCloseTarget.dialog,
+      result: 'ignored by void',
+    );
+    await tester.pumpAndSettle();
+    await globalClose;
+    await global.closed;
+
+    expect(global.isVisible, isFalse);
+    expect(find.text('Global void dialog'), findsNothing);
+  });
+
   for (final target in _bulkTargets) {
     testWidgets(
       '${target.name} rejects a result before mutation and accepts null cleanup',
