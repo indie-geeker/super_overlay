@@ -681,7 +681,7 @@ class _CommandOverlayLifecycle<T> {
       return _fireIfOpen();
     }
     await OverlayManager.instance.dismiss(
-      status: status,
+      status: _allMatchesDismissStatusFor(status),
       tag: replaceTag,
       force: true,
       generation: generation,
@@ -720,6 +720,16 @@ class _CommandOverlayLifecycle<T> {
       );
     }
   }
+}
+
+DismissStatus _allMatchesDismissStatusFor(DismissStatus status) {
+  return switch (status) {
+    DismissStatus.custom => DismissStatus.allCustom,
+    DismissStatus.attach => DismissStatus.allAttach,
+    DismissStatus.notify => DismissStatus.allNotify,
+    DismissStatus.toast => DismissStatus.allToast,
+    _ => status,
+  };
 }
 
 final _replacementQueue = _OverlayOperationQueue();

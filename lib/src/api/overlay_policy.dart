@@ -3,7 +3,8 @@ enum OverlayStrategy {
   /// Show a new overlay even when another matching tag already exists.
   stack,
 
-  /// Close the existing matching overlay before showing the new one.
+  /// Close every matching same-surface, same-tag overlay before showing the
+  /// new one.
   replaceExisting,
 
   /// Keep the existing matching overlay and do not show a duplicate.
