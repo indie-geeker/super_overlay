@@ -167,6 +167,17 @@ class MainOverlay {
     return completer.future.then((value) => value as T?);
   }
 
+  void validateDismissResult<T>({required String? tag, required T? result}) {
+    final resultType = _resultType;
+    if (result == null || resultType == null || resultType == T) {
+      return;
+    }
+    throw StateError(
+      'Overlay tag "${tag ?? '<unknown>'}" uses result type $resultType '
+      'and cannot be closed with $T.',
+    );
+  }
+
   Duration _openDuration(ShowCustomParam param) {
     if (!param.useAnimation ||
         param.nonAnimationTypes.contains(NonAnimationType.open)) {

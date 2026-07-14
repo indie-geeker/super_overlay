@@ -189,6 +189,10 @@ extension _OverlayManagerDismiss on OverlayManager {
       return;
     }
 
+    record.overlay.mainOverlay.validateDismissResult<T>(
+      tag: record.businessTag ?? record.tag,
+      result: result,
+    );
     record.presentationState = _OverlayPresentationState.closing;
     _dialogQueue.remove(record);
     _inFlightDialogRecords.add(record);
