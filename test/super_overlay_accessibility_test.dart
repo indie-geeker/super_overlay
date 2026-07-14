@@ -342,6 +342,30 @@ void main() {
     await harness.dispose(tester);
   });
 
+  testWidgets('loading handoff without a frame restores page focus', (
+    tester,
+  ) async {
+    final harness = await _pumpApp(tester);
+    final first = SuperOverlay.loading.show(
+      builder: (_) => const Text('First loading'),
+    );
+    await tester.pumpAndSettle();
+    expect(harness.pageFocus.hasFocus, isFalse);
+
+    await first.close();
+    final second = SuperOverlay.loading.show(
+      builder: (_) => const Text('Second loading'),
+    );
+    await tester.pumpAndSettle();
+
+    final closeSecond = second.close();
+    await tester.pumpAndSettle();
+    await closeSecond;
+
+    expect(harness.pageFocus.hasFocus, isTrue);
+    await harness.dispose(tester);
+  });
+
   testWidgets('Escape honors block and passThrough policies', (tester) async {
     var rootEscapeCount = 0;
     final harness = await _pumpAppWithRootEscape(
@@ -547,7 +571,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(_semanticsNodeWithLabel(tester, 'Page control'), isNotNull);
-    expect(_semanticsNodeWithLabel(tester, 'Non-modal dialog'), isNotNull);
+    final dialogNode = _semanticsNodeWithLabel(tester, 'Non-modal dialog')!;
+    expect(_hasSemanticsFlag(dialogNode, SemanticsFlag.scopesRoute), isFalse);
     await tester.tap(find.text('Page control'));
     await tester.pump();
     expect(pagePressCount, 1);
@@ -644,7 +669,9 @@ void main() {
       final nestedObserver = integration.navigatorObserver();
       final navigatorKey = GlobalKey<NavigatorState>();
       final pageFocus = FocusNode(debugLabel: 'nested page control');
+      final remountFocus = FocusNode(debugLabel: 'remount page control');
       final dialogFocus = FocusNode(debugLabel: 'scoped dialog control');
+      final coveringFocus = FocusNode(debugLabel: 'covering page control');
       late BuildContext nestedContext;
       var rootEscapeCount = 0;
 
@@ -668,10 +695,19 @@ void main() {
                             builder: (context) {
                               nestedContext = context;
                               return Scaffold(
-                                body: TextButton(
-                                  focusNode: pageFocus,
-                                  onPressed: () {},
-                                  child: const Text('Nested page control'),
+                                body: Column(
+                                  children: <Widget>[
+                                    TextButton(
+                                      focusNode: pageFocus,
+                                      onPressed: () {},
+                                      child: const Text('Nested page control'),
+                                    ),
+                                    TextButton(
+                                      focusNode: remountFocus,
+                                      onPressed: () {},
+                                      child: const Text('Remount page control'),
+                                    ),
+                                  ],
                                 ),
                               );
                             },
@@ -706,13 +742,22 @@ void main() {
 
       navigatorKey.currentState!.push<void>(
         MaterialPageRoute<void>(
-          builder: (_) => const Scaffold(body: Text('Nested covering page')),
+          builder:
+              (_) => Scaffold(
+                body: TextButton(
+                  autofocus: true,
+                  focusNode: coveringFocus,
+                  onPressed: () {},
+                  child: const Text('Nested covering page'),
+                ),
+              ),
         ),
       );
       await tester.pumpAndSettle();
 
       expect(dialog.isVisible, isFalse);
       expect(dialogFocus.hasFocus, isFalse);
+      expect(coveringFocus.hasFocus, isTrue);
       expect(_semanticsNodeWithLabel(tester, 'Scoped modal route'), isNull);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -721,6 +766,10 @@ void main() {
       expect(find.text('Nested covering page'), findsOneWidget);
 
       final handled = await navigatorKey.currentState!.maybePop();
+      // Flutter versions differ on whether the outgoing route or restored page
+      // owns focus while the overlay remounts. Keep that gap deterministic.
+      remountFocus.requestFocus();
+      await tester.pump();
       await tester.pumpAndSettle();
       expect(handled, isTrue);
       expect(find.text('Nested covering page'), findsNothing);
@@ -733,6 +782,7 @@ void main() {
       final closeDialog = dialog.close();
       await tester.pumpAndSettle();
       await closeDialog;
+      expect(pageFocus.hasFocus, isTrue);
 
       final loading = SuperOverlay.loading.show(
         builder: (_) => const Text('Root loading'),
@@ -755,7 +805,9 @@ void main() {
       nestedObserver.dispose();
       integration.dispose();
       pageFocus.dispose();
+      remountFocus.dispose();
       dialogFocus.dispose();
+      coveringFocus.dispose();
       semantics.dispose();
     },
   );

@@ -13,6 +13,7 @@ class OverlayAccessibilityScope extends StatefulWidget {
     required this.requestFocus,
     required this.semanticsLabel,
     required this.handlesEscape,
+    required this.focusRestoreTarget,
     required this.child,
   });
 
@@ -20,6 +21,7 @@ class OverlayAccessibilityScope extends StatefulWidget {
   final bool requestFocus;
   final String? semanticsLabel;
   final bool handlesEscape;
+  final WeakReference<FocusNode>? focusRestoreTarget;
   final Widget child;
 
   @override
@@ -31,18 +33,12 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
   late final FocusScopeNode _focusScopeNode = FocusScopeNode(
     debugLabel: 'SuperOverlay ${widget.mode.name} focus scope',
     traversalEdgeBehavior: _traversalEdgeBehavior,
-    directionalTraversalEdgeBehavior: _directionalTraversalEdgeBehavior,
   );
-  WeakReference<FocusNode>? _previousFocus;
   bool _hadFocus = false;
 
   @override
   void initState() {
     super.initState();
-    final previousFocus = FocusManager.instance.primaryFocus;
-    if (previousFocus != null) {
-      _previousFocus = WeakReference<FocusNode>(previousFocus);
-    }
     _focusScopeNode.addListener(_handleFocusChange);
     _scheduleFocusRequest();
   }
@@ -53,8 +49,7 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
     if (oldWidget.mode != widget.mode) {
       _focusScopeNode
         ..debugLabel = 'SuperOverlay ${widget.mode.name} focus scope'
-        ..traversalEdgeBehavior = _traversalEdgeBehavior
-        ..directionalTraversalEdgeBehavior = _directionalTraversalEdgeBehavior;
+        ..traversalEdgeBehavior = _traversalEdgeBehavior;
     }
     if (!oldWidget.requestFocus && widget.requestFocus) {
       _scheduleFocusRequest();
@@ -64,11 +59,6 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
   TraversalEdgeBehavior get _traversalEdgeBehavior =>
       widget.mode == OverlayAccessibilityMode.modal
           ? TraversalEdgeBehavior.closedLoop
-          : TraversalEdgeBehavior.parentScope;
-
-  TraversalEdgeBehavior get _directionalTraversalEdgeBehavior =>
-      widget.mode == OverlayAccessibilityMode.modal
-          ? TraversalEdgeBehavior.stop
           : TraversalEdgeBehavior.parentScope;
 
   void _scheduleFocusRequest() {
@@ -92,7 +82,7 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
             !_focusScopeNode.hasFocus)) {
       return;
     }
-    final previousFocus = _previousFocus?.target;
+    final previousFocus = widget.focusRestoreTarget?.target;
     if (previousFocus == null) {
       return;
     }

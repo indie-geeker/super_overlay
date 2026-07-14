@@ -27,6 +27,9 @@ class MainOverlay {
   OverlayDialogWidgetController? _dialogController;
   AttachDialogWidgetController? _attachController;
   ValueNotifier<Rect?>? _attachTargetRect;
+  WeakReference<FocusNode>? _focusRestoreTarget;
+  bool _focusRestoreTargetCaptured = false;
+  int _focusRestoreTargetToken = 0;
   Type? _resultType;
   bool Function(Object? value)? _acceptsResult;
 
@@ -41,6 +44,7 @@ class MainOverlay {
     required ShowCustomParam param,
     required VoidCallback onMask,
   }) {
+    _captureFocusRestoreTarget();
     _replaceController(param.controller);
     _resultType = T;
     _acceptsResult = (value) => value is T;
@@ -54,6 +58,7 @@ class MainOverlay {
       requestFocus: param.requestFocus,
       semanticsLabel: param.semanticsLabel,
       handlesEscape: param.backType != BackType.ignore || param.onBack != null,
+      focusRestoreTarget: _focusRestoreTarget,
       child: OverlayDialogWidget(
         controller: _dialogController!,
         alignment: param.alignment,
@@ -88,6 +93,7 @@ class MainOverlay {
     required VoidCallback onMask,
     required Future<void> Function() onTargetUnavailable,
   }) {
+    _captureFocusRestoreTarget();
     _replaceController(param.controller);
     _resultType = T;
     _acceptsResult = (value) => value is T;
@@ -102,6 +108,7 @@ class MainOverlay {
       requestFocus: param.requestFocus,
       semanticsLabel: param.semanticsLabel,
       handlesEscape: param.backType != BackType.ignore || param.onBack != null,
+      focusRestoreTarget: _focusRestoreTarget,
       child: AttachDialogWidget(
         param: param,
         controller: _attachController!,
@@ -113,6 +120,34 @@ class MainOverlay {
     overlayEntry.markNeedsBuild();
 
     return _completionFuture<T>(param);
+  }
+
+  void _captureFocusRestoreTarget() {
+    _focusRestoreTargetToken++;
+    if (_focusRestoreTargetCaptured) {
+      return;
+    }
+    _focusRestoreTargetCaptured = true;
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    _focusRestoreTarget =
+        primaryFocus == null ? null : WeakReference<FocusNode>(primaryFocus);
+  }
+
+  void _scheduleFocusRestoreTargetClear() {
+    final token = ++_focusRestoreTargetToken;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (token != _focusRestoreTargetToken) {
+        return;
+      }
+      _focusRestoreTarget = null;
+      _focusRestoreTargetCaptured = false;
+    });
+  }
+
+  void _clearFocusRestoreTarget() {
+    _focusRestoreTargetToken++;
+    _focusRestoreTarget = null;
+    _focusRestoreTargetCaptured = false;
   }
 
   void _replaceController(SuperOverlayController? controller) {
@@ -213,6 +248,7 @@ class MainOverlay {
     _controller = null;
     _widget = const SizedBox.shrink();
     overlayEntry.markNeedsBuild();
+    _scheduleFocusRestoreTargetClear();
 
     final completer = _completer;
     if (completer != null && !completer.isCompleted) {
@@ -229,6 +265,7 @@ class MainOverlay {
     _dialogController = null;
     _attachController = null;
     _attachTargetRect = null;
+    _clearFocusRestoreTarget();
     _refresh = null;
     _controller?.dismiss();
     _controller = null;

@@ -288,10 +288,11 @@ or `Form` callback may therefore also receive `didPop == false` while
 SuperOverlay blocks the route. Keep failed-pop callbacks idempotent and avoid
 destructive side effects until `didPop` is true.
 
-Dialog and loading surfaces capture focus by default, use a closed-loop focus
-scope, block background semantics, expose a semantic route, and restore prior
-focus when possible. Supply labels when the surrounding content does not make
-the purpose clear:
+Modal dialogs and loading surfaces capture focus by default, use a closed-loop
+focus scope, block background semantics, expose a semantic route, and restore
+prior focus when possible. `semanticsLabel` labels the overlay's semantic
+container and becomes its route label for modal dialogs. Supply labels when the
+surrounding content does not make the purpose clear:
 
 ```dart
 const OverlayDialogOptions(
@@ -303,10 +304,11 @@ const OverlayDialogOptions(
 
 Dialogs with `consumeEvents: false` are non-modal for both pointer input and
 semantics: the underlying page remains interactive and discoverable, and focus
-traversal is not trapped inside the overlay. Set `requestFocus: false` when the
-page should also retain keyboard focus. In that case, overlay Escape handling
-is guaranteed only while focus is inside the overlay; SuperOverlay does not
-install a host-level keyboard dispatcher.
+traversal is not trapped inside the overlay. `requestFocus` controls only
+initial focus capture; set it to `false` when the page should retain keyboard
+focus. Regardless of that setting, a non-modal dialog handles Escape only while
+focus remains inside it. SuperOverlay does not install a host-level keyboard
+dispatcher.
 
 Popup focus is non-modal by default. Toasts and notifications are live regions
 and do not steal focus. Application content remains responsible for semantic
