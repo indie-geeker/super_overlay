@@ -30,56 +30,62 @@ class OverlayAccessibilityScope extends StatefulWidget {
 }
 
 class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
-  late final FocusScopeNode _focusScopeNode = FocusScopeNode(
-    debugLabel: 'SuperOverlay ${widget.mode.name} focus scope',
-    traversalEdgeBehavior: _traversalEdgeBehavior,
+  late final FocusScopeNode _modalFocusScopeNode = FocusScopeNode(
+    debugLabel: 'SuperOverlay modal focus scope',
+    traversalEdgeBehavior: TraversalEdgeBehavior.closedLoop,
+  );
+  late final FocusNode _nonModalFocusNode = FocusNode(
+    debugLabel: 'SuperOverlay ${widget.mode.name} focus',
   );
   bool _hadFocus = false;
+
+  FocusNode get _activeFocusNode =>
+      widget.mode == OverlayAccessibilityMode.modal
+          ? _modalFocusScopeNode
+          : _nonModalFocusNode;
 
   @override
   void initState() {
     super.initState();
-    _focusScopeNode.addListener(_handleFocusChange);
+    _modalFocusScopeNode.addListener(_handleFocusChange);
+    _nonModalFocusNode.addListener(_handleFocusChange);
     _scheduleFocusRequest();
   }
 
   @override
   void didUpdateWidget(covariant OverlayAccessibilityScope oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.mode != widget.mode) {
-      _focusScopeNode
-        ..debugLabel = 'SuperOverlay ${widget.mode.name} focus scope'
-        ..traversalEdgeBehavior = _traversalEdgeBehavior;
+    final modeChanged = oldWidget.mode != widget.mode;
+    if (modeChanged && widget.mode != OverlayAccessibilityMode.modal) {
+      _nonModalFocusNode.debugLabel = 'SuperOverlay ${widget.mode.name} focus';
     }
-    if (!oldWidget.requestFocus && widget.requestFocus) {
+    if (widget.requestFocus && (modeChanged || !oldWidget.requestFocus)) {
       _scheduleFocusRequest();
     }
   }
-
-  TraversalEdgeBehavior get _traversalEdgeBehavior =>
-      widget.mode == OverlayAccessibilityMode.modal
-          ? TraversalEdgeBehavior.closedLoop
-          : TraversalEdgeBehavior.parentScope;
 
   void _scheduleFocusRequest() {
     if (!widget.requestFocus) {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _focusScopeNode.canRequestFocus) {
-        _focusScopeNode.requestFocus();
+      if (mounted && _activeFocusNode.canRequestFocus) {
+        _activeFocusNode.requestFocus();
       }
     });
   }
 
   void _handleFocusChange() {
-    _hadFocus = _hadFocus || _focusScopeNode.hasFocus;
+    _hadFocus =
+        _hadFocus ||
+        _modalFocusScopeNode.hasFocus ||
+        _nonModalFocusNode.hasFocus;
   }
 
   void _restorePreviousFocus() {
     if (!_hadFocus ||
         (widget.mode != OverlayAccessibilityMode.modal &&
-            !_focusScopeNode.hasFocus)) {
+            !_activeFocusNode.hasFocus)) {
       return;
     }
     final previousFocus = widget.focusRestoreTarget?.target;
@@ -98,7 +104,18 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
 
   @override
   Widget build(BuildContext context) {
-    Widget result = FocusScope(node: _focusScopeNode, child: widget.child);
+    Widget result =
+        widget.mode == OverlayAccessibilityMode.modal
+            ? FocusScope(node: _modalFocusScopeNode, child: widget.child)
+            : Semantics(
+              explicitChildNodes: true,
+              child: Focus(
+                focusNode: _nonModalFocusNode,
+                includeSemantics: false,
+                skipTraversal: true,
+                child: widget.child,
+              ),
+            );
 
     if (widget.handlesEscape) {
       result = CallbackShortcuts(
@@ -132,8 +149,10 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
   @override
   void dispose() {
     _restorePreviousFocus();
-    _focusScopeNode.removeListener(_handleFocusChange);
-    _focusScopeNode.dispose();
+    _modalFocusScopeNode.removeListener(_handleFocusChange);
+    _nonModalFocusNode.removeListener(_handleFocusChange);
+    _modalFocusScopeNode.dispose();
+    _nonModalFocusNode.dispose();
     super.dispose();
   }
 }

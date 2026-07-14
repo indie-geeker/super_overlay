@@ -255,6 +255,62 @@ void main() {
     dialogFocus.dispose();
   });
 
+  testWidgets('non-modal dialog allows directional focus to exit', (
+    tester,
+  ) async {
+    final integration = SuperOverlay.integration();
+    final pageFocus = FocusNode(debugLabel: 'lower page control');
+    final dialogFocus = FocusNode(debugLabel: 'upper non-modal control');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: <NavigatorObserver>[integration.observer],
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: TextButton(
+              focusNode: pageFocus,
+              onPressed: () {},
+              child: const Text('Lower page control'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final handle = SuperOverlay.dialog.show<void>(
+      builder:
+          (_) => TextButton(
+            focusNode: dialogFocus,
+            onPressed: () {},
+            child: const Text('Upper non-modal control'),
+          ),
+      options: const OverlayDialogOptions(
+        alignment: Alignment.topCenter,
+        consumeEvents: false,
+      ),
+    );
+    await tester.pumpAndSettle();
+    dialogFocus.requestFocus();
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.pump();
+
+    expect(pageFocus.hasFocus, isTrue);
+
+    final close = handle.close();
+    await tester.pumpAndSettle();
+    await close;
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+    pageFocus.dispose();
+    dialogFocus.dispose();
+  });
+
   testWidgets('Escape uses the same dismiss behavior as system back', (
     tester,
   ) async {
