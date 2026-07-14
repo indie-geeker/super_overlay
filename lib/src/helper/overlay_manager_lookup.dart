@@ -1,6 +1,34 @@
 part of 'overlay_manager.dart';
 
 extension _OverlayManagerLookup on OverlayManager {
+  _NotifyRecord? _findInFlightNotifyByIdentity({
+    required String identityTag,
+    required int generation,
+  }) {
+    for (final record in _inFlightNotifyRecords) {
+      if (record.generation == generation &&
+          record.matchesIdentityTag(identityTag)) {
+        return record;
+      }
+    }
+    return null;
+  }
+
+  _OverlayRecord? _findInFlightRecordByIdentity({
+    required OverlayType? type,
+    required String identityTag,
+    required int generation,
+  }) {
+    for (final record in _inFlightDialogRecords) {
+      if (record.generation == generation &&
+          (type == null || record.type == type) &&
+          record.matchesIdentityTag(identityTag)) {
+        return record;
+      }
+    }
+    return null;
+  }
+
   _NotifyRecord? _findNotifyByBusinessTag({
     required String businessTag,
     required int generation,

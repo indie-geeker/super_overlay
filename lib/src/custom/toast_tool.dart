@@ -530,6 +530,7 @@ class _ActiveToast {
   late Timer timer;
   final VoidCallback? onDismissed;
   final List<_ToastRequest> _requests = <_ToastRequest>[];
+  _ToastRequest? _currentRequest;
   Completer<void>? _dismissCompleter;
   bool invalidated = false;
   bool _finalizationStarted = false;
@@ -545,6 +546,7 @@ class _ActiveToast {
       );
     }
     _requests.add(request);
+    _currentRequest = request;
     request.completeAppear();
   }
 
@@ -599,20 +601,20 @@ class _ActiveToast {
       request.completeDismiss();
     }
     _requests.clear();
+    _currentRequest = null;
   }
 
   bool matchesTag(String tag, {_ToastTagMatch match = _ToastTagMatch.any}) {
-    return _requests.any((request) => request.matchesTag(tag, match: match));
+    return _currentRequest?.matchesTag(tag, match: match) ?? false;
   }
 
   _ToastRequest? requestForTag(
     String tag, {
     _ToastTagMatch match = _ToastTagMatch.any,
   }) {
-    for (final request in _requests.reversed) {
-      if (request.matchesTag(tag, match: match)) {
-        return request;
-      }
+    final request = _currentRequest;
+    if (request != null && request.matchesTag(tag, match: match)) {
+      return request;
     }
     return null;
   }

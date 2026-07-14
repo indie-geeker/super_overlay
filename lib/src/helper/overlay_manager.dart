@@ -286,28 +286,37 @@ class OverlayManager {
 
   void _settleActiveGeneration(_OverlayHostState host) {
     final generation = host.generation;
-    final dialogRecords = <_OverlayRecord>[
+    final dialogRecords = <_OverlayRecord>{
       ..._dialogQueue.where((record) => record.generation == generation),
       ..._inFlightDialogRecords.where(
         (record) => record.generation == generation,
       ),
-    ];
-    final notifyRecords = <_NotifyRecord>[
+    };
+    final notifyRecords = <_NotifyRecord>{
       ..._notifyQueue.where((record) => record.generation == generation),
       ..._inFlightNotifyRecords.where(
         (record) => record.generation == generation,
       ),
-    ];
+    };
 
     for (final record in dialogRecords) {
       record.displayTimer?.cancel();
-      record.overlay.mainOverlay.disposeImmediately();
-      record.overlay.overlayEntry.remove();
+      final dismissal = record.dismissal;
+      if (dismissal == null || dismissal.beginCleanup()) {
+        record.overlay.mainOverlay.disposeImmediately();
+        record.overlay.overlayEntry.remove();
+      }
+      record.presentationState = _OverlayPresentationState.closed;
+      dismissal?.settleForTeardown();
     }
     for (final record in notifyRecords) {
       record.displayTimer?.cancel();
-      record.overlay.mainOverlay.disposeImmediately();
-      record.overlay.overlayEntry.remove();
+      final dismissal = record.dismissal;
+      if (dismissal == null || dismissal.beginCleanup()) {
+        record.overlay.mainOverlay.disposeImmediately();
+        record.overlay.overlayEntry.remove();
+      }
+      dismissal?.settleForTeardown();
     }
     _dialogQueue.removeWhere((record) => record.generation == generation);
     _notifyQueue.removeWhere((record) => record.generation == generation);

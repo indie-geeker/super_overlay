@@ -93,7 +93,7 @@ class _OverlayRecord {
   final SuperOverlayOnBack? onBack;
   bool permanent;
   Timer? displayTimer;
-  Future<void>? dismissal;
+  _RecordDismissalOperation? dismissal;
   int detachedFrameCount = 0;
   Rect? lastRenderedAnchorRect;
   _OverlayPresentationState presentationState =
@@ -131,12 +131,43 @@ class _NotifyRecord {
   final BackType backType;
   final SuperOverlayOnBack? onBack;
   Timer? displayTimer;
-  Future<void>? dismissal;
+  _RecordDismissalOperation? dismissal;
 
   bool matchesIdentityTag(String value) => tag == value;
   bool matchesBusinessTag(String value) => businessTag == value;
   bool matchesTag(String value) =>
       matchesIdentityTag(value) || matchesBusinessTag(value);
+}
+
+class _RecordDismissalOperation {
+  final Completer<void> _completer = Completer<void>();
+  bool _cleanupClaimed = false;
+
+  Future<void> get future => _completer.future;
+
+  bool beginCleanup() {
+    if (_cleanupClaimed) {
+      return false;
+    }
+    _cleanupClaimed = true;
+    return true;
+  }
+
+  void complete() {
+    if (!_completer.isCompleted) {
+      _completer.complete();
+    }
+  }
+
+  void completeError(Object error, StackTrace stackTrace) {
+    if (!_completer.isCompleted) {
+      _completer.completeError(error, stackTrace);
+    }
+  }
+
+  void settleForTeardown() {
+    complete();
+  }
 }
 
 class ExistingCommandOverlay<T> {

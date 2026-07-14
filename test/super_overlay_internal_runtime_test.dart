@@ -66,6 +66,58 @@ Future<void> _expectReplacementWaitsForInFlightClose(
   await replacementClose;
 }
 
+Future<void> _expectHandleCloseJoinsReplacementDismissal(
+  WidgetTester tester, {
+  required String surface,
+  required _ShowReplacingOverlay show,
+}) async {
+  final originalLabel = 'Replacement-owned $surface';
+  final replacementLabel = 'Replacement winner $surface';
+  final original = show(label: originalLabel, strategy: OverlayStrategy.stack);
+  await tester.pumpAndSettle();
+  await original.visible;
+
+  var originalClosed = false;
+  final originalClosedProbe = original.closed.then<void>((_) {
+    originalClosed = true;
+  });
+  final replacement = show(
+    label: replacementLabel,
+    strategy: OverlayStrategy.replaceExisting,
+  );
+  var replacementVisible = false;
+  final replacementVisibleProbe = replacement.visible.then<void>((_) {
+    replacementVisible = true;
+  });
+  await tester.pump();
+
+  var joinedCloseCompleted = false;
+  final joinedClose = original.close().then<void>((_) {
+    joinedCloseCompleted = true;
+  });
+  await tester.pump(const Duration(milliseconds: 50));
+
+  expect(joinedCloseCompleted, isFalse);
+  expect(originalClosed, isFalse);
+  expect(replacementVisible, isFalse);
+  expect(find.text(originalLabel), findsOneWidget);
+  expect(find.text(replacementLabel), findsNothing);
+
+  await tester.pumpAndSettle();
+  await joinedClose;
+  await originalClosedProbe;
+  await replacementVisibleProbe;
+
+  expect(joinedCloseCompleted, isTrue);
+  expect(originalClosed, isTrue);
+  expect(find.text(originalLabel), findsNothing);
+  expect(find.text(replacementLabel), findsOneWidget);
+
+  final replacementClose = replacement.close();
+  await tester.pumpAndSettle();
+  await replacementClose;
+}
+
 void main() {
   setUp(() {
     overlayConfig.custom = const CustomDialogConfig();
@@ -231,6 +283,87 @@ void main() {
             label,
             options: OverlayNotifyOptions(
               tag: 'in-flight-notification',
+              strategy: strategy,
+              displayDuration: null,
+            ),
+          ),
+    );
+  });
+
+  testWidgets('dialog handle close joins replacement dismissal', (
+    tester,
+  ) async {
+    overlayConfig.custom = const CustomDialogConfig(
+      animationTime: Duration(milliseconds: 500),
+      nonAnimationTypes: [NonAnimationType.routeClose],
+    );
+    await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
+
+    await _expectHandleCloseJoinsReplacementDismissal(
+      tester,
+      surface: 'dialog',
+      show:
+          ({required label, required strategy}) =>
+              SuperOverlay.dialog.show<void>(
+                builder: (_) => Center(child: Text(label)),
+                options: OverlayDialogOptions(
+                  tag: 'join-replacement-dialog',
+                  strategy: strategy,
+                ),
+              ),
+    );
+  });
+
+  testWidgets('popup handle close joins replacement dismissal', (tester) async {
+    overlayConfig.attach = const AttachDialogConfig(
+      animationTime: Duration(milliseconds: 500),
+      nonAnimationTypes: [NonAnimationType.routeClose],
+    );
+    late BuildContext targetContext;
+    await tester.pumpWidget(
+      _buildOverlayApp(
+        Builder(
+          builder: (context) {
+            targetContext = context;
+            return const SizedBox(width: 80, height: 40);
+          },
+        ),
+      ),
+    );
+
+    await _expectHandleCloseJoinsReplacementDismissal(
+      tester,
+      surface: 'popup',
+      show:
+          ({required label, required strategy}) =>
+              SuperOverlay.popup.show<void>(
+                targetContext: targetContext,
+                builder: (_) => Text(label),
+                options: OverlayPopupOptions(
+                  tag: 'join-replacement-popup',
+                  strategy: strategy,
+                ),
+              ),
+    );
+  });
+
+  testWidgets('notification handle close joins replacement dismissal', (
+    tester,
+  ) async {
+    overlayConfig.notify = const NotifyConfig(
+      animationTime: Duration(milliseconds: 500),
+      nonAnimationTypes: [],
+    );
+    await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
+
+    await _expectHandleCloseJoinsReplacementDismissal(
+      tester,
+      surface: 'notification',
+      show:
+          ({required label, required strategy}) => SuperOverlay.notify.success(
+            label,
+            options: OverlayNotifyOptions(
+              tag: 'join-replacement-notification',
               strategy: strategy,
               displayDuration: null,
             ),
