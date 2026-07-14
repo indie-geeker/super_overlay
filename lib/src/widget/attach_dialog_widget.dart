@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../config/enum_config.dart';
@@ -20,11 +21,13 @@ class AttachDialogWidget extends StatefulWidget {
   const AttachDialogWidget({
     super.key,
     required this.param,
+    required this.targetRectListenable,
     required this.onMask,
     required this.onTargetUnavailable,
   });
 
   final ShowAttachParam param;
+  final ValueListenable<Rect?> targetRectListenable;
   final VoidCallback onMask;
   final Future<void> Function() onTargetUnavailable;
 
@@ -47,12 +50,20 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
   void initState() {
     super.initState();
     _bodyController = AnimationController(vsync: this);
+    widget.targetRectListenable.addListener(_handleTargetRectChanged);
     _forward();
   }
 
   @override
   void didUpdateWidget(covariant AttachDialogWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(
+      oldWidget.targetRectListenable,
+      widget.targetRectListenable,
+    )) {
+      oldWidget.targetRectListenable.removeListener(_handleTargetRectChanged);
+      widget.targetRectListenable.addListener(_handleTargetRectChanged);
+    }
     if (oldWidget.param != widget.param) {
       _layoutInfo = null;
       _pendingLayoutInfo = null;
@@ -63,13 +74,20 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
 
   @override
   void dispose() {
+    widget.targetRectListenable.removeListener(_handleTargetRectChanged);
     _bodyController.dispose();
     super.dispose();
   }
 
+  void _handleTargetRectChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final targetRect = _targetRect();
+    final targetRect = _targetRect(context);
     if (targetRect == null) {
       _scheduleTargetFailure();
       return const SizedBox.shrink();
@@ -292,25 +310,36 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
     );
   }
 
-  Rect? _targetRect() {
+  Rect? _targetRect(BuildContext context) {
     final targetContext = param.targetContext;
-    final renderObject =
-        targetContext?.mounted == true
-            ? targetContext?.findRenderObject()
-            : null;
-    var hasTargetInfo = false;
-    var targetOffset = Offset.zero;
-    var targetSize = Size.zero;
+    final trackedRect = widget.targetRectListenable.value;
+    var hasTargetInfo = trackedRect != null;
+    var targetOffset = trackedRect?.topLeft ?? Offset.zero;
+    var targetSize = trackedRect?.size ?? Size.zero;
 
-    if (renderObject is RenderBox &&
-        renderObject.attached &&
-        renderObject.hasSize) {
-      final offset = renderObject.localToGlobal(Offset.zero);
-      final size = renderObject.size;
-      if (_isValidOffset(offset) && _isValidSize(size)) {
-        targetOffset = offset;
-        targetSize = size;
-        hasTargetInfo = true;
+    if (!hasTargetInfo) {
+      final renderObject =
+          targetContext?.mounted == true
+              ? targetContext?.findRenderObject()
+              : null;
+      if (renderObject is RenderBox &&
+          renderObject.attached &&
+          renderObject.hasSize) {
+        final overlayRenderBox = _overlayRenderBox(context);
+        if (overlayRenderBox == null) {
+          return null;
+        }
+        final rect = MatrixUtils.transformRect(
+          renderObject.getTransformTo(overlayRenderBox),
+          Offset.zero & renderObject.size,
+        );
+        final offset = rect.topLeft;
+        final size = rect.size;
+        if (_isValidOffset(offset) && _isValidSize(size)) {
+          targetOffset = offset;
+          targetSize = size;
+          hasTargetInfo = true;
+        }
       }
     }
 
@@ -329,6 +358,18 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
         param.targetRectBuilder?.call(targetOffset & targetSize) ??
         targetOffset & targetSize;
     return _isValidRect(targetRect) ? targetRect : null;
+  }
+
+  RenderBox? _overlayRenderBox(BuildContext context) {
+    try {
+      final renderObject = Overlay.of(context).context.findRenderObject();
+      if (renderObject is RenderBox &&
+          renderObject.attached &&
+          renderObject.hasSize) {
+        return renderObject;
+      }
+    } catch (_) {}
+    return null;
   }
 
   bool _isValidOffset(Offset offset) {

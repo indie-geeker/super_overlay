@@ -94,6 +94,7 @@ class _OverlayRecord {
   bool permanent;
   Timer? displayTimer;
   int detachedFrameCount = 0;
+  Rect? lastRenderedAnchorRect;
   _OverlayPresentationState presentationState =
       _OverlayPresentationState.showing;
 

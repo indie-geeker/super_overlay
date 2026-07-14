@@ -1,5 +1,7 @@
 part of 'overlay_manager.dart';
 
+const _anchorMovementTolerance = 0.5;
+
 extension _OverlayManagerLifecycle on OverlayManager {
   Future<bool> _handleBackEvent(int generation) async {
     if (!ownsGeneration(generation)) {
@@ -146,9 +148,26 @@ extension _OverlayManagerLifecycle on OverlayManager {
       if (renderBox == null) {
         removeList.add(record);
       } else if (_hasInvalidGeometry(renderBox)) {
-        record.overlay.hide();
+        if (record.type == OverlayType.attach) {
+          removeList.add(record);
+        } else {
+          record.overlay.hide();
+        }
       } else {
         record.overlay.appear();
+        if (record.type == OverlayType.attach) {
+          final anchorRect = _anchorRectInOverlay(record, renderBox);
+          if (anchorRect == null) {
+            removeList.add(record);
+            continue;
+          }
+          final previousRect = record.lastRenderedAnchorRect;
+          if (previousRect == null ||
+              _rectDelta(previousRect, anchorRect) > _anchorMovementTolerance) {
+            record.lastRenderedAnchorRect = anchorRect;
+            record.overlay.mainOverlay.updateAttachTargetRect(anchorRect);
+          }
+        }
       }
     }
 
@@ -164,6 +183,55 @@ extension _OverlayManagerLifecycle on OverlayManager {
         ),
       );
     }
+  }
+
+  Rect? _anchorRectInOverlay(_OverlayRecord record, RenderBox targetRenderBox) {
+    final host = _hosts[record.generation];
+    final overlayContext = host?.contextAttach ?? host?.contextCustom;
+    if (overlayContext == null) {
+      return null;
+    }
+
+    try {
+      final overlayRenderObject =
+          overlayOf(overlayContext).context.findRenderObject();
+      if (overlayRenderObject is! RenderBox ||
+          !overlayRenderObject.attached ||
+          !overlayRenderObject.hasSize) {
+        return null;
+      }
+      final rect = MatrixUtils.transformRect(
+        targetRenderBox.getTransformTo(overlayRenderObject),
+        Offset.zero & targetRenderBox.size,
+      );
+      return _isValidRect(rect) ? rect : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  double _rectDelta(Rect previous, Rect current) {
+    var delta = 0.0;
+    for (final value in <double>[
+      (previous.left - current.left).abs(),
+      (previous.top - current.top).abs(),
+      (previous.right - current.right).abs(),
+      (previous.bottom - current.bottom).abs(),
+    ]) {
+      if (value > delta) {
+        delta = value;
+      }
+    }
+    return delta;
+  }
+
+  bool _isValidRect(Rect rect) {
+    return rect.left.isFinite &&
+        rect.top.isFinite &&
+        rect.right.isFinite &&
+        rect.bottom.isFinite &&
+        rect.width > 0 &&
+        rect.height > 0;
   }
 
   Future<bool?> _handleBackConfig({

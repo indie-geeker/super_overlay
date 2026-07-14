@@ -25,6 +25,7 @@ class MainOverlay {
   VoidCallback? _refresh;
   SuperOverlayController? _controller;
   OverlayDialogWidgetController? _dialogController;
+  ValueNotifier<Rect?>? _attachTargetRect;
   Type? _resultType;
 
   bool get visible => _visible;
@@ -43,6 +44,7 @@ class MainOverlay {
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _dialogController = OverlayDialogWidgetController();
+    _attachTargetRect = null;
     _widget = OverlayAccessibilityScope(
       mode: param.accessibilityMode,
       requestFocus: param.requestFocus,
@@ -87,6 +89,8 @@ class MainOverlay {
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _dialogController = null;
+    final attachTargetRect = ValueNotifier<Rect?>(null);
+    _attachTargetRect = attachTargetRect;
     _widget = OverlayAccessibilityScope(
       mode: param.accessibilityMode,
       requestFocus: param.requestFocus,
@@ -94,6 +98,7 @@ class MainOverlay {
       handlesEscape: param.backType != BackType.ignore || param.onBack != null,
       child: AttachDialogWidget(
         param: param,
+        targetRectListenable: attachTargetRect,
         onMask: onMask,
         onTargetUnavailable: onTargetUnavailable,
       ),
@@ -140,6 +145,13 @@ class MainOverlay {
   VoidCallback? get currentRefresh => _refresh;
   Future<void>? get currentVisibleFuture => _controller?.visible;
 
+  void updateAttachTargetRect(Rect targetRect) {
+    final listenable = _attachTargetRect;
+    if (listenable != null && listenable.value != targetRect) {
+      listenable.value = targetRect;
+    }
+  }
+
   Future<T?>? currentClosedFuture<T>({String? tag}) {
     final completer = _completer;
     if (completer == null) {
@@ -171,6 +183,7 @@ class MainOverlay {
     _onDismiss = null;
     await _dialogController?.dismiss(closeType: closeType);
     _dialogController = null;
+    _attachTargetRect = null;
     _refresh = null;
     _controller?.dismiss();
     _controller = null;
@@ -189,6 +202,7 @@ class MainOverlay {
     visible = false;
     _onDismiss = null;
     _dialogController = null;
+    _attachTargetRect = null;
     _refresh = null;
     _controller?.dismiss();
     _controller = null;
