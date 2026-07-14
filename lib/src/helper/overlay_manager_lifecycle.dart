@@ -96,6 +96,20 @@ extension _OverlayManagerLifecycle on OverlayManager {
             invocationContext is! Element || invocationContext.mounted;
         if (scopeTracked && invocationMounted) {
           record.detachedFrameCount = 0;
+          final previousState = record.presentationState;
+          if (NavigatorScopeRegistry.instance.isOwnerCurrent(owner)) {
+            _resumeRecord(record);
+          } else {
+            _suspendRecord(record);
+          }
+          if (record.presentationState != previousState) {
+            _syncBackDispositionForGeneration(record.generation);
+          }
+          if (record.presentationState == _OverlayPresentationState.suspended ||
+              record.presentationState ==
+                  _OverlayPresentationState.suspendedBeforeVisible) {
+            continue;
+          }
         } else {
           record.detachedFrameCount++;
           if (record.detachedFrameCount == 1) {

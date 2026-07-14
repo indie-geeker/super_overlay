@@ -390,6 +390,7 @@ class NavigatorScopeRegistry {
     final scope = _scopes[owner.scopeIdentity];
     return isOwnerTracked(owner) &&
         scope != null &&
+        scope.isNavigatorActive() &&
         scope.isLifecycleCurrent(owner.route);
   }
 
@@ -466,6 +467,19 @@ class _NavigatorScope {
   bool get wasAttached => _wasAttached;
 
   bool isAttached() => navigatorState() != null;
+
+  bool isNavigatorActive() {
+    if (isRoot) {
+      return true;
+    }
+    final navigator = navigatorState();
+    if (navigator == null || !navigator.mounted) {
+      return false;
+    }
+    // Flutter 3.29 exposes only getNotifier for a non-listening lookup.
+    // ignore: deprecated_member_use
+    return TickerMode.getNotifier(navigator.context).value;
+  }
 
   bool containsRoute(Route<dynamic> route) =>
       _resolveRoutes().any((candidate) => identical(candidate, route));

@@ -974,18 +974,20 @@ class OverlayManager {
       return;
     }
     record.presentationState = _OverlayPresentationState.closing;
-    unawaited(
-      _closeSingle<void>(
-        tag: record.tag,
-        result: null,
-        force: true,
-        type: record.type,
-        closeType: OverlayCloseType.route,
-        generation: record.generation,
-      ).whenComplete(() {
-        record.presentationState = _OverlayPresentationState.closed;
-      }),
-    );
+    ViewUtils.addSafeUse(() {
+      unawaited(
+        _closeSingle<void>(
+          tag: record.tag,
+          result: null,
+          force: true,
+          type: record.type,
+          closeType: OverlayCloseType.route,
+          generation: record.generation,
+        ).whenComplete(() {
+          record.presentationState = _OverlayPresentationState.closed;
+        }),
+      );
+    });
   }
 
   void _suspendRecord(_OverlayRecord record) {
