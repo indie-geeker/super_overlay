@@ -280,8 +280,13 @@ await SuperOverlay.close(
 `OverlayBackBehavior.dismiss` closes the highest-priority consuming overlay,
 `block` keeps it visible and blocks the route, and `passThrough` leaves the back
 event to the application. Android predictive back is coordinated through the
-same `ModalRoute` `PopEntry` protocol used by `PopScope`. Escape uses the same
-overlay policy on keyboard platforms.
+same `ModalRoute` `PopEntry` protocol used by `PopScope`.
+
+On keyboard platforms, Escape is focus-local: it uses the same overlay policy
+only while keyboard focus is inside the overlay. `requestFocus` controls only
+initial focus capture. With `requestFocus: false`, the page retains focus
+initially, so Escape remains with the page until focus enters the overlay.
+SuperOverlay does not install a host-level keyboard dispatcher.
 
 Flutter notifies every `PopEntry` after a failed pop. An application `PopScope`
 or `Form` callback may therefore also receive `didPop == false` while
@@ -306,9 +311,8 @@ Dialogs with `consumeEvents: false` are non-modal for both pointer input and
 semantics: the underlying page remains interactive and discoverable, and focus
 traversal is not trapped inside the overlay. `requestFocus` controls only
 initial focus capture; set it to `false` when the page should retain keyboard
-focus. Regardless of that setting, a non-modal dialog handles Escape only while
-focus remains inside it. SuperOverlay does not install a host-level keyboard
-dispatcher.
+focus. Because non-modal traversal is not trapped, traversal can move focus
+back to the page; Escape then remains with the page.
 
 Popup focus is non-modal by default. Toasts and notifications are live regions
 and do not steal focus. Application content remains responsible for semantic

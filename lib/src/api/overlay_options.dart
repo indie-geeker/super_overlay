@@ -78,12 +78,12 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
   /// Whether the dialog should capture initial focus after its first frame.
   ///
   /// This controls only initial focus capture. Set it to false to keep keyboard
-  /// focus on the underlying page.
+  /// focus on the underlying page. Escape is handled by the overlay only while
+  /// keyboard focus is inside the overlay. When false, the page retains focus
+  /// initially, so Escape remains with the page until focus enters the overlay.
   ///
   /// Modal dialogs that request focus use closed-loop traversal and restore the
-  /// previous focus when possible. Non-modal dialogs handle Escape only while
-  /// focus remains inside them, regardless of this setting. When handled,
-  /// Escape follows [backBehavior].
+  /// previous focus when possible. When handled, Escape follows [backBehavior].
   final bool requestFocus;
 
   /// Optional semantic container label for the dialog content.
@@ -164,9 +164,10 @@ class OverlayPopupOptions extends OverlaySurfaceOptions {
 
   /// Whether the popup should capture initial focus.
   ///
-  /// This controls only initial focus capture. Popups are non-modal and
-  /// preserve the current page focus by default.
-  /// Popup Escape handling is guaranteed only while focus is inside the popup.
+  /// This controls only initial focus capture. Escape is handled by the overlay
+  /// only while keyboard focus is inside the overlay. When false, the page
+  /// retains focus initially, so Escape remains with the page until focus enters
+  /// the overlay. Popups are non-modal and preserve page focus by default.
   final bool requestFocus;
 }
 
@@ -201,8 +202,14 @@ class OverlayLoadingOptions {
 
   /// Whether the loading surface should capture focus while it is visible.
   ///
-  /// Modal loading uses closed-loop traversal and restores prior focus when
-  /// possible. Escape follows [backBehavior].
+  /// This controls only initial focus capture. Escape is handled by the overlay
+  /// only while keyboard focus is inside the overlay. When false, the page
+  /// retains focus initially, so Escape remains with the page until focus enters
+  /// the overlay.
+  ///
+  /// Modal loading surfaces that request focus use closed-loop traversal and
+  /// restore prior focus when possible. When handled, Escape follows
+  /// [backBehavior].
   final bool requestFocus;
 
   /// Optional semantic route label for the loading content.
