@@ -104,6 +104,9 @@ class SuperOverlayObserver extends NavigatorObserver {
       scopeIdentity: _scopeIdentity,
       topRoute: topRoute,
     );
+    OverlayManager.instance.handleRouteTopologyChanged(
+      ownerIdentity: _ownerIdentity,
+    );
   }
 
   void dispose() {

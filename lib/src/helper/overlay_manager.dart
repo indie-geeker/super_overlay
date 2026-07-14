@@ -35,6 +35,7 @@ class OverlayManager {
   final Set<_OverlayRecord> _inFlightDialogRecords = <_OverlayRecord>{};
   final Set<_NotifyRecord> _inFlightNotifyRecords = <_NotifyRecord>{};
   final Set<int> _backAttemptsInProgress = <int>{};
+  final Set<Object> _scheduledIdleScopePrunes = HashSet<Object>.identity();
 
   final Map<int, _OverlayHostState> _hosts = <int, _OverlayHostState>{};
   final List<_OverlayHostState> _candidates = <_OverlayHostState>[];
@@ -134,13 +135,18 @@ class OverlayManager {
     _scheduleHostReconciliation();
   }
 
-  int requireActiveGeneration() => _commandHost.generation;
+  int requireActiveGeneration() {
+    final host = _commandHost;
+    _scheduleIdleDetachedScopePrunes(host);
+    return host.generation;
+  }
 
   OverlayRouteOwner captureRouteOwner(
     BuildContext context, {
     required String operation,
   }) {
     final host = _commandHost;
+    _scheduleIdleDetachedScopePrunes(host);
     return NavigatorScopeRegistry.instance.captureOwnerForContext(
       ownerIdentity: host.ownerIdentity,
       generation: host.generation,
@@ -155,6 +161,7 @@ class OverlayManager {
   }) {
     requireActiveGenerationMatch(generation);
     final host = _hostFor(generation);
+    _scheduleIdleDetachedScopePrunes(host);
     return NavigatorScopeRegistry.instance.captureRootOwner(
       ownerIdentity: host.ownerIdentity,
       generation: generation,
@@ -166,7 +173,7 @@ class OverlayManager {
     if (allowEmpty && _topology == _OverlayHostTopology.empty) {
       return null;
     }
-    return _commandHost.generation;
+    return requireActiveGeneration();
   }
 
   void requireActiveGenerationMatch(int generation) {
@@ -248,6 +255,7 @@ class OverlayManager {
       } else {
         _topology = _OverlayHostTopology.conflict;
       }
+      _scheduleIdleDetachedScopePrunes(active);
       return;
     }
 
@@ -265,6 +273,7 @@ class OverlayManager {
       _nextTagId = 0;
       _topology = _OverlayHostTopology.active;
       _syncBackDispositionForGeneration(promoted.generation);
+      _scheduleIdleDetachedScopePrunes(promoted);
       return;
     }
 
@@ -777,6 +786,7 @@ class OverlayManager {
     if (host == null || !_isActiveRouteHost(host)) {
       return;
     }
+    _scheduleIdleDetachedScopePrunes(host);
     if (route is PopupRoute || previousRoute == null) {
       return;
     }
@@ -800,6 +810,7 @@ class OverlayManager {
     if (host == null || !_isActiveRouteHost(host)) {
       return;
     }
+    _scheduleIdleDetachedScopePrunes(host);
     _closeRouteBoundRecords(host.generation, scopeIdentity, route);
     if (route is PopupRoute || previousRoute == null) {
       return;
@@ -823,6 +834,7 @@ class OverlayManager {
     if (host == null || !_isActiveRouteHost(host)) {
       return;
     }
+    _scheduleIdleDetachedScopePrunes(host);
     _closeRouteBoundRecords(host.generation, scopeIdentity, route);
   }
 
@@ -836,6 +848,7 @@ class OverlayManager {
     if (host == null || !_isActiveRouteHost(host)) {
       return;
     }
+    _scheduleIdleDetachedScopePrunes(host);
     if (oldRoute != null) {
       _closeRouteBoundRecords(host.generation, scopeIdentity, oldRoute);
     }
@@ -861,6 +874,56 @@ class OverlayManager {
       _closeRouteBoundRecord(record);
     }
     _syncBackDispositionForGeneration(host.generation);
+  }
+
+  void handleRouteTopologyChanged({required Object ownerIdentity}) {
+    final host = _routeHostForOwner(ownerIdentity);
+    if (host == null || !_isActiveRouteHost(host)) {
+      return;
+    }
+    _scheduleIdleDetachedScopePrunes(host);
+  }
+
+  void _scheduleIdleDetachedScopePrunes(_OverlayHostState host) {
+    if (!host.mounted || host.resourcesDisposed) {
+      return;
+    }
+    final registry = NavigatorScopeRegistry.instance;
+    final scopeIdentities = registry.detachedIdleScopeIdentities(
+      ownerIdentity: host.ownerIdentity,
+      generation: host.generation,
+    );
+    for (final scopeIdentity in scopeIdentities) {
+      if (_hasActiveRouteBoundRecord(host.generation, scopeIdentity) ||
+          !_scheduledIdleScopePrunes.add(scopeIdentity)) {
+        continue;
+      }
+      widgetsBinding.ensureVisualUpdate();
+      widgetsBinding.addPostFrameCallback((_) {
+        _scheduledIdleScopePrunes.remove(scopeIdentity);
+        final currentHost = _hosts[host.generation];
+        if (!identical(currentHost, host) ||
+            !host.mounted ||
+            host.resourcesDisposed ||
+            _hasActiveRouteBoundRecord(host.generation, scopeIdentity)) {
+          return;
+        }
+        registry.pruneIdleDetachedScope(
+          ownerIdentity: host.ownerIdentity,
+          generation: host.generation,
+          scopeIdentity: scopeIdentity,
+        );
+      });
+    }
+  }
+
+  bool _hasActiveRouteBoundRecord(int generation, Object scopeIdentity) {
+    return _dialogQueue.any(
+      (record) =>
+          record.generation == generation &&
+          record.bindPage &&
+          identical(record.routeOwner?.scopeIdentity, scopeIdentity),
+    );
   }
 
   _OverlayHostState? _routeHostForOwner(Object ownerIdentity) {

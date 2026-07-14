@@ -96,16 +96,22 @@ class NavigatorScopeRegistry {
     if (generations == null || !generations.remove(generation)) {
       return;
     }
+    final ownerScopes = _scopesForOwner(ownerIdentity).toList(growable: false);
     _removeRetainedRootSnapshot(ownerIdentity, generation);
-    for (final scope in _scopesForOwner(ownerIdentity)) {
+    for (final scope in ownerScopes) {
       scope.unbindGeneration(generation);
     }
     if (generations.isEmpty) {
       _hostGenerations.remove(ownerIdentity);
       _backBlocked.remove(ownerIdentity);
+      for (final scope in ownerScopes) {
+        if (!scope.isRoot && scope.wasAttached && !scope.isAttached()) {
+          unregisterObserver(scope.scopeIdentity);
+        }
+      }
     } else {
       final survivingGeneration = generations.last;
-      for (final scope in _scopesForOwner(ownerIdentity)) {
+      for (final scope in ownerScopes) {
         if (scope.generation == null) {
           scope.bindGeneration(survivingGeneration);
         }
@@ -249,6 +255,37 @@ class NavigatorScopeRegistry {
     if (scope != null && !scope.isAttached()) {
       unregisterObserver(scopeIdentity);
     }
+  }
+
+  List<Object> detachedIdleScopeIdentities({
+    required Object ownerIdentity,
+    required int generation,
+  }) {
+    return <Object>[
+      for (final scope in _scopesForOwner(ownerIdentity))
+        if (!scope.isRoot &&
+            scope.generation == generation &&
+            scope.wasAttached &&
+            !scope.isAttached())
+          scope.scopeIdentity,
+    ];
+  }
+
+  void pruneIdleDetachedScope({
+    required Object ownerIdentity,
+    required int generation,
+    required Object scopeIdentity,
+  }) {
+    final scope = _scopes[scopeIdentity];
+    if (scope == null ||
+        scope.isRoot ||
+        !identical(scope.ownerIdentity, ownerIdentity) ||
+        scope.generation != generation ||
+        !scope.wasAttached ||
+        scope.isAttached()) {
+      return;
+    }
+    unregisterObserver(scopeIdentity);
   }
 
   ModalRoute<dynamic> requireRootModalRoute({
@@ -416,6 +453,7 @@ class _NavigatorScope {
   _WeakRootRouteSnapshot? _pendingRootTransfer;
   Object? _pendingRootTransferToken;
   bool _disposed = false;
+  bool _wasAttached = false;
 
   Route<dynamic>? get currentRoute => _currentRoute?.target;
 
@@ -424,6 +462,8 @@ class _NavigatorScope {
   }
 
   int get trackedRouteCount => _resolveRoutes().length;
+
+  bool get wasAttached => _wasAttached;
 
   bool isAttached() => navigatorState() != null;
 
@@ -457,6 +497,7 @@ class _NavigatorScope {
     _clearPendingRootTransfer();
     _clearRoutes();
     generation = value;
+    _wasAttached = _wasAttached || isAttached();
   }
 
   void unbindGeneration(int value) {
@@ -472,6 +513,7 @@ class _NavigatorScope {
     if (_disposed || generation == null) {
       return;
     }
+    _wasAttached = true;
     if (!_resolveRoutes().any((candidate) => identical(candidate, route))) {
       _routes.add(WeakReference<Route<dynamic>>(route));
       _register(route);
@@ -523,6 +565,7 @@ class _NavigatorScope {
       }
     }
     if (newRoute != null && generation != null) {
+      _wasAttached = true;
       if (index < 0 || index > routes.length) {
         routes.add(newRoute);
       } else {
@@ -541,6 +584,7 @@ class _NavigatorScope {
     if (_disposed || generation == null) {
       return;
     }
+    _wasAttached = true;
     if (!_resolveRoutes().any((candidate) => identical(candidate, route))) {
       _routes.add(WeakReference<Route<dynamic>>(route));
       _register(route);
@@ -555,7 +599,7 @@ class _NavigatorScope {
     }
     _pruneDeadReferences();
     for (final registration in _entries) {
-      registration.entry.updateCanPop(
+      registration.entry.target?.updateCanPop(
         !(blocked && identical(registration.route.target, currentRoute)),
       );
     }
@@ -689,7 +733,7 @@ class _NavigatorScope {
     _entries.add(
       _WeakPopEntryRegistration(
         route: WeakReference<ModalRoute<dynamic>>(route),
-        entry: entry,
+        entry: WeakReference<OverlayPopEntry>(entry),
       ),
     );
     route.registerPopEntry(entry);
@@ -705,7 +749,10 @@ class _NavigatorScope {
     if (index < 0) {
       return;
     }
-    final entry = _entries.removeAt(index).entry;
+    final entry = _entries.removeAt(index).entry.target;
+    if (entry == null) {
+      return;
+    }
     route.unregisterPopEntry(entry);
     entry.dispose();
   }
@@ -715,7 +762,7 @@ class _NavigatorScope {
       final route = registration.route.target;
       if (route == null) {
         _entries.remove(registration);
-        registration.entry.dispose();
+        registration.entry.target?.dispose();
       } else {
         _unregister(route);
       }
@@ -741,11 +788,15 @@ class _NavigatorScope {
   void _pruneDeadReferences() {
     _routes.removeWhere((reference) => reference.target == null);
     final deadEntries = _entries
-        .where((registration) => registration.route.target == null)
+        .where(
+          (registration) =>
+              registration.route.target == null ||
+              registration.entry.target == null,
+        )
         .toList(growable: false);
     for (final registration in deadEntries) {
       _entries.remove(registration);
-      registration.entry.dispose();
+      registration.entry.target?.dispose();
     }
     if (_currentRoute?.target == null) {
       _currentRoute = null;
@@ -769,7 +820,7 @@ class _WeakPopEntryRegistration {
   const _WeakPopEntryRegistration({required this.route, required this.entry});
 
   final WeakReference<ModalRoute<dynamic>> route;
-  final OverlayPopEntry entry;
+  final WeakReference<OverlayPopEntry> entry;
 }
 
 class _WeakRootRouteSnapshot {

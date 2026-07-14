@@ -632,6 +632,185 @@ void main() {
     integration.dispose();
   });
 
+  testWidgets('idle detached scoped Navigator is pruned after route lookup', (
+    tester,
+  ) async {
+    final initialScopeCount =
+        NavigatorScopeRegistry.instance.debugRegisteredScopeCount;
+    final integration = SuperOverlay.integration();
+    final scopedObserver = integration.navigatorObserver();
+    late StateSetter updateHost;
+    late BuildContext rootContext;
+    var showNested = true;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: <NavigatorObserver>[integration.observer],
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            rootContext = context;
+            updateHost = setState;
+            if (!showNested) {
+              return const Scaffold(body: Text('Idle nested detached'));
+            }
+            return Navigator(
+              observers: <NavigatorObserver>[scopedObserver],
+              onGenerateRoute:
+                  (_) => MaterialPageRoute<void>(
+                    builder:
+                        (_) => const Scaffold(
+                          body: Text('Idle nested owner page'),
+                        ),
+                  ),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      NavigatorScopeRegistry.instance.debugRegisteredScopeCount,
+      initialScopeCount + 2,
+    );
+
+    updateHost(() => showNested = false);
+    await tester.pump();
+    expect(
+      NavigatorScopeRegistry.instance.debugRegisteredScopeCount,
+      initialScopeCount + 2,
+    );
+
+    expect(() => SuperOverlay.of(rootContext), returnsNormally);
+    expect(
+      NavigatorScopeRegistry.instance.debugRegisteredScopeCount,
+      initialScopeCount + 2,
+    );
+
+    await tester.pump();
+    expect(
+      NavigatorScopeRegistry.instance.debugRegisteredScopeCount,
+      initialScopeCount + 1,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+  });
+
+  testWidgets('idle scope reattached in prune frame is retained', (
+    tester,
+  ) async {
+    final initialScopeCount =
+        NavigatorScopeRegistry.instance.debugRegisteredScopeCount;
+    final integration = SuperOverlay.integration();
+    final scopedObserver = integration.navigatorObserver();
+    late StateSetter updateHost;
+    late BuildContext rootContext;
+    late BuildContext nestedContext;
+    var showNested = true;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: <NavigatorObserver>[integration.observer],
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            rootContext = context;
+            updateHost = setState;
+            if (!showNested) {
+              return const Scaffold(body: Text('Idle nested gap'));
+            }
+            return Navigator(
+              observers: <NavigatorObserver>[scopedObserver],
+              onGenerateRoute:
+                  (_) => MaterialPageRoute<void>(
+                    builder:
+                        (context) => Builder(
+                          builder: (context) {
+                            nestedContext = context;
+                            return const Scaffold(
+                              body: Text('Reattached nested owner page'),
+                            );
+                          },
+                        ),
+                  ),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    updateHost(() => showNested = false);
+    await tester.pump();
+    expect(
+      NavigatorScopeRegistry.instance.debugRegisteredScopeCount,
+      initialScopeCount + 2,
+    );
+
+    expect(() => SuperOverlay.of(rootContext), returnsNormally);
+    updateHost(() => showNested = true);
+    await tester.pumpAndSettle();
+
+    expect(
+      NavigatorScopeRegistry.instance.debugRegisteredScopeCount,
+      initialScopeCount + 2,
+    );
+    expect(() => SuperOverlay.of(nestedContext), returnsNormally);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+  });
+
+  testWidgets('host retirement prunes idle detached scoped observers', (
+    tester,
+  ) async {
+    final initialScopeCount =
+        NavigatorScopeRegistry.instance.debugRegisteredScopeCount;
+    final integration = SuperOverlay.integration();
+    final scopedObserver = integration.navigatorObserver();
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: <NavigatorObserver>[integration.observer],
+        home: Navigator(
+          observers: <NavigatorObserver>[scopedObserver],
+          onGenerateRoute:
+              (_) => MaterialPageRoute<void>(
+                builder:
+                    (_) => const Scaffold(
+                      body: Text('Host retirement nested page'),
+                    ),
+              ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      NavigatorScopeRegistry.instance.debugRegisteredScopeCount,
+      initialScopeCount + 2,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+
+    expect(
+      NavigatorScopeRegistry.instance.debugRegisteredScopeCount,
+      initialScopeCount + 1,
+    );
+
+    integration.dispose();
+    expect(
+      NavigatorScopeRegistry.instance.debugRegisteredScopeCount,
+      initialScopeCount,
+    );
+  });
+
   testWidgets('scoped popup follows nested route suspension', (tester) async {
     final integration = SuperOverlay.integration();
     final scopedObserver = integration.navigatorObserver();
