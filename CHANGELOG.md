@@ -1,4 +1,4 @@
-## Unreleased
+## 0.3.0
 
 * Add owned `SuperOverlayIntegration` objects, disposable scoped Navigator
   observers, and `SuperOverlay.of(context)` for exact nested-route ownership.

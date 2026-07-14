@@ -10,7 +10,7 @@ and moving-anchor tracking without installing a package-owned navigator key.
 
 ```yaml
 dependencies:
-  super_overlay: ^0.2.0
+  super_overlay: ^0.3.0
 ```
 
 The package requires Dart `>=3.7.0 <4.0.0` and Flutter `>=3.29.0`. Runtime

@@ -6,8 +6,12 @@ is recorded.
 
 ## Current Candidate Status
 
-The commercial-readiness branch passed its local automated source gate on
-2026-07-13 with Flutter 3.41.6:
+Version `0.3.0` is the current unpublished release candidate. It has not been
+tagged or published and is not release-complete.
+
+For historical context, the commercial-readiness branch passed the following
+local automated source baseline on 2026-07-13 with Flutter 3.41.6, before the
+current candidate metadata and subsequent hardening changes:
 
 - 246 package tests passed with fixed and fresh randomized ordering;
 - line coverage was 91.138% (3507 of 3848 lines);
@@ -15,19 +19,17 @@ The commercial-readiness branch passed its local automated source gate on
 - publish dry-run reported zero warnings in the Git worktree and in a copied
   archive without `.git`.
 
-This is source-code-ready evidence, not release approval. The release remains
-blocked by the manual [device verification matrix](tool/verification/example_device_matrix.md),
-remote CI for the exact candidate commit (including Flutter 3.29), and final
-version/changelog approval. The official Dart package resolver currently
-selects published `0.2.0`; because this branch adds public integration and
-nested-navigation APIs, the next candidate is expected to be `0.3.0`. Do not
-change the package version until the remaining evidence is complete.
+This historical baseline is not evidence for the current RC gate. The
+candidate remains blocked until the full local gate is rerun, remote CI passes
+for the exact candidate commit (including Flutter 3.29), and a maintainer
+records the required Android and iOS results in the
+[device verification matrix](tool/verification/example_device_matrix.md).
 
 ## 1. Prepare The Candidate
 
 - Confirm the intended package version in `pubspec.yaml`.
-- Move user-visible entries from `Unreleased` into that version only when the
-  release is approved.
+- Confirm `CHANGELOG.md` contains one undated section for the candidate version
+  and preserves all published histories.
 - Confirm README installation syntax and `example/pubspec.lock` match the
   candidate version.
 - Review breaking changes, migration notes, supported topology, and platform

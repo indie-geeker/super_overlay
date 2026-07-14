@@ -16,7 +16,7 @@ void main() {
     },
   );
 
-  test('README install and example lock agree with package version', () {
+  test('0.3.0 candidate metadata agrees across package surfaces', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
     final version =
         RegExp(
@@ -26,10 +26,54 @@ void main() {
     final readme = File('README.md').readAsStringSync();
     final exampleLock = File('example/pubspec.lock').readAsStringSync();
 
-    expect(readme, contains('super_overlay: ^$version'));
+    expect(version, '0.3.0');
+    expect(readme, contains('super_overlay: ^0.3.0'));
     expect(
       exampleLock,
-      contains(RegExp('super_overlay:[\\s\\S]*?version: "$version"')),
+      contains(RegExp('super_overlay:[\\s\\S]*?version: "0.3.0"')),
+    );
+  });
+
+  test('changelog has one unpublished 0.3.0 section before 0.2.0', () {
+    final changelog = File('CHANGELOG.md').readAsStringSync();
+    final headings =
+        RegExp(
+          r'^##\s+(.+)$',
+          multiLine: true,
+        ).allMatches(changelog).map((match) => match.group(1)!).toList();
+
+    expect(headings.where((heading) => heading == '0.3.0'), hasLength(1));
+    expect(headings, isNot(contains('Unreleased')));
+    expect(headings, contains('0.2.0'));
+    expect(headings.indexOf('0.3.0'), lessThan(headings.indexOf('0.2.0')));
+  });
+
+  test('device evidence separates mobile blockers from claim-only rows', () {
+    final matrix =
+        File('tool/verification/example_device_matrix.md').readAsStringSync();
+    const requiredHeading = '## Required Mobile Release Blockers';
+    const claimOnlyHeading = '## Claim-Only And Optional Evidence';
+    final requiredStart = matrix.indexOf(requiredHeading);
+    final claimOnlyStart = matrix.indexOf(claimOnlyHeading);
+
+    expect(requiredStart, greaterThanOrEqualTo(0));
+    expect(claimOnlyStart, greaterThan(requiredStart));
+
+    final required = matrix.substring(requiredStart, claimOnlyStart);
+    final claimOnly = matrix.substring(claimOnlyStart);
+    expect(required, contains(RegExp(r'iPhone|iOS')));
+    expect(required, contains('Android'));
+    expect(required, isNot(contains('Desktop')));
+    expect(claimOnly, contains('Desktop'));
+    expect(claimOnly, contains('Stateful shell'));
+
+    final manualResults = RegExp(r'\[[ xX]\]').allMatches(matrix).toList();
+    expect(manualResults, isNotEmpty);
+    expect(
+      manualResults.map((match) => match.group(0)).toSet(),
+      {'[ ]'},
+      reason:
+          'Manual evidence must stay pending until a maintainer records it.',
     );
   });
 
