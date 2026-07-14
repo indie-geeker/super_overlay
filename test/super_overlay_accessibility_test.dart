@@ -448,6 +448,61 @@ void main() {
     await harness.dispose(tester);
   });
 
+  testWidgets('closed loading does not reclaim newer page focus', (
+    tester,
+  ) async {
+    final integration = SuperOverlay.integration();
+    final firstPageFocus = FocusNode(debugLabel: 'first page control');
+    final secondPageFocus = FocusNode(debugLabel: 'second page control');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: <NavigatorObserver>[integration.observer],
+        home: Scaffold(
+          body: Column(
+            children: <Widget>[
+              TextButton(
+                focusNode: firstPageFocus,
+                onPressed: () {},
+                child: const Text('First page control'),
+              ),
+              TextButton(
+                focusNode: secondPageFocus,
+                onPressed: () {},
+                child: const Text('Second page control'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    firstPageFocus.requestFocus();
+    await tester.pump();
+
+    final loading = SuperOverlay.loading.show(
+      builder: (_) => const Text('Closing loading'),
+    );
+    await tester.pumpAndSettle();
+    expect(firstPageFocus.hasFocus, isFalse);
+
+    await loading.close();
+    expect(firstPageFocus.hasFocus, isTrue);
+    secondPageFocus.requestFocus();
+    FocusManager.instance.applyFocusChangesIfNeeded();
+    expect(secondPageFocus.hasFocus, isTrue);
+
+    await tester.pump();
+    expect(secondPageFocus.hasFocus, isTrue);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+    firstPageFocus.dispose();
+    secondPageFocus.dispose();
+  });
+
   testWidgets('Escape honors block and passThrough policies', (tester) async {
     var rootEscapeCount = 0;
     final harness = await _pumpAppWithRootEscape(

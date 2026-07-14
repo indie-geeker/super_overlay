@@ -27,6 +27,7 @@ class MainOverlay {
   OverlayDialogWidgetController? _dialogController;
   AttachDialogWidgetController? _attachController;
   ValueNotifier<Rect?>? _attachTargetRect;
+  final OverlayFocusLifecycle _focusLifecycle = OverlayFocusLifecycle();
   WeakReference<FocusNode>? _focusRestoreTarget;
   bool _focusRestoreTargetCaptured = false;
   int _focusRestoreTargetToken = 0;
@@ -36,6 +37,14 @@ class MainOverlay {
   bool get visible => _visible;
 
   set visible(bool value) {
+    if (_visible == value) {
+      return;
+    }
+    if (value) {
+      _focusLifecycle.requestFocusAfterShow();
+    } else {
+      _focusLifecycle.restoreFocusBeforeHide();
+    }
     _visible = value;
     _controller?.setPresentationEnabled(value);
   }
@@ -59,6 +68,7 @@ class MainOverlay {
       semanticsLabel: param.semanticsLabel,
       handlesEscape: param.backType != BackType.ignore || param.onBack != null,
       focusRestoreTarget: _focusRestoreTarget,
+      focusLifecycle: _focusLifecycle,
       child: OverlayDialogWidget(
         controller: _dialogController!,
         alignment: param.alignment,
@@ -84,6 +94,7 @@ class MainOverlay {
       ),
     );
     overlayEntry.markNeedsBuild();
+    _focusLifecycle.requestFocusAfterShow();
 
     return _completionFuture<T>(param);
   }
@@ -109,6 +120,7 @@ class MainOverlay {
       semanticsLabel: param.semanticsLabel,
       handlesEscape: param.backType != BackType.ignore || param.onBack != null,
       focusRestoreTarget: _focusRestoreTarget,
+      focusLifecycle: _focusLifecycle,
       child: AttachDialogWidget(
         param: param,
         controller: _attachController!,
@@ -118,6 +130,7 @@ class MainOverlay {
       ),
     );
     overlayEntry.markNeedsBuild();
+    _focusLifecycle.requestFocusAfterShow();
 
     return _completionFuture<T>(param);
   }
@@ -240,6 +253,7 @@ class MainOverlay {
     _onDismiss = null;
     await _dialogController?.dismiss(closeType: closeType);
     await _attachController?.dismiss(closeType: closeType);
+    _focusLifecycle.restoreFocusBeforeHide();
     _dialogController = null;
     _attachController = null;
     _attachTargetRect = null;
