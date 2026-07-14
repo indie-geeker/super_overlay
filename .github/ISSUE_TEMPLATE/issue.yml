@@ -1,37 +1,77 @@
 name: Issue
-description: Report a bug or request an improvement.
+description: Report a reproducible bug or request a focused improvement.
 title: "[Issue]: "
 labels: ["needs triage"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not disclose security vulnerabilities here. Follow SECURITY.md for private reporting.
   - type: textarea
     id: summary
     attributes:
       label: Summary
-      description: What happened, or what would you like to improve?
+      description: Briefly describe the problem or improvement.
     validations:
       required: true
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Reproduction
-      description: Include a minimal code sample, steps, or a link to a small repo.
-      placeholder: |
-        1. Initialize SuperOverlay with ...
-        2. Call ...
-        3. Observe ...
-    validations:
-      required: false
   - type: input
     id: version
     attributes:
       label: super_overlay version
       placeholder: "0.2.0"
     validations:
-      required: false
+      required: true
   - type: input
     id: flutter
     attributes:
       label: Flutter version
-      placeholder: "flutter --version"
+      description: Paste the relevant output from flutter --version.
+      placeholder: "Flutter 3.29.0, Dart 3.7.0"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Include a minimal code sample, exact steps, or a small repository.
+      placeholder: |
+        1. Configure SuperOverlay with ...
+        2. Show ...
+        3. Navigate or interact ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: What happened instead? Include errors and stack traces when relevant.
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Android
+        - iOS
+        - Web
+        - macOS
+        - Windows
+        - Linux
+        - Multiple or not platform-specific
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Screenshots, recordings, related issues, or other useful details.
     validations:
       required: false

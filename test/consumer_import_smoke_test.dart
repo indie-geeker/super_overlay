@@ -31,8 +31,20 @@ void main() {
       tag: 'dialog',
       strategy: OverlayStrategy.replaceExisting,
       backBehavior: OverlayBackBehavior.dismiss,
+      requestFocus: true,
+      semanticsLabel: 'Confirmation dialog',
+      barrierSemanticsLabel: 'Dismiss confirmation dialog',
     );
     expect(dialogOptions.tag, 'dialog');
+
+    const popupOptions = OverlayPopupOptions(requestFocus: false);
+    const loadingOptions = OverlayLoadingOptions(
+      requestFocus: true,
+      semanticsLabel: 'Loading profile',
+      barrierSemanticsLabel: 'Loading in progress',
+    );
+    expect(popupOptions.requestFocus, isFalse);
+    expect(loadingOptions.requestFocus, isTrue);
 
     final handle = OverlayHandle<void>.detached();
     expect(handle.isVisible, isFalse);
@@ -62,4 +74,15 @@ void main() {
     expect(core, isNot(contains(RegExp(r'static\s+Future<[^>]+>\s+dismiss'))));
     expect(core, isNot(contains(RegExp(r'static\s+bool\s+checkExist'))));
   });
+}
+
+void compileScopedCommands(ScopedSuperOverlay scoped) {
+  final OverlayHandle<bool> dialog = scoped.dialog.show<bool>(
+    builder: (_) => const SizedBox.shrink(),
+  );
+  final OverlayHandle<void> popup = scoped.popup.show<void>(
+    builder: (_) => const SizedBox.shrink(),
+  );
+  dialog.refresh();
+  popup.refresh();
 }

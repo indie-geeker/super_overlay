@@ -45,7 +45,8 @@ class OverlayHandle<T> {
   /// Completes when the overlay has become visible.
   ///
   /// Fails with a [StateError] if the overlay closes or is rejected before its
-  /// first rendered frame.
+  /// first rendered frame. A handle created with [OverlayHandle.detached] is a
+  /// deliberate no-op exception: it completes immediately and remains hidden.
   Future<void> get visible => _visible;
 
   /// Completes once, when the overlay has closed.

@@ -76,6 +76,9 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
   final bool consumeEvents;
 
   /// Whether the dialog should capture focus after its first rendered frame.
+  ///
+  /// Modal dialogs use closed-loop traversal and restore the previous focus
+  /// when possible. Escape follows [backBehavior].
   final bool requestFocus;
 
   /// Optional semantic route label for the dialog content.
@@ -113,7 +116,10 @@ class OverlayPopupOptions extends OverlaySurfaceOptions {
   /// Popup alignment relative to its target.
   final Alignment alignment;
 
-  /// Optional transform for the target widget rectangle before positioning.
+  /// Optional transform for the measured target rectangle before positioning.
+  ///
+  /// Mounted targets are tracked in overlay-host coordinates while the popup
+  /// is visible, including after scroll and transform changes.
   final PopupTargetRectBuilder? targetRectBuilder;
 
   /// Optional target point override.
@@ -144,6 +150,9 @@ class OverlayPopupOptions extends OverlaySurfaceOptions {
   final BorderRadius highlightBorderRadius;
 
   /// Optional area where the popup mask should not intercept input.
+  ///
+  /// This rectangle is fixed in overlay-host coordinates; it does not move
+  /// relative to [targetRectBuilder] or the tracked target.
   final Rect? maskIgnoreArea;
 
   /// Whether the popup should capture focus.
@@ -182,6 +191,9 @@ class OverlayLoadingOptions {
   final Duration minimumVisibleDuration;
 
   /// Whether the loading surface should capture focus while it is visible.
+  ///
+  /// Modal loading uses closed-loop traversal and restores prior focus when
+  /// possible. Escape follows [backBehavior].
   final bool requestFocus;
 
   /// Optional semantic route label for the loading content.

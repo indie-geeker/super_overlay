@@ -1,5 +1,24 @@
 ## Unreleased
 
+* Add owned `SuperOverlayIntegration` objects, disposable scoped Navigator
+  observers, and `SuperOverlay.of(context)` for exact nested-route ownership.
+* Support generic nested Navigators, `go_router` `ShellRoute`, and the default
+  `StatefulShellRoute.indexedStack` branch lifecycle without adding a runtime
+  dependency on `go_router`.
+* Make same-frame whole-root replacement generation-safe and fail fast for
+  simultaneous live app hosts or competing views.
+* Coordinate `dismiss`, `block`, and `passThrough` through route `PopEntry`
+  state for predictive back, nested routes, and application `PopScope`/`Form`
+  interoperability.
+* Add modal focus trapping, focus restoration, background semantic blocking,
+  semantic route/barrier labels, Escape handling, and live-region feedback.
+* Track moving popup anchors in root Overlay coordinates with per-entry
+  invalidation, a 0.5 logical-pixel tolerance, and fail-closed target cleanup.
+* Expand the runnable example with typed dialog results, all public back
+  behaviors, nested Navigator suspension/resume, and `refreshActive` versus
+  handle-owned `refresh()`.
+* Add compile-backed README snippets, support tiers, a capability coverage
+  matrix, repository contracts, and a release checklist.
 * Make `OverlayHandle.visible` reflect the first rendered frame across dialog,
   loading, popup, toast, and notification surfaces. Requests that terminate
   before rendering now fail `visible` with `StateError` while still settling

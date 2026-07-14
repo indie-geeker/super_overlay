@@ -1,47 +1,238 @@
 # SuperOverlay
 
-SuperOverlay is a Flutter package for app-level overlays backed by a
-self-managed `OverlayEntry` tree. It provides command-style dialogs, loading
-indicators, toasts, target-attached popups, highlighted masks, notifications,
-route binding, widget binding, and back-button policies without requiring a
-package-owned `Navigator` key.
+SuperOverlay is a Flutter package for app-level dialogs, loading indicators,
+toasts, target-attached popups, highlighted guides, and notifications backed by
+a self-managed `OverlayEntry` host. It provides typed handles, route and widget
+ownership, nested-Navigator scoping, back policies, keyboard/focus behavior,
+and moving-anchor tracking without installing a package-owned navigator key.
 
-## Quick Start
-
-Add the package:
+## Install
 
 ```yaml
 dependencies:
   super_overlay: ^0.2.0
 ```
 
-SuperOverlay requires Dart `>=3.7.0 <4.0.0` and Flutter `>=3.29.0`.
+The package requires Dart `>=3.7.0 <4.0.0` and Flutter `>=3.29.0`. Runtime
+dependencies are limited to the Flutter SDK; `go_router` is used only as a
+dev-time compatibility fixture.
 
-Initialize the overlay host once at the app root:
+## Root Integration
+
+Create one stable `SuperOverlayIntegration` outside `build`, then use its
+matching builder and root observer for that `MaterialApp`. Dispose the
+integration with the app root.
 
 ```dart
-import 'package:flutter/material.dart';
-import 'package:super_overlay/super_overlay.dart';
+// snippet:root-integration:start
+class RootOverlayApp extends StatefulWidget {
+  const RootOverlayApp({super.key});
 
-class App extends StatelessWidget {
-  const App({super.key});
+  @override
+  State<RootOverlayApp> createState() => _RootOverlayAppState();
+}
+
+class _RootOverlayAppState extends State<RootOverlayApp> {
+  late final SuperOverlayIntegration integration;
+
+  @override
+  void initState() {
+    super.initState();
+    integration = SuperOverlay.integration();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      builder: SuperOverlay.init(),
-      navigatorObservers: [SuperOverlay.observer],
+      builder: integration.builder,
+      navigatorObservers: [integration.observer],
       home: const AppHome(),
     );
   }
+
+  @override
+  void dispose() {
+    integration.dispose();
+    super.dispose();
+  }
 }
+// snippet:root-integration:end
 ```
 
-Show overlays through command services and keep the returned handle when the
-calling flow owns the overlay lifecycle:
+`SuperOverlay.init()` and `SuperOverlay.observer` remain the compact legacy
+pair for one stable root. New production integrations should prefer the owned
+object above because observer ownership and disposal are explicit.
+
+### Atomic Root Replacement
+
+When replacing a complete `MaterialApp`, give the old and new roots separate,
+stable integrations. Store both integration pairs outside their respective
+`build` methods. A same-frame replacement overlap is frozen until the old root
+detaches, then the candidate is promoted atomically. Existing handles remain
+generation-bound and cannot mutate the new root.
+
+Do not reuse one observer in two Navigators, and do not leave both roots mounted
+beyond the replacement frame. Two live app hosts in one isolate are an
+unsupported conflict, not a multi-tenant mode.
+
+## Nested Navigator Integration
+
+Create one scoped observer per nested Navigator. Store it outside `build`,
+attach it to exactly one Navigator, and dispose it when that Navigator is
+removed.
 
 ```dart
-final loading = SuperOverlay.loading.show(message: 'Syncing...');
+// snippet:nested-navigator:start
+class NestedCheckoutFlow extends StatefulWidget {
+  const NestedCheckoutFlow({super.key, required this.integration});
+
+  final SuperOverlayIntegration integration;
+
+  @override
+  State<NestedCheckoutFlow> createState() => _NestedCheckoutFlowState();
+}
+
+class _NestedCheckoutFlowState extends State<NestedCheckoutFlow> {
+  late final SuperOverlayNavigatorObserver observer;
+
+  @override
+  void initState() {
+    super.initState();
+    observer = widget.integration.navigatorObserver();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      observers: [observer],
+      onGenerateRoute:
+          (_) => MaterialPageRoute<void>(builder: (_) => const CheckoutHome()),
+    );
+  }
+
+  @override
+  void dispose() {
+    observer.dispose();
+    super.dispose();
+  }
+}
+// snippet:nested-navigator:end
+```
+
+Call `SuperOverlay.of(context)` with a context below the Navigator that owns the
+route. A shell AppBar context above a branch Navigator resolves to the shell or
+root scope, not the branch.
+
+```dart
+final handle = SuperOverlay.of(context).dialog.show<bool>(
+  builder: (_) => const ConfirmDeleteDialog(),
+);
+```
+
+Scoped route-bound dialogs and popups suspend while their route is covered,
+resume when it becomes current, and close when the owner route or observer is
+removed. Route-neutral toast, loading, and notification surfaces remain rooted
+at the one app host.
+
+## go_router ShellRoute
+
+The root `GoRouter.observers` receives the root observer. Every `ShellRoute`
+receives its own scoped observer.
+
+```dart
+// snippet:shell-route:start
+class ShellRouterOwner {
+  ShellRouterOwner(this.integration);
+
+  final SuperOverlayIntegration integration;
+  late final SuperOverlayNavigatorObserver shellObserver =
+      integration.navigatorObserver();
+  late final GoRouter router = GoRouter(
+    observers: [integration.observer],
+    routes: [
+      ShellRoute(
+        observers: [shellObserver],
+        builder: (context, state, child) => Scaffold(body: child),
+        routes: [
+          GoRoute(path: '/', builder: (context, state) => const ShellHome()),
+        ],
+      ),
+    ],
+  );
+
+  void dispose() {
+    router.dispose();
+    shellObserver.dispose();
+  }
+}
+// snippet:shell-route:end
+```
+
+For `StatefulShellRoute.indexedStack`, create a distinct observer for every
+branch and initiate branch-owned commands from a descendant context inside that
+branch.
+
+```dart
+// snippet:stateful-shell-branches:start
+class StatefulShellRouterOwner {
+  StatefulShellRouterOwner(this.integration);
+
+  final SuperOverlayIntegration integration;
+  late final SuperOverlayNavigatorObserver firstBranchObserver =
+      integration.navigatorObserver();
+  late final SuperOverlayNavigatorObserver secondBranchObserver =
+      integration.navigatorObserver();
+  late final GoRouter router = GoRouter(
+    observers: [integration.observer],
+    routes: [
+      StatefulShellRoute.indexedStack(
+        builder:
+            (context, state, navigationShell) =>
+                Scaffold(body: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            observers: [firstBranchObserver],
+            routes: [
+              GoRoute(
+                path: '/first',
+                builder: (context, state) => const FirstBranchHome(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            observers: [secondBranchObserver],
+            routes: [
+              GoRoute(
+                path: '/second',
+                builder: (context, state) => const SecondBranchHome(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  );
+
+  void dispose() {
+    router.dispose();
+    firstBranchObserver.dispose();
+    secondBranchObserver.dispose();
+  }
+}
+// snippet:stateful-shell-branches:end
+```
+
+The default indexed-stack container supplies Navigator-level `TickerMode`, so
+inactive branch overlays release hit testing, semantics, focus, and back
+priority. A custom stateful-shell container must provide the same
+exactly-one-active Navigator-level signal.
+
+## Command And Handle Basics
+
+Keep the returned handle when the calling flow owns the overlay lifecycle:
+
+```dart
+final loading = SuperOverlay.loading.show(message: 'Syncing profile...');
 try {
   await syncProfile();
   SuperOverlay.toast(
@@ -55,189 +246,28 @@ try {
 }
 ```
 
-Dialogs return a typed result through `OverlayHandle.closed`:
+Dialogs and popups carry typed results through `closed`:
 
 ```dart
-final handle = SuperOverlay.dialog.show<bool>(
-  builder: (_) => const ConfirmDeleteDialog(),
+late final OverlayHandle<bool> handle;
+handle = SuperOverlay.dialog.show<bool>(
+  builder: (_) => ConfirmDeleteDialog(
+    onDecision: (confirmed) => handle.close(confirmed),
+  ),
   options: const OverlayDialogOptions(
     tag: 'delete-confirmation',
     strategy: OverlayStrategy.replaceExisting,
-    backBehavior: OverlayBackBehavior.dismiss,
   ),
 );
 
 final confirmed = await handle.closed;
 ```
 
-Inside dialog content, close by handle when possible. For content that does not
-receive a handle, close by target and tag:
-
-```dart
-await SuperOverlay.close(
-  target: OverlayCloseTarget.dialog,
-  tag: 'delete-confirmation',
-  result: true,
-);
-```
-
-## Production Recipes
-
-### Default Feedback Styling
-
-Applications can configure default loading, toast, and notification rendering
-during initialization. Per-call builders still take precedence.
-
-```dart
-MaterialApp(
-  builder: SuperOverlay.init(
-    toastBuilder: (message) => AppToast(message: message),
-    loadingBuilder: (message) => AppLoading(message: message),
-    notifyStyle: NotifyStyle(
-      successBuilder: (message) => AppBanner.success(message),
-      errorBuilder: (message) => AppBanner.error(message),
-    ),
-  ),
-  navigatorObservers: [SuperOverlay.observer],
-  home: const AppHome(),
-);
-```
-
-### Loading Plus Page-Owned Empty And Error States
-
-Use overlays for transient request state and keep durable empty or error pages
-inside the route that owns the data.
-
-```dart
-final loading = SuperOverlay.loading.show(
-  message: 'Loading products...',
-  options: const OverlayLoadingOptions(
-    minimumVisibleDuration: Duration(milliseconds: 500),
-    backBehavior: OverlayBackBehavior.block,
-  ),
-);
-
-try {
-  final products = await repository.loadProducts();
-  setState(() {
-    items = products;
-    error = null;
-  });
-} catch (error) {
-  setState(() {
-    items = const [];
-    this.error = error;
-  });
-  SuperOverlay.notify.error('Products could not be loaded');
-} finally {
-  await loading.close();
-}
-```
-
-### Anchored Popup
-
-Attach popups to a target context for menus, filters, or lightweight editors:
-
-```dart
-final handle = SuperOverlay.popup.show<void>(
-  targetContext: buttonContext,
-  builder: (_) => FilterPopup(onApply: applyFilters),
-  options: const OverlayPopupOptions(
-    tag: 'product-filter',
-    alignment: Alignment.bottomCenter,
-    strategy: OverlayStrategy.replaceExisting,
-  ),
-);
-
-await handle.visible;
-```
-
-For geometry-sensitive popups, provide typed hooks:
-
-```dart
-SuperOverlay.popup.show<void>(
-  targetContext: targetContext,
-  builder: (_) => const ToolbarMenu(),
-  options: OverlayPopupOptions(
-    tag: 'toolbar-menu',
-    alignment: Alignment.bottomLeft,
-    alignmentMode: OverlayPopupAlignmentMode.center,
-    targetRectBuilder: (rect) => rect.inflate(4),
-    replacementBuilder: (info) {
-      return ToolbarMenu(width: info.popupSize.width);
-    },
-    adjustmentBuilder: (_) {
-      return const PopupAdjustment(alignment: Alignment.topRight);
-    },
-    scaleOriginBuilder: (size) => Offset(size.width, 0),
-  ),
-);
-```
-
-`maskIgnoreArea` removes one exact rectangle from the popup mask's hit-test
-area. Coordinates are relative to the overlay host, so the underlying UI
-receives pointer events only inside that rectangle:
-
-```dart
-SuperOverlay.popup.show<void>(
-  options: const OverlayPopupOptions(
-    targetPointBuilder: menuAnchor,
-    maskIgnoreArea: Rect.fromLTWH(16, 16, 240, 48),
-  ),
-  builder: (_) => const ToolbarMenu(),
-);
-```
-
-### Guided Highlight
-
-Use popup highlighting when the user must interact with a specific target while
-the rest of the screen is masked.
-
-```dart
-SuperOverlay.popup.show<void>(
-  targetContext: targetContext,
-  builder: (_) => const GuideBubble(),
-  options: OverlayPopupOptions(
-    tag: 'onboarding-step',
-    dismissOnMaskTap: false,
-    highlightTarget: true,
-    highlightMaskColor: const Color(0x99000000),
-    highlightPadding: const EdgeInsets.all(8),
-    highlightBorderRadius: BorderRadius.circular(8),
-  ),
-);
-```
-
-### Route And Widget Binding
-
-Dialogs and popups bind to the current route by default. They hide while another
-route covers that page, reappear when the page returns, and close when the route
-is removed. Register `SuperOverlay.observer` for this behavior.
-
-Bind a dialog to a widget when the overlay must not outlive that widget:
-
-```dart
-SuperOverlay.dialog.show<void>(
-  builder: (_) => const FieldHelpDialog(),
-  options: OverlayDialogOptions(
-    tag: 'field-help',
-    bindToWidget: fieldContext,
-    alignment: Alignment.bottomCenter,
-    barrierColor: Colors.transparent,
-    dismissOnMaskTap: false,
-    consumeEvents: false,
-  ),
-);
-```
-
-### Global Cleanup
-
-Prefer `handle.close()` for owned overlays. Use `SuperOverlay.close` for global
-cleanup, tagged content buttons, or tests:
+Prefer `handle.close()` for owned content. Use typed global cleanup for
+application shutdown, tests, or content that cannot receive its handle:
 
 ```dart
 await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
-
 await SuperOverlay.close(
   target: OverlayCloseTarget.allDialogs,
   tag: 'checkout',
@@ -245,69 +275,131 @@ await SuperOverlay.close(
 );
 ```
 
-Check existence with typed surfaces:
+## Back, Focus, And Semantics
+
+`OverlayBackBehavior.dismiss` closes the highest-priority consuming overlay,
+`block` keeps it visible and blocks the route, and `passThrough` leaves the back
+event to the application. Android predictive back is coordinated through the
+same `ModalRoute` `PopEntry` protocol used by `PopScope`. Escape uses the same
+overlay policy on keyboard platforms.
+
+Flutter notifies every `PopEntry` after a failed pop. An application `PopScope`
+or `Form` callback may therefore also receive `didPop == false` while
+SuperOverlay blocks the route. Keep failed-pop callbacks idempotent and avoid
+destructive side effects until `didPop` is true.
+
+Dialog and loading surfaces capture focus by default, use a closed-loop focus
+scope, block background semantics, expose a semantic route, and restore prior
+focus when possible. Supply labels when the surrounding content does not make
+the purpose clear:
 
 ```dart
-final hasCheckoutOverlay = SuperOverlay.exists(
-  tag: 'checkout',
-  surfaces: const {OverlaySurface.dialog, OverlaySurface.popup},
+const OverlayDialogOptions(
+  requestFocus: true,
+  semanticsLabel: 'Delete confirmation',
+  barrierSemanticsLabel: 'Dismiss delete confirmation',
 );
 ```
 
-## Contracts And Limits
+Popup focus is non-modal by default. Toasts and notifications are live regions
+and do not steal focus. Application content remains responsible for semantic
+labels on its own buttons, fields, and custom controls.
 
-SuperOverlay exposes a command-oriented public API from
-`package:super_overlay/super_overlay.dart`. The supported entrypoints are
-`SuperOverlay.init`, `SuperOverlay.observer`, `SuperOverlay.dialog`,
-`SuperOverlay.loading`, `SuperOverlay.popup`, `SuperOverlay.notify`,
-`SuperOverlay.toast`, `SuperOverlay.close`, `SuperOverlay.exists`, typed option
-objects, and `OverlayHandle`.
+Consuming back behavior (`dismiss` or `block`) requires an observed
+`ModalRoute`. Custom non-`ModalRoute` routes and dispatchers that bypass
+Navigator do not have this guarantee; use `passThrough` or a route-neutral
+surface there.
 
-`OverlayHandle.visible` completes only after the overlay's first rendered
-frame. It fails with `StateError` if the request is rejected or closes before
-rendering, such as when a popup target is detached or has invalid geometry.
-`OverlayHandle.closed` still completes once with the optional result. Calling
-`close()` more than once is safe.
+## Moving Anchored Popups
 
-Tags are business identifiers. Use `OverlayStrategy.replaceExisting` when only
-one overlay for a flow should exist, `OverlayStrategy.keepExisting` when repeated
-commands should reuse the active overlay, and `OverlayStrategy.stack` when
-multiple overlays are intentional. Same-tag replacements are serialized, so
-multiple commands issued in one event-loop turn leave the latest replacement
-active. A tag reused through `keepExisting` must keep the same dialog or popup
-result type; an incompatible generic result type throws `StateError` instead of
-failing later with a cast error.
+An anchored popup follows a mounted `targetContext` after scrolling, layout,
+and transform changes. The runtime converts the target into the root Overlay's
+local coordinates and refreshes only that popup when movement exceeds 0.5
+logical pixels. Placement, highlight cutout, and highlight hit testing receive
+one immutable rectangle snapshot.
 
-Removing or replacing the widget that hosts `SuperOverlay.init()` closes active
-handles and clears init-level builders. Mounting a new host starts from the
-package defaults unless that host supplies new builders.
+```dart
+SuperOverlay.popup.show<void>(
+  targetContext: buttonContext,
+  builder: (_) => const FilterMenu(),
+  options: const OverlayPopupOptions(
+    tag: 'filter-menu',
+    alignment: Alignment.bottomCenter,
+    strategy: OverlayStrategy.replaceExisting,
+  ),
+);
+```
 
-Toasts are transient feedback. Empty pages, error pages, and durable network
-state belong in your application widget tree.
+An unmounted or invalid target fails closed and removes its registry record.
+`maskIgnoreArea` is different: it remains fixed in overlay-host coordinates and
+does not move relative to the target.
 
-This package intentionally stays UI-runtime lightweight: it has no runtime
-dependencies beyond the Flutter SDK and does not install a global navigator key.
+## Refresh Contracts
 
-The current command API is a breaking public surface. Older fluent-builder,
-configuration-mutation, and route-key APIs are not part of the supported
-entrypoint.
+`OverlayToastDisplayPolicy.refreshActive` starts a new toast command in the
+policy-owned refresh lane or replaces that lane's content. It is not a handle
+content refresh.
 
-## Example And Contributing
+`handle.refresh()` rebuilds only content owned by that existing handle. Use it
+for progress or mutable presentation state without starting another command.
+The runnable example displays both families side by side.
 
-The [example app](example/README.md) is organized around common scenarios,
-interaction enhancements, and advanced capabilities. It includes Toast policy
-comparisons, one-at-a-time notifications, anchored dropdown and upward menus,
-route/widget lifecycle cases, and an Overlay Control Lab for strategies,
-Handle-owned refresh/close, lifecycle futures, scoped cleanup, and advanced
-popup geometry.
+## Handle Lifecycle
 
-Automated tests simulate safe-area padding and responsive widths. Physical
-cutout-device checks remain a separate release step documented in the example
-[device matrix](tool/verification/example_device_matrix.md).
+`OverlayHandle.visible` completes after the first rendered frame. It fails with
+`StateError` if the command is rejected or closes before rendering, including
+an invalid popup target or a route removed before first paint. The deliberate
+exception is `OverlayHandle.detached()`: it represents a no-op owner, completes
+`visible` immediately, and is never visible.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and release-gate commands. Use
-the [security policy](SECURITY.md) for private vulnerability reports.
+`OverlayHandle.closed` settles exactly once with the optional result. Repeated
+`close()` calls share one close future. A suspended route-bound overlay reports
+`isVisible == false` until it resumes.
+
+## Supported Topology And Platforms
+
+SuperOverlay supports one active root host per isolate. The table records the
+release policy; device evidence status is maintained in the
+[device verification matrix](tool/verification/example_device_matrix.md).
+
+| Platform | Tier | Release expectation |
+| --- | --- | --- |
+| Android | Supported | Automated gates plus recorded edge-to-edge/cutout device evidence before release |
+| iOS | Supported | Automated gates plus recorded notch/Dynamic Island evidence before release |
+| Web | Supported | Full example test suite and `flutter build web` in CI |
+| macOS | Best effort | Single-window behavior; record a build/manual result to claim it for a release |
+| Windows | Best effort | Single-window behavior; record a build/manual result to claim it for a release |
+| Linux | Best effort | Single-window behavior; record a build/manual result to claim it for a release |
+
+Supported navigation topologies include one stable MaterialApp, same-frame
+atomic whole-root replacement, ordinary nested Navigators, `ShellRoute`, and
+the default `StatefulShellRoute.indexedStack` container.
+
+Explicit limitations:
+
+- simultaneous live `MaterialApp` hosts in one isolate fail fast;
+- root transitions that keep old and new hosts mounted across multiple frames
+  are unsupported;
+- desktop multi-window routing in one isolate/view registry is unsupported;
+- custom stateful-shell containers without Navigator-level `TickerMode` cannot
+  provide reliable branch activity;
+- consuming back behavior on a non-`ModalRoute` is unsupported;
+- physical-device cutout and keyboard evidence must be recorded per release;
+- desktop claims are single-window best effort unless that release records a
+  build and manual result.
+
+## Example, Verification, And Maintenance
+
+The [example app](example/README.md) demonstrates typed dialog results,
+`dismiss`/`block`/`passThrough`, nested Navigator suspension and cleanup,
+moving anchors, and `refreshActive` versus `handle.refresh()`.
+
+Traceability is recorded in the
+[example coverage matrix](tool/verification/example_coverage_matrix.md). See
+[CONTRIBUTING.md](CONTRIBUTING.md) for contributor gates,
+[RELEASE.md](RELEASE.md) for the release checklist, and
+[SECURITY.md](SECURITY.md) for vulnerability reporting policy.
 
 ## License
 
-SuperOverlay is MIT licensed.
+SuperOverlay is MIT licensed. See [LICENSE](LICENSE).

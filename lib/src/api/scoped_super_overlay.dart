@@ -1,6 +1,9 @@
 part of '../super_overlay_core.dart';
 
 /// Commands captured against one exact observed Navigator route.
+///
+/// Obtain this facade with a context below the Navigator that owns the route.
+/// A context above a nested or shell Navigator resolves to its parent scope.
 class ScopedSuperOverlay {
   ScopedSuperOverlay._(OverlayRouteOwner routeOwner)
     : dialog = ScopedOverlayDialogService._(routeOwner),

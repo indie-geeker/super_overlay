@@ -7,6 +7,8 @@ part of '../super_overlay_core.dart';
 /// nested Navigator that should participate in SuperOverlay route tracking.
 /// Attach each observer to exactly one Navigator. When a nested Navigator is
 /// removed dynamically, dispose its scoped observer as part of that lifecycle.
+/// One integration owns one root; do not share it across simultaneous
+/// `MaterialApp` or `Navigator` roots.
 class SuperOverlayIntegration {
   /// Creates an independently owned SuperOverlay root integration.
   SuperOverlayIntegration({
@@ -55,7 +57,9 @@ class SuperOverlayIntegration {
   /// Creates an observer owned by this integration for one nested Navigator.
   ///
   /// Store the returned observer outside `build`, attach it to exactly one
-  /// Navigator, and call its `dispose` method when that Navigator is removed.
+  /// Navigator, call [SuperOverlay.of] from below that Navigator for scoped
+  /// commands, and call this observer's `dispose` method when the Navigator is
+  /// removed.
   SuperOverlayNavigatorObserver navigatorObserver() {
     _ensureNotDisposed();
 
