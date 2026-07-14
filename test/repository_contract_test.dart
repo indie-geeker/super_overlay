@@ -126,6 +126,29 @@ Keep documentation tasks [ ] separate from device results.
     }
   });
 
+  test(
+    'example avoids DropdownButtonFormField parameters unavailable in Flutter 3.29',
+    () {
+      final incompatibleParameter = RegExp(
+        r'DropdownButtonFormField(?:<[^>]+>)?\s*\([^;]*\binitialValue\s*:',
+        dotAll: true,
+      );
+      final exampleSources = Directory('example/lib')
+          .listSync(recursive: true)
+          .whereType<File>()
+          .where((file) => file.path.endsWith('.dart'));
+
+      for (final file in exampleSources) {
+        expect(
+          file.readAsStringSync(),
+          isNot(contains(incompatibleParameter)),
+          reason:
+              '${file.path} must remain compatible with the minimum Flutter version.',
+        );
+      }
+    },
+  );
+
   test('focus docs keep Escape local to the focused overlay', () {
     final options = File('lib/src/api/overlay_options.dart').readAsStringSync();
 
