@@ -73,6 +73,8 @@ class _DialogDemoPanelState extends State<DialogDemoPanel> {
         strategy: OverlayStrategy.replaceExisting,
         barrierColor: maskColor,
         dismissOnMaskTap: _dismissible,
+        semanticsLabel: '确认操作对话框',
+        barrierSemanticsLabel: '关闭确认操作对话框',
       ),
     );
     _handle = handle;
