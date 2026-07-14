@@ -2,6 +2,8 @@
 
 Status: **manual checks pending**
 
+Release status: **blocked until every required row has real device evidence**.
+
 Automated widget tests verify simulated safe-area padding, anchored popup
 geometry, and responsive layouts at 320, 600, and 1200 logical pixels. They do
 not constitute proof on real display-cutout hardware, with a physical keyboard,
@@ -10,6 +12,24 @@ or under device-specific edge-to-edge window behavior.
 Do not mark the cutout issue as hardware-verified until at least one iPhone with
 a notch or Dynamic Island and one edge-to-edge Android cutout device pass the
 relevant rows below.
+
+## Automated Baseline
+
+The following source checks passed locally on 2026-07-13 with Flutter 3.41.6.
+They reduce regression risk but do not complete any manual row:
+
+- 246 package tests under fixed and fresh randomized ordering;
+- 91.138% package line coverage (3507 of 3848 lines);
+- 26 example widget tests;
+- example Web build;
+- example Android debug APK build;
+- publish dry-run from both the Git worktree and a copy without `.git`, with
+  zero warnings.
+
+The final release candidate still requires remote CI on Flutter stable and
+Flutter 3.29, plus the manual evidence below.
+
+## Required Manual Evidence
 
 | Done | Device and orientation | Scenario | Expected result | Evidence |
 | --- | --- | --- | --- | --- |
@@ -20,6 +40,12 @@ relevant rows below.
 | [ ] | iPhone or Android after scrolling the home page | Open the sort dropdown from its trigger | Popup opens directly below the current on-screen trigger and keeps its width | Device/OS and screenshot |
 | [ ] | iPhone or Android with the keyboard visible | Open the attachment menu | Upward menu opens above its trigger without covering the field or keyboard | Device/OS and screenshot |
 | [ ] | iPhone or Android with the keyboard visible | Show a top notification | Notification stays below the cutout/status bar and is not displaced incorrectly | Device/OS and screenshot |
+| [ ] | iPhone or Android with the keyboard visible | Focus a field, open and close a modal dialog | Focus is trapped inside the modal and restored to the original field after close | Device/OS and recording |
+| [ ] | Android with gesture navigation | Use system back with `dismiss`, `block`, and `passThrough` dialogs | Overlay and route behavior matches the selected policy without a double pop | Device/OS and recording |
+| [ ] | Android with predictive back enabled | Start, cancel, then complete predictive back with an active modal | Preview and completion respect the modal policy and never expose a stale route | Device/OS and recording |
+| [ ] | Desktop with a physical keyboard | Exercise Tab, Shift-Tab, and Escape in a modal and focused popup | Focus remains scoped correctly and Escape follows the documented back policy | OS/build and recording |
+| [ ] | Stateful shell example or fixture on a device | Switch branches while a branch-scoped modal is active, then return | Inactive overlay suspends and resumes without blocking the active branch | Device/OS and recording |
+| [ ] | iPhone or Android in a scrolling view | Keep a popup open while its anchor moves, then remove the anchor | Popup follows the anchor and closes when the target becomes invalid | Device/OS and recording |
 
 For each completed row, replace the Evidence placeholder with the device model,
 OS version, and a screenshot or recording path. If a row fails, record the

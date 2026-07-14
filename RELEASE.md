@@ -4,6 +4,25 @@ Use this checklist for every pub.dev release candidate. Do not assign a release
 date or create a tag until all automated gates pass and required manual evidence
 is recorded.
 
+## Current Candidate Status
+
+The commercial-readiness branch passed its local automated source gate on
+2026-07-13 with Flutter 3.41.6:
+
+- 246 package tests passed with fixed and fresh randomized ordering;
+- line coverage was 91.138% (3507 of 3848 lines);
+- 26 example tests, the Web build, and the Android debug APK build passed;
+- publish dry-run reported zero warnings in the Git worktree and in a copied
+  archive without `.git`.
+
+This is source-code-ready evidence, not release approval. The release remains
+blocked by the manual [device verification matrix](tool/verification/example_device_matrix.md),
+remote CI for the exact candidate commit (including Flutter 3.29), and final
+version/changelog approval. The official Dart package resolver currently
+selects published `0.2.0`; because this branch adds public integration and
+nested-navigation APIs, the next candidate is expected to be `0.3.0`. Do not
+change the package version until the remaining evidence is complete.
+
 ## 1. Prepare The Candidate
 
 - Confirm the intended package version in `pubspec.yaml`.
