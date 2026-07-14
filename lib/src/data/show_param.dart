@@ -5,6 +5,8 @@ import '../kit/overlay_controller.dart';
 import '../kit/typedef.dart';
 import '../helper/overlay_route_owner.dart';
 
+enum OverlayAccessibilityMode { modal, popup, liveRegion }
+
 class HighlightConfig {
   const HighlightConfig({
     this.padding = EdgeInsets.zero,
@@ -31,6 +33,10 @@ class ShowParamBase {
     required this.onDismiss,
     required this.onMask,
     required this.awaitCompletion,
+    this.accessibilityMode = OverlayAccessibilityMode.modal,
+    this.requestFocus = true,
+    this.semanticsLabel,
+    this.barrierSemanticsLabel,
     this.controller,
   });
 
@@ -48,6 +54,10 @@ class ShowParamBase {
   final VoidCallback? onDismiss;
   final VoidCallback? onMask;
   final AwaitCompletion awaitCompletion;
+  final OverlayAccessibilityMode accessibilityMode;
+  final bool requestFocus;
+  final String? semanticsLabel;
+  final String? barrierSemanticsLabel;
   final SuperOverlayController? controller;
 }
 
@@ -67,6 +77,10 @@ class ShowCustomParam extends ShowParamBase {
     required super.onDismiss,
     required super.onMask,
     required super.awaitCompletion,
+    super.accessibilityMode,
+    super.requestFocus,
+    super.semanticsLabel,
+    super.barrierSemanticsLabel,
     required this.debounce,
     required this.debounceTime,
     required this.displayTime,
@@ -114,6 +128,10 @@ class ShowCustomParam extends ShowParamBase {
     VoidCallback? onDismiss,
     VoidCallback? onMask,
     AwaitCompletion? awaitCompletion,
+    OverlayAccessibilityMode? accessibilityMode,
+    bool? requestFocus,
+    String? semanticsLabel,
+    String? barrierSemanticsLabel,
     bool? debounce,
     Duration? debounceTime,
     Duration? displayTime,
@@ -145,6 +163,11 @@ class ShowCustomParam extends ShowParamBase {
       onDismiss: onDismiss ?? this.onDismiss,
       onMask: onMask ?? this.onMask,
       awaitCompletion: awaitCompletion ?? this.awaitCompletion,
+      accessibilityMode: accessibilityMode ?? this.accessibilityMode,
+      requestFocus: requestFocus ?? this.requestFocus,
+      semanticsLabel: semanticsLabel ?? this.semanticsLabel,
+      barrierSemanticsLabel:
+          barrierSemanticsLabel ?? this.barrierSemanticsLabel,
       debounce: debounce ?? this.debounce,
       debounceTime: debounceTime ?? this.debounceTime,
       displayTime: displayTime ?? this.displayTime,
@@ -180,6 +203,10 @@ class ShowAttachParam extends ShowCustomParam {
     required super.onDismiss,
     required super.onMask,
     required super.awaitCompletion,
+    super.accessibilityMode = OverlayAccessibilityMode.popup,
+    super.requestFocus = false,
+    super.semanticsLabel,
+    super.barrierSemanticsLabel,
     required super.debounce,
     required super.debounceTime,
     required super.displayTime,
@@ -233,6 +260,10 @@ class ShowLoadingParam extends ShowParamBase {
     required super.onDismiss,
     required super.onMask,
     required super.awaitCompletion,
+    super.accessibilityMode,
+    super.requestFocus,
+    super.semanticsLabel,
+    super.barrierSemanticsLabel,
     super.controller,
     required this.displayTime,
     required this.leastLoadingTime,
@@ -266,6 +297,10 @@ class ShowToastParam extends ShowParamBase {
     required super.onDismiss,
     required super.onMask,
     required super.awaitCompletion,
+    super.accessibilityMode = OverlayAccessibilityMode.liveRegion,
+    super.requestFocus = false,
+    super.semanticsLabel,
+    super.barrierSemanticsLabel,
     super.controller,
     required this.displayTime,
     required this.debounceTime,
@@ -305,6 +340,10 @@ class ShowNotifyParam extends ShowParamBase {
     required super.onDismiss,
     required super.onMask,
     required super.awaitCompletion,
+    super.accessibilityMode = OverlayAccessibilityMode.liveRegion,
+    super.requestFocus = false,
+    super.semanticsLabel,
+    super.barrierSemanticsLabel,
     super.controller,
     required this.debounce,
     required this.debounceTime,

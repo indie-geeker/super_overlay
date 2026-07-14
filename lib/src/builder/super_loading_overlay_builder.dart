@@ -19,6 +19,9 @@ class _SuperLoadingOverlayBuilder {
   SuperOverlayOnBack? _onBack;
   SuperOverlayController? _controller;
   AwaitCompletion _awaitCompletion = overlayConfig.loading.awaitCompletion;
+  bool _requestFocus = true;
+  String? _semanticsLabel;
+  String? _barrierSemanticsLabel;
 
   _SuperLoadingOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -77,6 +80,17 @@ class _SuperLoadingOverlayBuilder {
     return this;
   }
 
+  _SuperLoadingOverlayBuilder withAccessibility({
+    required bool requestFocus,
+    String? semanticsLabel,
+    String? barrierSemanticsLabel,
+  }) {
+    _requestFocus = requestFocus;
+    _semanticsLabel = semanticsLabel;
+    _barrierSemanticsLabel = barrierSemanticsLabel;
+    return this;
+  }
+
   Future<T?> fire<T>() {
     final loading = overlayConfig.loading;
     return OverlayManager.instance.showLoading<T>(
@@ -99,6 +113,10 @@ class _SuperLoadingOverlayBuilder {
         onDismiss: null,
         onMask: null,
         awaitCompletion: _awaitCompletion,
+        accessibilityMode: OverlayAccessibilityMode.modal,
+        requestFocus: _requestFocus,
+        semanticsLabel: _semanticsLabel,
+        barrierSemanticsLabel: _barrierSemanticsLabel,
         controller: _controller,
         displayTime: _displayTime,
         leastLoadingTime: _leastLoadingTime,

@@ -28,6 +28,8 @@ class OverlayDialogWidget extends StatefulWidget {
     required this.maskWidget,
     required this.maskTriggerType,
     required this.ignoreArea,
+    required this.barrierDismissible,
+    required this.barrierSemanticsLabel,
     required this.onMask,
   });
 
@@ -44,6 +46,8 @@ class OverlayDialogWidget extends StatefulWidget {
   final Widget? maskWidget;
   final MaskTriggerType maskTriggerType;
   final Rect? ignoreArea;
+  final bool barrierDismissible;
+  final String? barrierSemanticsLabel;
   final VoidCallback onMask;
 
   @override
@@ -116,6 +120,8 @@ class _OverlayDialogWidgetState extends State<OverlayDialogWidget>
     return MaskEvent(
       maskTriggerType: widget.maskTriggerType,
       onMask: widget.onMask,
+      dismissible: widget.barrierDismissible,
+      semanticsLabel: widget.barrierSemanticsLabel,
       child: mask,
     );
   }

@@ -30,6 +30,9 @@ class _SuperCustomOverlayBuilder {
   VoidCallback? _onDismiss;
   VoidCallback? _onMask;
   AwaitCompletion _awaitCompletion = overlayConfig.custom.awaitCompletion;
+  bool _requestFocus = true;
+  String? _semanticsLabel;
+  String? _barrierSemanticsLabel;
 
   _SuperCustomOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -133,6 +136,17 @@ class _SuperCustomOverlayBuilder {
     return this;
   }
 
+  _SuperCustomOverlayBuilder withAccessibility({
+    required bool requestFocus,
+    String? semanticsLabel,
+    String? barrierSemanticsLabel,
+  }) {
+    _requestFocus = requestFocus;
+    _semanticsLabel = semanticsLabel;
+    _barrierSemanticsLabel = barrierSemanticsLabel;
+    return this;
+  }
+
   Future<T?> fire<T>() {
     final custom = overlayConfig.custom;
     return OverlayManager.instance.show<T>(
@@ -151,6 +165,10 @@ class _SuperCustomOverlayBuilder {
         onDismiss: _onDismiss,
         onMask: _onMask,
         awaitCompletion: _awaitCompletion,
+        accessibilityMode: OverlayAccessibilityMode.modal,
+        requestFocus: _requestFocus,
+        semanticsLabel: _semanticsLabel,
+        barrierSemanticsLabel: _barrierSemanticsLabel,
         debounce: _debounce,
         debounceTime: custom.debounceTime,
         displayTime: _displayTime,

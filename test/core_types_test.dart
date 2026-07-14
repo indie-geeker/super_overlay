@@ -2,8 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_overlay/src/kit/debounce_utils.dart';
 import 'package:super_overlay/src/kit/super_overlay_entry.dart';
+import 'package:super_overlay/super_overlay.dart';
 
 void main() {
+  test('accessibility options expose stable defaults', () {
+    const dialog = OverlayDialogOptions();
+    const popup = OverlayPopupOptions();
+    const loading = OverlayLoadingOptions();
+
+    expect(dialog.requestFocus, isTrue);
+    expect(dialog.semanticsLabel, isNull);
+    expect(dialog.barrierSemanticsLabel, isNull);
+    expect(popup.requestFocus, isFalse);
+    expect(loading.requestFocus, isTrue);
+    expect(loading.semanticsLabel, isNull);
+    expect(loading.barrierSemanticsLabel, isNull);
+  });
+
   test('debounce blocks only the same overlay type', () {
     var now = DateTime(2026);
     final debounce = DebounceUtils(clock: () => now);

@@ -272,6 +272,8 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
       MaskEvent(
         maskTriggerType: param.maskTriggerType,
         onMask: widget.onMask,
+        dismissible: param.clickMaskDismiss,
+        semanticsLabel: param.barrierSemanticsLabel,
         child: mask,
       ),
     );

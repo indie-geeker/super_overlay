@@ -30,6 +30,11 @@ class OverlayLoadingService {
         )
         .withMask(dismissible: options.dismissOnMaskTap)
         .withLeastLoadingTime(options.minimumVisibleDuration)
+        .withAccessibility(
+          requestFocus: options.requestFocus,
+          semanticsLabel: options.semanticsLabel,
+          barrierSemanticsLabel: options.barrierSemanticsLabel,
+        )
         .withController(controller)
         .withBack(type: backType)
         .withAwait(AwaitCompletion.dismiss);
@@ -123,6 +128,11 @@ class OverlayDialogService {
         )
         .bindPage(options.bindToRoute)
         .withPenetrate(!options.consumeEvents)
+        .withAccessibility(
+          requestFocus: options.requestFocus,
+          semanticsLabel: options.semanticsLabel,
+          barrierSemanticsLabel: options.barrierSemanticsLabel,
+        )
         .withController(controller)
         .withBack(type: backType)
         .withAwait(AwaitCompletion.dismiss);
@@ -235,6 +245,7 @@ class OverlayPopupService {
         .withAlignment(options.alignment)
         .withMask(dismissible: options.dismissOnMaskTap)
         .bindPage(options.bindToRoute)
+        .withAccessibility(requestFocus: options.requestFocus)
         .withController(controller)
         .withBack(type: backType)
         .withAwait(AwaitCompletion.dismiss);

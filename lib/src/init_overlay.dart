@@ -141,7 +141,12 @@ class _SuperOverlayInitState extends State<SuperOverlayInit> {
       key: ObjectKey(_hostLease),
       initialEntries: [_appEntry, _hostLease.entryLoading],
     );
-    return widget.styleBuilder?.call(overlay) ??
+    final content =
+        widget.styleBuilder?.call(overlay) ??
         Material(color: Colors.transparent, child: overlay);
+    return FocusScope(
+      debugLabel: 'SuperOverlay host focus scope',
+      child: content,
+    );
   }
 }

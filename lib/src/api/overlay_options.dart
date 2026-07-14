@@ -51,6 +51,9 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
     this.barrierColor,
     this.bindToWidget,
     this.consumeEvents = true,
+    this.requestFocus = true,
+    this.semanticsLabel,
+    this.barrierSemanticsLabel,
   });
 
   /// Where the dialog should be aligned inside the overlay host.
@@ -71,6 +74,15 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
   /// Set this to false for non-modal route-bound overlays that should allow
   /// users to keep interacting with the underlying page.
   final bool consumeEvents;
+
+  /// Whether the dialog should capture focus after its first rendered frame.
+  final bool requestFocus;
+
+  /// Optional semantic route label for the dialog content.
+  final String? semanticsLabel;
+
+  /// Optional semantic label for the dialog barrier.
+  final String? barrierSemanticsLabel;
 }
 
 /// Options for command-style popup overlays.
@@ -95,6 +107,7 @@ class OverlayPopupOptions extends OverlaySurfaceOptions {
     this.highlightPadding = EdgeInsets.zero,
     this.highlightBorderRadius = BorderRadius.zero,
     this.maskIgnoreArea,
+    this.requestFocus = false,
   });
 
   /// Popup alignment relative to its target.
@@ -132,6 +145,11 @@ class OverlayPopupOptions extends OverlaySurfaceOptions {
 
   /// Optional area where the popup mask should not intercept input.
   final Rect? maskIgnoreArea;
+
+  /// Whether the popup should capture focus.
+  ///
+  /// Popups are non-modal and preserve the current page focus by default.
+  final bool requestFocus;
 }
 
 /// Options for command-style loading overlays.
@@ -143,6 +161,9 @@ class OverlayLoadingOptions {
     this.backBehavior = OverlayBackBehavior.dismiss,
     this.displayDuration,
     this.minimumVisibleDuration = Duration.zero,
+    this.requestFocus = true,
+    this.semanticsLabel,
+    this.barrierSemanticsLabel,
   });
 
   /// Business identifier for this loading overlay.
@@ -159,6 +180,15 @@ class OverlayLoadingOptions {
 
   /// Minimum time the loading overlay should stay visible before closing.
   final Duration minimumVisibleDuration;
+
+  /// Whether the loading surface should capture focus while it is visible.
+  final bool requestFocus;
+
+  /// Optional semantic route label for the loading content.
+  final String? semanticsLabel;
+
+  /// Optional semantic label for the loading barrier.
+  final String? barrierSemanticsLabel;
 }
 
 /// Options for command-style toast overlays.

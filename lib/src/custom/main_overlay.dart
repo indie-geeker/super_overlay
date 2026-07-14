@@ -10,6 +10,7 @@ import '../kit/super_overlay_entry.dart';
 import '../kit/view_utils.dart';
 import '../widget/attach_dialog_widget.dart';
 import '../widget/helper/dialog_scope.dart';
+import '../widget/helper/overlay_accessibility_scope.dart';
 import '../widget/overlay_dialog_widget.dart';
 
 class MainOverlay {
@@ -42,21 +43,34 @@ class MainOverlay {
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _dialogController = OverlayDialogWidgetController();
-    _widget = OverlayDialogWidget(
-      controller: _dialogController!,
-      alignment: param.alignment,
-      usePenetrate: param.usePenetrate,
-      useAnimation: param.useAnimation,
-      animationTime: param.animationTime,
-      animationType: param.animationType,
-      nonAnimationTypes: param.nonAnimationTypes,
-      animationBuilder: param.animationBuilder,
-      maskColor: param.maskColor,
-      maskWidget: param.maskWidget,
-      maskTriggerType: param.maskTriggerType,
-      ignoreArea: param.ignoreArea,
-      onMask: onMask,
-      child: DialogScope(controller: param.controller, builder: param.builder),
+    _widget = OverlayAccessibilityScope(
+      mode: param.accessibilityMode,
+      requestFocus: param.requestFocus,
+      semanticsLabel: param.semanticsLabel,
+      handlesEscape: param.backType != BackType.ignore || param.onBack != null,
+      child: OverlayDialogWidget(
+        controller: _dialogController!,
+        alignment: param.alignment,
+        usePenetrate: param.usePenetrate,
+        useAnimation: param.useAnimation,
+        animationTime: param.animationTime,
+        animationType: param.animationType,
+        nonAnimationTypes: param.nonAnimationTypes,
+        animationBuilder: param.animationBuilder,
+        maskColor: param.maskColor,
+        maskWidget: param.maskWidget,
+        maskTriggerType: param.maskTriggerType,
+        ignoreArea: param.ignoreArea,
+        barrierDismissible: param.clickMaskDismiss,
+        barrierSemanticsLabel: param.barrierSemanticsLabel,
+        onMask: onMask,
+        child: DialogScope(
+          controller: param.controller,
+          builder: param.builder,
+          liveRegion:
+              param.accessibilityMode == OverlayAccessibilityMode.liveRegion,
+        ),
+      ),
     );
     overlayEntry.markNeedsBuild();
 
@@ -73,10 +87,16 @@ class MainOverlay {
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _dialogController = null;
-    _widget = AttachDialogWidget(
-      param: param,
-      onMask: onMask,
-      onTargetUnavailable: onTargetUnavailable,
+    _widget = OverlayAccessibilityScope(
+      mode: param.accessibilityMode,
+      requestFocus: param.requestFocus,
+      semanticsLabel: param.semanticsLabel,
+      handlesEscape: param.backType != BackType.ignore || param.onBack != null,
+      child: AttachDialogWidget(
+        param: param,
+        onMask: onMask,
+        onTargetUnavailable: onTargetUnavailable,
+      ),
     );
     overlayEntry.markNeedsBuild();
 

@@ -7,11 +7,15 @@ class MaskEvent extends StatefulWidget {
     super.key,
     required this.maskTriggerType,
     required this.onMask,
+    this.dismissible = false,
+    this.semanticsLabel,
     required this.child,
   });
 
   final MaskTriggerType maskTriggerType;
   final VoidCallback onMask;
+  final bool dismissible;
+  final String? semanticsLabel;
   final Widget child;
 
   @override
@@ -39,30 +43,40 @@ class _MaskEventState extends State<MaskEvent> {
         break;
     }
 
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) {
-        onPointerDown?.call();
-        if (onPointerDown != null) {
-          _maskTriggered = true;
-        }
-      },
-      onPointerMove: (_) {
-        if (!_maskTriggered) {
-          onPointerMove?.call();
-        }
-        if (onPointerMove != null) {
-          _maskTriggered = true;
-        }
-      },
-      onPointerUp: (_) {
-        onPointerUp?.call();
-        if (onPointerUp == null && !_maskTriggered) {
-          widget.onMask.call();
-        }
-        _maskTriggered = false;
-      },
-      child: widget.child,
+    final label =
+        widget.semanticsLabel ??
+        (widget.dismissible
+            ? MaterialLocalizations.of(context).modalBarrierDismissLabel
+            : null);
+    return Semantics(
+      container: true,
+      label: label,
+      onDismiss: widget.dismissible ? widget.onMask : null,
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) {
+          onPointerDown?.call();
+          if (onPointerDown != null) {
+            _maskTriggered = true;
+          }
+        },
+        onPointerMove: (_) {
+          if (!_maskTriggered) {
+            onPointerMove?.call();
+          }
+          if (onPointerMove != null) {
+            _maskTriggered = true;
+          }
+        },
+        onPointerUp: (_) {
+          onPointerUp?.call();
+          if (onPointerUp == null && !_maskTriggered) {
+            widget.onMask.call();
+          }
+          _maskTriggered = false;
+        },
+        child: widget.child,
+      ),
     );
   }
 }

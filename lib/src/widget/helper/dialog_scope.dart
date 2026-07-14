@@ -8,10 +8,12 @@ class DialogScope extends StatefulWidget {
     super.key,
     required this.controller,
     required this.builder,
+    this.liveRegion = false,
   });
 
   final SuperOverlayController? controller;
   final WidgetBuilder builder;
+  final bool liveRegion;
 
   @override
   State<DialogScope> createState() => _DialogScopeState();
@@ -49,7 +51,11 @@ class _DialogScopeState extends State<DialogScope> {
         }
       });
     }
-    return widget.builder(context);
+    final child = widget.builder(context);
+    if (!widget.liveRegion) {
+      return child;
+    }
+    return Semantics(liveRegion: true, child: child);
   }
 
   void _bindController(SuperOverlayController? controller) {

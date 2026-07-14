@@ -32,6 +32,7 @@ class _SuperPopupOverlayBuilder {
   BackType _backType = overlayConfig.attach.backType;
   SuperOverlayOnBack? _onBack;
   AwaitCompletion _awaitCompletion = overlayConfig.attach.awaitCompletion;
+  bool _requestFocus = false;
 
   _SuperPopupOverlayBuilder withBuilder(WidgetBuilder builder) {
     _builder = builder;
@@ -138,6 +139,11 @@ class _SuperPopupOverlayBuilder {
     return this;
   }
 
+  _SuperPopupOverlayBuilder withAccessibility({required bool requestFocus}) {
+    _requestFocus = requestFocus;
+    return this;
+  }
+
   _SuperPopupOverlayBuilder withBack({
     BackType type = BackType.normal,
     SuperOverlayOnBack? onBack,
@@ -165,6 +171,10 @@ class _SuperPopupOverlayBuilder {
         onDismiss: null,
         onMask: null,
         awaitCompletion: _awaitCompletion,
+        accessibilityMode: OverlayAccessibilityMode.popup,
+        requestFocus: _requestFocus,
+        semanticsLabel: null,
+        barrierSemanticsLabel: null,
         debounce: attach.debounce,
         debounceTime: attach.debounceTime,
         displayTime: _displayTime,
