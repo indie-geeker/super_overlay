@@ -38,9 +38,15 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
     debugLabel: 'SuperOverlay ${widget.mode.name} focus',
   );
   bool _hadFocus = false;
+  int _focusRequestToken = 0;
 
   FocusNode get _activeFocusNode =>
       widget.mode == OverlayAccessibilityMode.modal
+          ? _modalFocusScopeNode
+          : _nonModalFocusNode;
+
+  FocusNode _focusNodeFor(OverlayAccessibilityMode mode) =>
+      mode == OverlayAccessibilityMode.modal
           ? _modalFocusScopeNode
           : _nonModalFocusNode;
 
@@ -59,8 +65,21 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
     if (modeChanged && widget.mode != OverlayAccessibilityMode.modal) {
       _nonModalFocusNode.debugLabel = 'SuperOverlay ${widget.mode.name} focus';
     }
+
+    if (oldWidget.requestFocus && !widget.requestFocus) {
+      _cancelPendingFocusRequest();
+      _restorePreviousFocus(
+        focusNode: _focusNodeFor(oldWidget.mode),
+        requireOverlayFocus: true,
+      );
+      _hadFocus = false;
+      return;
+    }
+
     if (widget.requestFocus && (modeChanged || !oldWidget.requestFocus)) {
       _scheduleFocusRequest();
+    } else if (modeChanged) {
+      _cancelPendingFocusRequest();
     }
   }
 
@@ -68,11 +87,23 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
     if (!widget.requestFocus) {
       return;
     }
+    final token = ++_focusRequestToken;
+    final focusNode = _activeFocusNode;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _activeFocusNode.canRequestFocus) {
-        _activeFocusNode.requestFocus();
+      if (!mounted ||
+          token != _focusRequestToken ||
+          !widget.requestFocus ||
+          !identical(focusNode, _activeFocusNode)) {
+        return;
+      }
+      if (focusNode.canRequestFocus) {
+        focusNode.requestFocus();
       }
     });
+  }
+
+  void _cancelPendingFocusRequest() {
+    _focusRequestToken++;
   }
 
   void _handleFocusChange() {
@@ -82,23 +113,33 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
         _nonModalFocusNode.hasFocus;
   }
 
-  void _restorePreviousFocus() {
+  void _restorePreviousFocus({
+    FocusNode? focusNode,
+    bool requireOverlayFocus = false,
+  }) {
+    final overlayFocus = focusNode ?? _activeFocusNode;
     if (!_hadFocus ||
-        (widget.mode != OverlayAccessibilityMode.modal &&
-            !_activeFocusNode.hasFocus)) {
+        (requireOverlayFocus && !overlayFocus.hasFocus) ||
+        (!requireOverlayFocus &&
+            widget.mode != OverlayAccessibilityMode.modal &&
+            !overlayFocus.hasFocus)) {
       return;
     }
     final previousFocus = widget.focusRestoreTarget?.target;
     if (previousFocus == null) {
+      overlayFocus.unfocus();
       return;
     }
     try {
       if (previousFocus.canRequestFocus) {
         previousFocus.requestFocus();
+      } else {
+        overlayFocus.unfocus();
       }
     } catch (_) {
       // The previous owner may have disposed its focus node while the overlay
       // was visible. In that case Flutter's focus manager chooses a fallback.
+      overlayFocus.unfocus();
     }
   }
 
@@ -148,6 +189,7 @@ class _OverlayAccessibilityScopeState extends State<OverlayAccessibilityScope> {
 
   @override
   void dispose() {
+    _cancelPendingFocusRequest();
     _restorePreviousFocus();
     _modalFocusScopeNode.removeListener(_handleFocusChange);
     _nonModalFocusNode.removeListener(_handleFocusChange);

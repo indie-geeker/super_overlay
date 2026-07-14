@@ -422,6 +422,32 @@ void main() {
     await harness.dispose(tester);
   });
 
+  testWidgets('loading handoff to requestFocus false restores page focus', (
+    tester,
+  ) async {
+    final harness = await _pumpApp(tester);
+    final first = SuperOverlay.loading.show(
+      builder: (_) => const Text('Focused loading'),
+    );
+    await tester.pumpAndSettle();
+    expect(harness.pageFocus.hasFocus, isFalse);
+
+    await first.close();
+    final second = SuperOverlay.loading.show(
+      builder: (_) => const Text('Passive loading'),
+      options: const OverlayLoadingOptions(requestFocus: false),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Passive loading'), findsOneWidget);
+    expect(harness.pageFocus.hasFocus, isTrue);
+
+    final closeSecond = second.close();
+    await tester.pumpAndSettle();
+    await closeSecond;
+    await harness.dispose(tester);
+  });
+
   testWidgets('Escape honors block and passThrough policies', (tester) async {
     var rootEscapeCount = 0;
     final harness = await _pumpAppWithRootEscape(
