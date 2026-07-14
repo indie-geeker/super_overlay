@@ -22,6 +22,7 @@ Future<void> _revealEveryHomePanel(WidgetTester tester) async {
     'guided-mask-panel',
     'lifecycle-panel',
     'control-lab-panel',
+    'nested-navigation-panel',
   ]) {
     await tester.ensureVisible(find.byKey(ValueKey(key)));
     await tester.pumpAndSettle();

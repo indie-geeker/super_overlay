@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:super_overlay/super_overlay.dart';
 
 import '../network_state/presentation/network_state_demo_page.dart';
 import 'anchored_menu_panel.dart';
@@ -6,12 +7,15 @@ import 'dialog_demo_panel.dart';
 import 'guided_mask_panel.dart';
 import 'instant_feedback_panel.dart';
 import 'lifecycle_demo_page.dart';
+import 'nested_navigation_demo_page.dart';
 import 'overlay_control_lab_page.dart';
 import 'showcase_theme.dart';
 import 'showcase_widgets.dart';
 
 class ShowcaseHomePage extends StatelessWidget {
-  const ShowcaseHomePage({super.key});
+  const ShowcaseHomePage({super.key, required this.integration});
+
+  final SuperOverlayIntegration integration;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +60,8 @@ class ShowcaseHomePage extends StatelessWidget {
                 first: _buildLifecyclePanel(context),
                 second: _buildControlLabPanel(context),
               ),
+              const SizedBox(height: 16),
+              _buildNestedNavigationPanel(context),
             ],
           ),
         ),
@@ -132,6 +138,37 @@ class ShowcaseHomePage extends StatelessWidget {
             onPressed: () => _pushPage(context, const OverlayControlLabPage()),
             icon: const Icon(Icons.open_in_new),
             label: const Text('打开控制实验室'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNestedNavigationPanel(BuildContext context) {
+    return FeaturePanel(
+      key: const ValueKey('nested-navigation-panel'),
+      title: 'Nested Navigator',
+      subtitle:
+          '一个根 SuperOverlayIntegration，通过 navigatorObserver() '
+          '跟踪内层路由',
+      icon: Icons.account_tree_outlined,
+      accent: ShowcaseColors.primary,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '观察 scoped 弹窗如何随内层路由挂起、恢复，并在 owner route 关闭时清理。',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed:
+                () => _pushPage(
+                  context,
+                  NestedNavigationDemoPage(integration: integration),
+                ),
+            icon: const Icon(Icons.open_in_new),
+            label: const Text('打开嵌套 Navigator 案例'),
           ),
         ],
       ),

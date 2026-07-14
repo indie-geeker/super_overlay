@@ -66,8 +66,8 @@ class ShowcaseHeader extends StatelessWidget {
           const SizedBox(height: 18),
           const CodeStrip(
             code:
-                'MaterialApp(builder: SuperOverlay.init(), '
-                'navigatorObservers: [SuperOverlay.observer])',
+                'MaterialApp(builder: integration.builder, '
+                'navigatorObservers: [integration.observer])',
           ),
         ],
       ),

@@ -117,14 +117,15 @@ void main() {
     expect(find.text('生命周期绑定'), findsOneWidget);
     expect(find.text('网络请求状态'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('打开自定义弹窗'));
-    await tester.tap(find.text('打开自定义弹窗'));
+    await tester.ensureVisible(find.text('打开确认弹窗'));
+    await tester.tap(find.text('打开确认弹窗'));
     await tester.pumpAndSettle();
-    expect(find.text('自定义弹窗'), findsNWidgets(2));
+    expect(find.text('确认本次操作？'), findsOneWidget);
 
-    await tester.tap(find.text('关闭弹窗'));
+    await tester.tap(find.text('确认'));
     await tester.pumpAndSettle();
-    expect(find.text('自定义弹窗'), findsOneWidget);
+    expect(find.text('确认本次操作？'), findsNothing);
+    expect(find.text('handle.closed 返回结果：true'), findsOneWidget);
 
     await tester.ensureVisible(find.text('运行 Toast 演示'));
     await tester.tap(find.text('运行 Toast 演示'));

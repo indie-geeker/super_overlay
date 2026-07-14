@@ -84,7 +84,7 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
             const SizedBox(height: 16),
             FeaturePanel(
               title: '返回键处理',
-              subtitle: 'normal 关闭、block 阻止、ignore 交给页面',
+              subtitle: 'dismiss 关闭、block 阻止、passThrough 交给页面',
               icon: Icons.keyboard_return_outlined,
               accent: ShowcaseColors.danger,
               child: Wrap(
@@ -94,7 +94,7 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
                   FilledButton(
                     onPressed:
                         () => _showBackOverlay(OverlayBackBehavior.dismiss),
-                    child: const Text('Back normal'),
+                    child: const Text('Back dismiss'),
                   ),
                   OutlinedButton(
                     onPressed:
@@ -104,7 +104,7 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
                   OutlinedButton(
                     onPressed:
                         () => _showBackOverlay(OverlayBackBehavior.passThrough),
-                    child: const Text('Back ignore'),
+                    child: const Text('Back passThrough'),
                   ),
                 ],
               ),

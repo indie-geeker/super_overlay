@@ -132,6 +132,7 @@ class AdvancedPopupPanel extends StatelessWidget {
         tag: 'mask-ignore-popup',
         targetPointBuilder: _maskIgnoreTarget,
         alignment: Alignment.topCenter,
+        backBehavior: OverlayBackBehavior.passThrough,
         maskIgnoreArea: Rect.fromLTWH(0, 0, screenWidth, 96),
       ),
     );

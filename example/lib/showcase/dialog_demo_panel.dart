@@ -15,9 +15,10 @@ class DialogDemoPanel extends StatefulWidget {
 }
 
 class _DialogDemoPanelState extends State<DialogDemoPanel> {
-  OverlayHandle<void>? _handle;
+  OverlayHandle<bool>? _handle;
   bool _dismissible = true;
   bool _dimmed = true;
+  String _resultStatus = '尚未等待确认结果。';
 
   @override
   Widget build(BuildContext context) {
@@ -47,9 +48,11 @@ class _DialogDemoPanelState extends State<DialogDemoPanel> {
             child: FilledButton.icon(
               onPressed: _showDialog,
               icon: const Icon(Icons.open_in_full),
-              label: const Text('打开自定义弹窗'),
+              label: const Text('打开确认弹窗'),
             ),
           ),
+          const SizedBox(height: 12),
+          DemoStatusBanner(message: _resultStatus),
         ],
       ),
     );
@@ -57,8 +60,14 @@ class _DialogDemoPanelState extends State<DialogDemoPanel> {
 
   void _showDialog() {
     final maskColor = _dimmed ? ShowcaseColors.scrim : Colors.transparent;
-    final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => DialogSurface(dismissible: _dismissible, dimmed: _dimmed),
+    late final OverlayHandle<bool> handle;
+    handle = SuperOverlay.dialog.show<bool>(
+      builder:
+          (_) => DialogSurface(
+            dismissible: _dismissible,
+            dimmed: _dimmed,
+            onResult: (result) => unawaited(handle.close(result)),
+          ),
       options: OverlayDialogOptions(
         tag: 'dialog-lab',
         strategy: OverlayStrategy.replaceExisting,
@@ -67,13 +76,15 @@ class _DialogDemoPanelState extends State<DialogDemoPanel> {
       ),
     );
     _handle = handle;
-    unawaited(
-      handle.closed.whenComplete(() {
-        if (identical(_handle, handle)) {
+    unawaited(() async {
+      final result = await handle.closed;
+      if (mounted && identical(_handle, handle)) {
+        setState(() {
           _handle = null;
-        }
-      }),
-    );
+          _resultStatus = 'handle.closed 返回结果：$result';
+        });
+      }
+    }());
   }
 
   @override

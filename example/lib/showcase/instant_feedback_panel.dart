@@ -11,6 +11,8 @@ enum ToastDemoPolicy { replaceLatest, queue, stack }
 
 const _feedbackToastTag = 'showcase-feedback-toast';
 const _feedbackNotifyTag = 'showcase-feedback-notify';
+const _refreshActiveToastTag = 'showcase-refresh-active-toast';
+const _handleOwnedToastTag = 'showcase-handle-owned-toast';
 
 class InstantFeedbackPanel extends StatefulWidget {
   const InstantFeedbackPanel({super.key});
@@ -23,6 +25,9 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
   ToastDemoPolicy _policy = ToastDemoPolicy.replaceLatest;
   OverlayNotificationType _notificationType = OverlayNotificationType.success;
   OverlayHandle<void>? _notificationHandle;
+  OverlayHandle<void>? _handleOwnedToast;
+  var _refreshActiveRevision = 0;
+  var _handleRevision = 0;
   String _status = '选择一种策略，然后运行对应的反馈场景。';
 
   @override
@@ -61,6 +66,29 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
           ),
           const SizedBox(height: 12),
           DemoStatusBanner(message: _status),
+          const SizedBox(height: 16),
+          Text('刷新契约', style: Theme.of(context).textTheme.labelLarge),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.tonal(
+                onPressed: () => unawaited(_createRefreshDemo()),
+                child: const Text('创建两类刷新 Toast'),
+              ),
+              OutlinedButton(
+                onPressed:
+                    _refreshActiveRevision == 0 ? null : _runRefreshActive,
+                child: const Text('运行 refreshActive'),
+              ),
+              OutlinedButton(
+                onPressed:
+                    _handleOwnedToast == null ? null : _refreshHandleContent,
+                child: const Text('调用 handle.refresh()'),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 12),
@@ -217,6 +245,76 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
     _setStatus('已显示${_notificationLabel(_notificationType)}通知。');
   }
 
+  Future<void> _createRefreshDemo() async {
+    await SuperOverlay.close(target: OverlayCloseTarget.allToasts, force: true);
+    if (!mounted) {
+      return;
+    }
+
+    _refreshActiveRevision = 1;
+    _handleRevision = 1;
+    _showRefreshActiveToast();
+
+    late final OverlayHandle<void> handle;
+    handle = SuperOverlay.toast(
+      'handle-owned',
+      builder:
+          (_) => ToastSurface(
+            icon: Icons.refresh_outlined,
+            text: 'Handle 内容 $_handleRevision',
+            accent: ShowcaseColors.info,
+          ),
+      options: const OverlayToastOptions(
+        tag: _handleOwnedToastTag,
+        displayPolicy: OverlayToastDisplayPolicy.stack,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    _handleOwnedToast = handle;
+    setState(() {
+      _status = 'refreshActive 负责策略 lane；handle.refresh() 只重建自己的内容。';
+    });
+    unawaited(
+      handle.closed.whenComplete(() {
+        if (mounted && identical(_handleOwnedToast, handle)) {
+          setState(() => _handleOwnedToast = null);
+        }
+      }),
+    );
+  }
+
+  void _runRefreshActive() {
+    setState(() => _refreshActiveRevision++);
+    _showRefreshActiveToast();
+  }
+
+  void _showRefreshActiveToast() {
+    final revision = _refreshActiveRevision;
+    SuperOverlay.toast(
+      'refresh-active',
+      builder:
+          (_) => ToastSurface(
+            icon: Icons.policy_outlined,
+            text: 'refreshActive 内容 $revision',
+            accent: ShowcaseColors.warning,
+          ),
+      options: const OverlayToastOptions(
+        tag: _refreshActiveToastTag,
+        displayPolicy: OverlayToastDisplayPolicy.refreshActive,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+  }
+
+  void _refreshHandleContent() {
+    final handle = _handleOwnedToast;
+    if (handle == null) {
+      return;
+    }
+    setState(() => _handleRevision++);
+    handle.refresh();
+  }
+
   void _setStatus(String status) {
     if (mounted) {
       setState(() => _status = status);
@@ -226,12 +324,22 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
   @override
   void dispose() {
     final notificationHandle = _notificationHandle;
+    final handleOwnedToast = _handleOwnedToast;
     _notificationHandle = null;
+    _handleOwnedToast = null;
     unawaited(notificationHandle?.close());
+    unawaited(handleOwnedToast?.close());
     unawaited(
       SuperOverlay.close(
         target: OverlayCloseTarget.allToasts,
         tag: _feedbackToastTag,
+        force: true,
+      ),
+    );
+    unawaited(
+      SuperOverlay.close(
+        target: OverlayCloseTarget.allToasts,
+        tag: _refreshActiveToastTag,
         force: true,
       ),
     );

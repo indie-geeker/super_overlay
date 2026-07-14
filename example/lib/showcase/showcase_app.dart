@@ -4,39 +4,56 @@ import 'package:super_overlay/super_overlay.dart';
 import 'showcase_home_page.dart';
 import 'showcase_theme.dart';
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late final SuperOverlayIntegration _integration;
+
+  @override
+  void initState() {
+    super.initState();
+    _integration = SuperOverlay.integration(
+      toastBuilder: _toastBuilder,
+      loadingBuilder: _loadingBuilder,
+      notifyStyle: NotifyStyle(
+        successBuilder:
+            (message) =>
+                _notifyBuilder(OverlayNotificationType.success, message),
+        failureBuilder:
+            (message) =>
+                _notifyBuilder(OverlayNotificationType.failure, message),
+        warningBuilder:
+            (message) =>
+                _notifyBuilder(OverlayNotificationType.warning, message),
+        errorBuilder:
+            (message) => _notifyBuilder(OverlayNotificationType.error, message),
+        alertBuilder:
+            (message) => _notifyBuilder(OverlayNotificationType.alert, message),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'SuperOverlay Showcase',
       debugShowCheckedModeBanner: false,
-      builder: SuperOverlay.init(
-        toastBuilder: _toastBuilder,
-        loadingBuilder: _loadingBuilder,
-        notifyStyle: NotifyStyle(
-          successBuilder:
-              (message) =>
-                  _notifyBuilder(OverlayNotificationType.success, message),
-          failureBuilder:
-              (message) =>
-                  _notifyBuilder(OverlayNotificationType.failure, message),
-          warningBuilder:
-              (message) =>
-                  _notifyBuilder(OverlayNotificationType.warning, message),
-          errorBuilder:
-              (message) =>
-                  _notifyBuilder(OverlayNotificationType.error, message),
-          alertBuilder:
-              (message) =>
-                  _notifyBuilder(OverlayNotificationType.alert, message),
-        ),
-      ),
-      navigatorObservers: [SuperOverlay.observer],
+      builder: _integration.builder,
+      navigatorObservers: [_integration.observer],
       theme: ShowcaseTheme.light(),
-      home: const ShowcaseHomePage(),
+      home: ShowcaseHomePage(integration: _integration),
     );
+  }
+
+  @override
+  void dispose() {
+    _integration.dispose();
+    super.dispose();
   }
 
   Widget _toastBuilder(String message) {

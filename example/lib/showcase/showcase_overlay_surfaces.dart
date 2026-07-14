@@ -8,10 +8,12 @@ class DialogSurface extends StatelessWidget {
     super.key,
     required this.dismissible,
     required this.dimmed,
+    required this.onResult,
   });
 
   final bool dismissible;
   final bool dimmed;
+  final ValueChanged<bool> onResult;
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +28,7 @@ class DialogSurface extends StatelessWidget {
               const Icon(Icons.dashboard_customize_outlined),
               const SizedBox(width: 10),
               Text(
-                '自定义弹窗',
+                '确认本次操作？',
                 style: Theme.of(
                   context,
                 ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
@@ -37,16 +39,19 @@ class DialogSurface extends StatelessWidget {
           Text('点击外部：${dismissible ? '允许关闭' : '不会关闭'}'),
           Text('背景高亮：${dimmed ? '开启' : '关闭'}'),
           const SizedBox(height: 18),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton(
-              onPressed:
-                  () => SuperOverlay.close(
-                    target: OverlayCloseTarget.dialog,
-                    tag: 'dialog-lab',
-                  ),
-              child: const Text('关闭弹窗'),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => onResult(false),
+                child: const Text('取消'),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: () => onResult(true),
+                child: const Text('确认'),
+              ),
+            ],
           ),
         ],
       ),
