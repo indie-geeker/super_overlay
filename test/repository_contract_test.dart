@@ -216,6 +216,24 @@ Keep documentation tasks [ ] separate from device results.
       contains('blank_issues_enabled: false'),
     );
   });
+
+  test('release intake and coverage matrix track the 0.3.0 README', () {
+    final issueForm =
+        File('.github/ISSUE_TEMPLATE/issue.yml').readAsStringSync();
+    final coverageMatrix =
+        File('tool/verification/example_coverage_matrix.md').readAsStringSync();
+
+    expect(issueForm, contains('placeholder: "0.3.0"'));
+    expect(coverageMatrix, isNot(contains('[Quick Start]')));
+    expect(coverageMatrix, isNot(contains('[Conflict Policy]')));
+    expect(coverageMatrix, contains('[Install](../../README.md#install)'));
+    expect(
+      coverageMatrix,
+      contains(
+        '[Command And Handle Basics](../../README.md#command-and-handle-basics)',
+      ),
+    );
+  });
 }
 
 Set<String> _dependencyNames(String pubspec, String section) {
