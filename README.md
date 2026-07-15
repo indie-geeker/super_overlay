@@ -344,6 +344,9 @@ SuperOverlay.popup.show<void>(
 ```
 
 An unmounted or invalid target fails closed and removes its registry record.
+Partial clipping at any Overlay viewport edge remains valid and continues to
+track. Once the mounted target has no positive-area intersection with the
+Overlay viewport, it fails closed as unavailable.
 `maskIgnoreArea` is different: it remains fixed in overlay-host coordinates and
 does not move relative to the target.
 
