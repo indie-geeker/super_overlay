@@ -53,8 +53,10 @@ void registerNotifyOverlayTests() {
   ) async {
     tester.view.devicePixelRatio = 1;
     tester.view.padding = const FakeViewPadding(top: 44);
+    tester.view.viewPadding = const FakeViewPadding(top: 44);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
 
     Widget surface(OverlayNotificationType type, String message) {
       return Container(
@@ -102,6 +104,59 @@ void registerNotifyOverlayTests() {
       force: true,
     );
     await Future.wait(handles.map((handle) => handle.closed));
+  });
+
+  testWidgets('notify honors physical cutout after safe padding is consumed', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.padding = const FakeViewPadding(top: 44);
+    tester.view.viewPadding = const FakeViewPadding(top: 44);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPadding);
+    addTearDown(tester.view.resetViewPadding);
+
+    final integration = SuperOverlay.integration(
+      notifyStyle: NotifyStyle(
+        warningBuilder:
+            (message) => Container(
+              key: const ValueKey('consumed-padding-notify'),
+              child: Text(message),
+            ),
+      ),
+    );
+    addTearDown(integration.dispose);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: (context, child) {
+          final data = MediaQuery.of(context);
+          return MediaQuery(
+            data: data.copyWith(padding: EdgeInsets.zero),
+            child: integration.builder(context, child),
+          );
+        },
+        navigatorObservers: [integration.observer],
+        home: const Scaffold(body: SizedBox.shrink()),
+      ),
+    );
+
+    final handle = SuperOverlay.notify.warning(
+      'Physical cutout notification',
+      options: const OverlayNotifyOptions(displayDuration: null),
+    );
+    await tester.pump();
+
+    expect(
+      tester
+          .getTopLeft(find.byKey(const ValueKey('consumed-padding-notify')))
+          .dy,
+      greaterThanOrEqualTo(44),
+    );
+
+    final close = handle.close();
+    await tester.pumpAndSettle();
+    await close;
   });
 
   testWidgets('notify auto-dismisses after displayDuration', (tester) async {

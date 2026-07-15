@@ -80,6 +80,7 @@ class _OverlayDialogWidgetState extends State<OverlayDialogWidget>
 
   @override
   Widget build(BuildContext context) {
+    final viewPadding = MediaQuery.viewPaddingOf(context);
     return Padding(
       padding: EdgeInsets.only(
         left: widget.ignoreArea?.left ?? 0,
@@ -92,6 +93,11 @@ class _OverlayDialogWidgetState extends State<OverlayDialogWidget>
         children: [
           _buildMask(),
           SafeArea(
+            minimum: EdgeInsets.only(
+              left: viewPadding.left,
+              top: viewPadding.top,
+              right: viewPadding.right,
+            ),
             child: Align(
               alignment: widget.alignment,
               child: Material(
