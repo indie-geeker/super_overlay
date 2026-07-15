@@ -14,11 +14,14 @@
   semantic route/barrier labels, Escape handling, and live-region feedback.
 * Track moving popup anchors in root Overlay coordinates with per-entry
   invalidation, a 0.5 logical-pixel tolerance, and fail-closed target cleanup.
+  Partially clipped mounted anchors remain active until they fully leave the
+  Overlay viewport.
 * Expand the runnable example with typed dialog results, all public back
   behaviors, nested Navigator suspension/resume, and `refreshActive` versus
   handle-owned `refresh()`.
 * Add compile-backed README snippets, support tiers, a capability coverage
-  matrix, repository contracts, and a release checklist.
+  matrix, repository contracts, a release checklist, and complete English and
+  Simplified Chinese README editions.
 * Make `OverlayHandle.visible` reflect the first rendered frame across dialog,
   loading, popup, toast, and notification surfaces. Requests that terminate
   before rendering now fail `visible` with `StateError` while still settling

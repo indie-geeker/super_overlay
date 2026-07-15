@@ -13,17 +13,20 @@ The complete local automated RC gate passed on 2026-07-14 with Flutter 3.41.6
 and Dart 3.11.4:
 
 - formatting, analysis, and dependency resolution completed successfully;
-- 293 package tests passed with fixed seed `20260713` and fresh seed
-  `3347434202`;
-- line coverage was 90.9157% (3773 of 4150 lines), above the 90% threshold;
+- 298 package tests passed with fixed seed `20260714` and fresh randomized
+  ordering;
+- line coverage was 90.9398% (3774 of 4150 lines), above the 90% threshold;
 - dartdoc reported zero warnings and zero errors;
-- publish dry-run reported zero warnings;
+- publish dry-run included both README languages in a 421 KB archive and
+  reported zero warnings;
 - 29 example tests, the Web build, and the Android debug APK build passed.
 
-Both jobs in [GitHub Actions run #8](https://github.com/indie-geeker/super_overlay/actions/runs/29319573548)
-passed for source commit `48447e884c6b27c98675013e400d389d35ea052e`,
-covering Flutter stable and Flutter 3.29. The remaining release blocker is the
-required Android and iOS evidence that a maintainer must record in the
+Both jobs in [GitHub Actions run #9](https://github.com/indie-geeker/super_overlay/actions/runs/29320075868)
+passed for source commit `daa9af70608e887f4ee3361eb78a1d851e917d24`,
+covering Flutter stable and Flutter 3.29. That run predates the subsequent local
+anchor and bilingual-documentation fixes. The final candidate still requires
+exact-SHA remote CI plus the Android and iOS evidence that a maintainer must
+record in the
 [device verification matrix](tool/verification/example_device_matrix.md).
 
 ## 1. Prepare The Candidate
@@ -31,8 +34,8 @@ required Android and iOS evidence that a maintainer must record in the
 - Confirm the intended package version in `pubspec.yaml`.
 - Confirm `CHANGELOG.md` contains one undated section for the candidate version
   and preserves all published histories.
-- Confirm README installation syntax and `example/pubspec.lock` match the
-  candidate version.
+- Confirm both README installation snippets and `example/pubspec.lock` match
+  the candidate version.
 - Review breaking changes, migration notes, supported topology, and platform
   tiers.
 - Confirm the private vulnerability-reporting path in

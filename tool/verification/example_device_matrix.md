@@ -30,10 +30,13 @@ complete any manual row:
 - publish dry-run from both the Git worktree and a copy without `.git`, with
   zero warnings.
 
-The current release candidate passed the refreshed local gates on 2026-07-14.
-Both Flutter stable and Flutter 3.29 passed in GitHub Actions run #8 for source
-commit `48447e884c6b27c98675013e400d389d35ea052e`. The required mobile evidence
-below remains pending and is the remaining release blocker.
+The current source passed the refreshed local gates on 2026-07-14 with 298
+package tests, 90.9398% line coverage (3774 of 4150 lines), 29 example tests,
+and successful Web and Android debug APK builds. Flutter stable and Flutter
+3.29 passed in GitHub Actions run #9 for the earlier source commit
+`daa9af70608e887f4ee3361eb78a1d851e917d24`. Subsequent local blocker fixes
+still require exact-SHA remote CI. The required mobile evidence below also
+remains pending.
 
 ## Required Mobile Release Blockers
 
@@ -52,7 +55,7 @@ publication.
 | [ ] | iPhone or Android with the keyboard visible | Focus a field, open and close a modal dialog | Focus is trapped inside the modal and restored to the original field after close | Device/OS and recording |
 | [ ] | Android with gesture navigation | Use system back with `dismiss`, `block`, and `passThrough` dialogs | Overlay and route behavior matches the selected policy without a double pop | Device/OS and recording |
 | [ ] | Android with predictive back enabled | Start, cancel, then complete predictive back with an active modal | Preview and completion respect the modal policy and never expose a stale route | Device/OS and recording |
-| [ ] | iPhone or Android in a scrolling view | Keep a popup open while its anchor moves, then remove the anchor | Popup follows the anchor and closes when the target becomes invalid | Device/OS and recording |
+| [ ] | iPhone or Android in a scrolling view | Move a popup anchor partially and then fully outside the viewport, then remove it | Popup follows while partially visible and closes after full exit or target removal | Device/OS and recording |
 
 ## Claim-Only And Optional Evidence
 
