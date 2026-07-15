@@ -6,30 +6,36 @@ is recorded.
 
 ## Current Candidate Status
 
-The commercial-readiness branch passed its local automated source gate on
-2026-07-13 with Flutter 3.41.6:
+Version `0.3.0` is the current unpublished release candidate. It has not been
+tagged or published and is not release-complete.
 
-- 246 package tests passed with fixed and fresh randomized ordering;
-- line coverage was 91.138% (3507 of 3848 lines);
-- 26 example tests, the Web build, and the Android debug APK build passed;
-- publish dry-run reported zero warnings in the Git worktree and in a copied
-  archive without `.git`.
+The complete local automated RC gate passed on 2026-07-14 with Flutter 3.41.6
+and Dart 3.11.4:
 
-This is source-code-ready evidence, not release approval. The release remains
-blocked by the manual [device verification matrix](tool/verification/example_device_matrix.md),
-remote CI for the exact candidate commit (including Flutter 3.29), and final
-version/changelog approval. The official Dart package resolver currently
-selects published `0.2.0`; because this branch adds public integration and
-nested-navigation APIs, the next candidate is expected to be `0.3.0`. Do not
-change the package version until the remaining evidence is complete.
+- formatting, analysis, and dependency resolution completed successfully;
+- 298 package tests passed with fixed seed `20260714` and fresh randomized
+  ordering;
+- line coverage was 90.9398% (3774 of 4150 lines), above the 90% threshold;
+- dartdoc reported zero warnings and zero errors;
+- publish dry-run included both README languages in a 421 KB archive and
+  reported zero warnings;
+- 29 example tests, the Web build, and the Android debug APK build passed.
+
+Both jobs in [GitHub Actions run #9](https://github.com/indie-geeker/super_overlay/actions/runs/29320075868)
+passed for source commit `daa9af70608e887f4ee3361eb78a1d851e917d24`,
+covering Flutter stable and Flutter 3.29. That run predates the subsequent local
+anchor and bilingual-documentation fixes. The final candidate still requires
+exact-SHA remote CI plus the Android and iOS evidence that a maintainer must
+record in the
+[device verification matrix](tool/verification/example_device_matrix.md).
 
 ## 1. Prepare The Candidate
 
 - Confirm the intended package version in `pubspec.yaml`.
-- Move user-visible entries from `Unreleased` into that version only when the
-  release is approved.
-- Confirm README installation syntax and `example/pubspec.lock` match the
-  candidate version.
+- Confirm `CHANGELOG.md` contains one undated section for the candidate version
+  and preserves all published histories.
+- Confirm both README installation snippets and `example/pubspec.lock` match
+  the candidate version.
 - Review breaking changes, migration notes, supported topology, and platform
   tiers.
 - Confirm the private vulnerability-reporting path in
@@ -67,6 +73,7 @@ dart format --output=none --set-exit-if-changed .
 flutter analyze
 flutter test
 flutter build web
+flutter build apk --debug
 cd ..
 ```
 

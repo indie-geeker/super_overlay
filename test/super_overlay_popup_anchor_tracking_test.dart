@@ -6,6 +6,205 @@ import 'package:super_overlay/src/widget/highlight_mask.dart';
 import 'super_overlay_popup_geometry_cases.dart';
 
 void main() {
+  testWidgets(
+    'popup stays open while its mounted anchor is partially outside the viewport',
+    (tester) async {
+      final viewport = tester.view.physicalSize / tester.view.devicePixelRatio;
+      final cases =
+          <({String edge, Offset initialOffset, Offset clippedOffset})>[
+            (
+              edge: 'top',
+              initialOffset: const Offset(120, 10),
+              clippedOffset: const Offset(120, -1),
+            ),
+            (
+              edge: 'right',
+              initialOffset: Offset(viewport.width - 110, 120),
+              clippedOffset: Offset(viewport.width - 99, 120),
+            ),
+            (
+              edge: 'bottom',
+              initialOffset: Offset(120, viewport.height - 50),
+              clippedOffset: Offset(120, viewport.height - 39),
+            ),
+            (
+              edge: 'left',
+              initialOffset: const Offset(10, 120),
+              clippedOffset: const Offset(-1, 120),
+            ),
+          ];
+
+      for (final anchorCase in cases) {
+        final targetOffset = ValueNotifier<Offset>(anchorCase.initialOffset);
+        late BuildContext targetContext;
+        final targetKey = ValueKey('partial-${anchorCase.edge}-target');
+        final popupKey = ValueKey('partial-${anchorCase.edge}-popup');
+        final tag = 'partial-${anchorCase.edge}-popup';
+
+        await tester.pumpWidget(
+          buildPopupGeometryApp(
+            ValueListenableBuilder<Offset>(
+              valueListenable: targetOffset,
+              builder:
+                  (context, offset, child) => Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        left: offset.dx,
+                        top: offset.dy,
+                        child: Builder(
+                          builder: (context) {
+                            targetContext = context;
+                            return SizedBox(
+                              key: targetKey,
+                              width: 100,
+                              height: 40,
+                              child: Text('${anchorCase.edge} target'),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+            ),
+          ),
+        );
+
+        final handle = SuperOverlay.popup.show<void>(
+          targetContext: targetContext,
+          builder:
+              (_) => SizedBox(
+                key: popupKey,
+                width: 120,
+                height: 32,
+                child: Text('${anchorCase.edge} popup'),
+              ),
+          options: OverlayPopupOptions(tag: tag),
+        );
+        await tester.pumpAndSettle();
+
+        targetOffset.value = anchorCase.clippedOffset;
+        await tester.pump();
+        await tester.pump();
+
+        final targetRect = tester.getRect(find.byKey(targetKey));
+        expect(targetContext.mounted, isTrue, reason: anchorCase.edge);
+        expect(
+          targetRect.overlaps(Offset.zero & viewport),
+          isTrue,
+          reason: anchorCase.edge,
+        );
+        expect(handle.isVisible, isTrue, reason: anchorCase.edge);
+        expect(find.byKey(popupKey), findsOneWidget, reason: anchorCase.edge);
+
+        await _closeHandle(tester, handle);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        targetOffset.dispose();
+      }
+    },
+  );
+
+  testWidgets(
+    'popup fails closed when its mounted anchor leaves the viewport',
+    (tester) async {
+      final viewport = tester.view.physicalSize / tester.view.devicePixelRatio;
+      final cases =
+          <({String edge, Offset initialOffset, Offset outsideOffset})>[
+            (
+              edge: 'top',
+              initialOffset: const Offset(120, 10),
+              outsideOffset: const Offset(120, -40),
+            ),
+            (
+              edge: 'right',
+              initialOffset: Offset(viewport.width - 110, 120),
+              outsideOffset: Offset(viewport.width, 120),
+            ),
+            (
+              edge: 'bottom',
+              initialOffset: Offset(120, viewport.height - 50),
+              outsideOffset: Offset(120, viewport.height),
+            ),
+            (
+              edge: 'left',
+              initialOffset: const Offset(10, 120),
+              outsideOffset: const Offset(-100, 120),
+            ),
+          ];
+
+      for (final anchorCase in cases) {
+        final targetOffset = ValueNotifier<Offset>(anchorCase.initialOffset);
+        late BuildContext targetContext;
+        final targetKey = ValueKey('outside-${anchorCase.edge}-target');
+        final popupKey = ValueKey('outside-${anchorCase.edge}-popup');
+        final tag = 'outside-${anchorCase.edge}-popup';
+
+        await tester.pumpWidget(
+          buildPopupGeometryApp(
+            ValueListenableBuilder<Offset>(
+              valueListenable: targetOffset,
+              builder:
+                  (context, offset, child) => Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        left: offset.dx,
+                        top: offset.dy,
+                        child: Builder(
+                          builder: (context) {
+                            targetContext = context;
+                            return SizedBox(
+                              key: targetKey,
+                              width: 100,
+                              height: 40,
+                              child: Text('${anchorCase.edge} target'),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+            ),
+          ),
+        );
+
+        final handle = SuperOverlay.popup.show<void>(
+          targetContext: targetContext,
+          builder:
+              (_) => SizedBox(
+                key: popupKey,
+                width: 120,
+                height: 32,
+                child: Text('${anchorCase.edge} popup'),
+              ),
+          options: OverlayPopupOptions(tag: tag),
+        );
+        await tester.pumpAndSettle();
+
+        targetOffset.value = anchorCase.outsideOffset;
+        await tester.pump();
+        await tester.pumpAndSettle();
+
+        final targetRect = tester.getRect(find.byKey(targetKey));
+        expect(targetContext.mounted, isTrue, reason: anchorCase.edge);
+        expect(
+          targetRect.overlaps(Offset.zero & viewport),
+          isFalse,
+          reason: anchorCase.edge,
+        );
+        expect(handle.isVisible, isFalse, reason: anchorCase.edge);
+        expect(SuperOverlay.exists(tag: tag), isFalse, reason: anchorCase.edge);
+        expect(find.byKey(popupKey), findsNothing, reason: anchorCase.edge);
+        await handle.closed;
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        targetOffset.dispose();
+      }
+    },
+  );
+
   testWidgets('popup follows a target on the frame after scrolling', (
     tester,
   ) async {

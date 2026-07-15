@@ -51,7 +51,10 @@ bool _hasSemanticsFlag(SemanticsNode node, SemanticsFlag flag) {
   return node.getSemanticsData().hasFlag(flag);
 }
 
-Future<_AccessibilityHarness> _pumpApp(WidgetTester tester) async {
+Future<_AccessibilityHarness> _pumpApp(
+  WidgetTester tester, {
+  VoidCallback? onPagePressed,
+}) async {
   final integration = SuperOverlay.integration();
   final pageFocus = FocusNode(debugLabel: 'page control');
   late BuildContext targetContext;
@@ -67,7 +70,7 @@ Future<_AccessibilityHarness> _pumpApp(WidgetTester tester) async {
             return Center(
               child: TextButton(
                 focusNode: pageFocus,
-                onPressed: () {},
+                onPressed: onPagePressed ?? () {},
                 child: const Text('Page control'),
               ),
             );
@@ -188,6 +191,126 @@ void main() {
     await harness.dispose(tester);
   });
 
+  testWidgets('non-modal dialog preserves newer page focus on close', (
+    tester,
+  ) async {
+    final integration = SuperOverlay.integration();
+    final firstPageFocus = FocusNode(debugLabel: 'first page control');
+    final secondPageFocus = FocusNode(debugLabel: 'second page control');
+    final dialogFocus = FocusNode(debugLabel: 'non-modal dialog control');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: <NavigatorObserver>[integration.observer],
+        home: Scaffold(
+          body: Column(
+            children: <Widget>[
+              TextButton(
+                focusNode: firstPageFocus,
+                onPressed: () {},
+                child: const Text('First page control'),
+              ),
+              TextButton(
+                focusNode: secondPageFocus,
+                onPressed: () {},
+                child: const Text('Second page control'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    firstPageFocus.requestFocus();
+    await tester.pump();
+
+    final handle = SuperOverlay.dialog.show<void>(
+      builder:
+          (_) => TextButton(
+            focusNode: dialogFocus,
+            onPressed: () {},
+            child: const Text('Non-modal dialog control'),
+          ),
+      options: const OverlayDialogOptions(consumeEvents: false),
+    );
+    await tester.pumpAndSettle();
+    dialogFocus.requestFocus();
+    await tester.pump();
+    secondPageFocus.requestFocus();
+    await tester.pump();
+
+    final close = handle.close();
+    await tester.pumpAndSettle();
+    await close;
+
+    expect(secondPageFocus.hasFocus, isTrue);
+    expect(firstPageFocus.hasFocus, isFalse);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+    firstPageFocus.dispose();
+    secondPageFocus.dispose();
+    dialogFocus.dispose();
+  });
+
+  testWidgets('non-modal dialog allows sequential focus to exit', (
+    tester,
+  ) async {
+    final integration = SuperOverlay.integration();
+    final pageFocus = FocusNode(debugLabel: 'lower page control');
+    final dialogFocus = FocusNode(debugLabel: 'upper non-modal control');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: <NavigatorObserver>[integration.observer],
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.bottomCenter,
+            child: TextButton(
+              focusNode: pageFocus,
+              onPressed: () {},
+              child: const Text('Lower page control'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final handle = SuperOverlay.dialog.show<void>(
+      builder:
+          (_) => TextButton(
+            focusNode: dialogFocus,
+            onPressed: () {},
+            child: const Text('Upper non-modal control'),
+          ),
+      options: const OverlayDialogOptions(
+        alignment: Alignment.topCenter,
+        consumeEvents: false,
+      ),
+    );
+    await tester.pumpAndSettle();
+    dialogFocus.requestFocus();
+    await tester.pump();
+
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+
+    expect(pageFocus.hasFocus, isTrue);
+
+    final close = handle.close();
+    await tester.pumpAndSettle();
+    await close;
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+    pageFocus.dispose();
+    dialogFocus.dispose();
+  });
+
   testWidgets('Escape uses the same dismiss behavior as system back', (
     tester,
   ) async {
@@ -273,6 +396,170 @@ void main() {
     await closeDialog;
     loadingFocus.dispose();
     await harness.dispose(tester);
+  });
+
+  testWidgets('loading handoff without a frame restores page focus', (
+    tester,
+  ) async {
+    final harness = await _pumpApp(tester);
+    final first = SuperOverlay.loading.show(
+      builder: (_) => const Text('First loading'),
+    );
+    await tester.pumpAndSettle();
+    expect(harness.pageFocus.hasFocus, isFalse);
+
+    await first.close();
+    final second = SuperOverlay.loading.show(
+      builder: (_) => const Text('Second loading'),
+    );
+    await tester.pumpAndSettle();
+
+    final closeSecond = second.close();
+    await tester.pumpAndSettle();
+    await closeSecond;
+
+    expect(harness.pageFocus.hasFocus, isTrue);
+    await harness.dispose(tester);
+  });
+
+  testWidgets('loading handoff to requestFocus false restores page focus', (
+    tester,
+  ) async {
+    final harness = await _pumpApp(tester);
+    final first = SuperOverlay.loading.show(
+      builder: (_) => const Text('Focused loading'),
+    );
+    await tester.pumpAndSettle();
+    expect(harness.pageFocus.hasFocus, isFalse);
+
+    await first.close();
+    final second = SuperOverlay.loading.show(
+      builder: (_) => const Text('Passive loading'),
+      options: const OverlayLoadingOptions(requestFocus: false),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Passive loading'), findsOneWidget);
+    expect(harness.pageFocus.hasFocus, isTrue);
+
+    final closeSecond = second.close();
+    await tester.pumpAndSettle();
+    await closeSecond;
+    await harness.dispose(tester);
+  });
+
+  testWidgets('closed loading does not reclaim newer page focus', (
+    tester,
+  ) async {
+    final integration = SuperOverlay.integration();
+    final firstPageFocus = FocusNode(debugLabel: 'first page control');
+    final secondPageFocus = FocusNode(debugLabel: 'second page control');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: <NavigatorObserver>[integration.observer],
+        home: Scaffold(
+          body: Column(
+            children: <Widget>[
+              TextButton(
+                focusNode: firstPageFocus,
+                onPressed: () {},
+                child: const Text('First page control'),
+              ),
+              TextButton(
+                focusNode: secondPageFocus,
+                onPressed: () {},
+                child: const Text('Second page control'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    firstPageFocus.requestFocus();
+    await tester.pump();
+
+    final loading = SuperOverlay.loading.show(
+      builder: (_) => const Text('Closing loading'),
+    );
+    await tester.pumpAndSettle();
+    expect(firstPageFocus.hasFocus, isFalse);
+
+    await loading.close();
+    expect(firstPageFocus.hasFocus, isTrue);
+    secondPageFocus.requestFocus();
+    FocusManager.instance.applyFocusChangesIfNeeded();
+    expect(secondPageFocus.hasFocus, isTrue);
+
+    await tester.pump();
+    expect(secondPageFocus.hasFocus, isTrue);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+    firstPageFocus.dispose();
+    secondPageFocus.dispose();
+  });
+
+  testWidgets('new loading presentation captures the current page focus', (
+    tester,
+  ) async {
+    final integration = SuperOverlay.integration();
+    final firstPageFocus = FocusNode(debugLabel: 'first page control');
+    final secondPageFocus = FocusNode(debugLabel: 'second page control');
+
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: <NavigatorObserver>[integration.observer],
+        home: Scaffold(
+          body: Column(
+            children: <Widget>[
+              TextButton(
+                focusNode: firstPageFocus,
+                onPressed: () {},
+                child: const Text('First page control'),
+              ),
+              TextButton(
+                focusNode: secondPageFocus,
+                onPressed: () {},
+                child: const Text('Second page control'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    firstPageFocus.requestFocus();
+    await tester.pump();
+
+    final first = SuperOverlay.loading.show(
+      builder: (_) => const Text('First loading'),
+    );
+    await tester.pumpAndSettle();
+    await first.close();
+    expect(firstPageFocus.hasFocus, isTrue);
+
+    secondPageFocus.requestFocus();
+    FocusManager.instance.applyFocusChangesIfNeeded();
+    expect(secondPageFocus.hasFocus, isTrue);
+
+    final second = SuperOverlay.loading.show(
+      builder: (_) => const Text('Second loading'),
+    );
+    await tester.pumpAndSettle();
+    await second.close();
+
+    expect(secondPageFocus.hasFocus, isTrue);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+    firstPageFocus.dispose();
+    secondPageFocus.dispose();
   });
 
   testWidgets('Escape honors block and passThrough policies', (tester) async {
@@ -368,6 +655,9 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.tab);
     await tester.pump();
     expect(requestedFocus.hasFocus, isTrue);
+    await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+    await tester.pump();
+    expect(harness.pageFocus.hasFocus, isTrue);
 
     final closeRequestedPopup = requestedPopup.close();
     await tester.pumpAndSettle();
@@ -452,6 +742,40 @@ void main() {
     await tester.pumpAndSettle();
     await closeLoading;
 
+    semantics.dispose();
+    await harness.dispose(tester);
+  });
+
+  testWidgets('non-modal dialog preserves background semantics', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    var pagePressCount = 0;
+    final harness = await _pumpApp(
+      tester,
+      onPagePressed: () => pagePressCount++,
+    );
+
+    final handle = SuperOverlay.dialog.show<void>(
+      builder: (_) => const Text('Non-modal dialog content'),
+      options: const OverlayDialogOptions(
+        alignment: Alignment.topCenter,
+        consumeEvents: false,
+        semanticsLabel: 'Non-modal dialog',
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(_semanticsNodeWithLabel(tester, 'Page control'), isNotNull);
+    final dialogNode = _semanticsNodeWithLabel(tester, 'Non-modal dialog')!;
+    expect(_hasSemanticsFlag(dialogNode, SemanticsFlag.scopesRoute), isFalse);
+    await tester.tap(find.text('Page control'));
+    await tester.pump();
+    expect(pagePressCount, 1);
+
+    final close = handle.close();
+    await tester.pumpAndSettle();
+    await close;
     semantics.dispose();
     await harness.dispose(tester);
   });
@@ -541,7 +865,9 @@ void main() {
       final nestedObserver = integration.navigatorObserver();
       final navigatorKey = GlobalKey<NavigatorState>();
       final pageFocus = FocusNode(debugLabel: 'nested page control');
+      final remountFocus = FocusNode(debugLabel: 'remount page control');
       final dialogFocus = FocusNode(debugLabel: 'scoped dialog control');
+      final coveringFocus = FocusNode(debugLabel: 'covering page control');
       late BuildContext nestedContext;
       var rootEscapeCount = 0;
 
@@ -565,10 +891,19 @@ void main() {
                             builder: (context) {
                               nestedContext = context;
                               return Scaffold(
-                                body: TextButton(
-                                  focusNode: pageFocus,
-                                  onPressed: () {},
-                                  child: const Text('Nested page control'),
+                                body: Column(
+                                  children: <Widget>[
+                                    TextButton(
+                                      focusNode: pageFocus,
+                                      onPressed: () {},
+                                      child: const Text('Nested page control'),
+                                    ),
+                                    TextButton(
+                                      focusNode: remountFocus,
+                                      onPressed: () {},
+                                      child: const Text('Remount page control'),
+                                    ),
+                                  ],
                                 ),
                               );
                             },
@@ -603,13 +938,22 @@ void main() {
 
       navigatorKey.currentState!.push<void>(
         MaterialPageRoute<void>(
-          builder: (_) => const Scaffold(body: Text('Nested covering page')),
+          builder:
+              (_) => Scaffold(
+                body: TextButton(
+                  autofocus: true,
+                  focusNode: coveringFocus,
+                  onPressed: () {},
+                  child: const Text('Nested covering page'),
+                ),
+              ),
         ),
       );
       await tester.pumpAndSettle();
 
       expect(dialog.isVisible, isFalse);
       expect(dialogFocus.hasFocus, isFalse);
+      expect(coveringFocus.hasFocus, isTrue);
       expect(_semanticsNodeWithLabel(tester, 'Scoped modal route'), isNull);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -618,6 +962,10 @@ void main() {
       expect(find.text('Nested covering page'), findsOneWidget);
 
       final handled = await navigatorKey.currentState!.maybePop();
+      // Flutter versions differ on whether the outgoing route or restored page
+      // owns focus while the overlay remounts. Keep that gap deterministic.
+      remountFocus.requestFocus();
+      await tester.pump();
       await tester.pumpAndSettle();
       expect(handled, isTrue);
       expect(find.text('Nested covering page'), findsNothing);
@@ -630,6 +978,7 @@ void main() {
       final closeDialog = dialog.close();
       await tester.pumpAndSettle();
       await closeDialog;
+      expect(pageFocus.hasFocus, isTrue);
 
       final loading = SuperOverlay.loading.show(
         builder: (_) => const Text('Root loading'),
@@ -652,7 +1001,9 @@ void main() {
       nestedObserver.dispose();
       integration.dispose();
       pageFocus.dispose();
+      remountFocus.dispose();
       dialogFocus.dispose();
+      coveringFocus.dispose();
       semantics.dispose();
     },
   );

@@ -1288,6 +1288,161 @@ void main() {
     await first.close();
   });
 
+  testWidgets('toast keepExisting refreshes the retained toast', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
+
+    var version = 1;
+    final first = SuperOverlay.toast(
+      'Retained toast',
+      builder: (_) => Text('Retained toast v$version'),
+      options: const OverlayToastOptions(
+        tag: 'keep-refresh-toast',
+        displayPolicy: OverlayToastDisplayPolicy.stack,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+
+    final kept = SuperOverlay.toast(
+      'Ignored toast',
+      builder: (_) => const Text('Ignored toast content'),
+      options: const OverlayToastOptions(
+        tag: 'keep-refresh-toast',
+        strategy: OverlayStrategy.keepExisting,
+        displayPolicy: OverlayToastDisplayPolicy.stack,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Retained toast v1'), findsOneWidget);
+    expect(find.text('Ignored toast content'), findsNothing);
+
+    version = 2;
+    kept.refresh();
+    await tester.pump();
+
+    expect(find.text('Retained toast v1'), findsNothing);
+    expect(find.text('Retained toast v2'), findsOneWidget);
+
+    final close = kept.close();
+    await tester.pumpAndSettle();
+    await close;
+    expect(first.isVisible, isFalse);
+  });
+
+  testWidgets('refreshActive toast transfers ownership to its latest request', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
+
+    var ownerAVersion = 1;
+    var ownerBVersion = 1;
+    final ownerA = SuperOverlay.toast(
+      'owner-a',
+      builder: (_) => Text('Refresh owner A v$ownerAVersion'),
+      options: const OverlayToastOptions(
+        tag: 'refresh-owner-a',
+        displayPolicy: OverlayToastDisplayPolicy.refreshActive,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+    await ownerA.visible;
+
+    final ownerB = SuperOverlay.toast(
+      'owner-b',
+      builder: (_) => Text('Refresh owner B v$ownerBVersion'),
+      options: const OverlayToastOptions(
+        tag: 'refresh-owner-b',
+        displayPolicy: OverlayToastDisplayPolicy.refreshActive,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+    await ownerB.visible;
+
+    expect(find.text('Refresh owner A v1'), findsNothing);
+    expect(find.text('Refresh owner B v1'), findsOneWidget);
+    expect(ownerA.isVisible, isFalse);
+    expect(ownerB.isVisible, isTrue);
+    expect(
+      SuperOverlay.exists(
+        tag: 'refresh-owner-a',
+        surfaces: const {OverlaySurface.toast},
+      ),
+      isFalse,
+    );
+    expect(
+      SuperOverlay.exists(
+        tag: 'refresh-owner-b',
+        surfaces: const {OverlaySurface.toast},
+      ),
+      isTrue,
+    );
+
+    ownerAVersion = 2;
+    ownerBVersion = 2;
+    ownerA.refresh();
+    await tester.pump();
+    expect(find.text('Refresh owner A v2'), findsNothing);
+    expect(find.text('Refresh owner B v1'), findsOneWidget);
+
+    final newOwnerA = SuperOverlay.toast(
+      'new-owner-a',
+      builder: (_) => const Text('New refresh owner A'),
+      options: const OverlayToastOptions(
+        tag: 'refresh-owner-a',
+        strategy: OverlayStrategy.keepExisting,
+        displayPolicy: OverlayToastDisplayPolicy.stack,
+        displayDuration: Duration(minutes: 1),
+      ),
+    );
+    await tester.pump();
+    await newOwnerA.visible;
+
+    expect(find.text('New refresh owner A'), findsOneWidget);
+    expect(find.text('Refresh owner B v1'), findsOneWidget);
+    expect(newOwnerA.isVisible, isTrue);
+    expect(ownerB.isVisible, isTrue);
+
+    final staleClose = ownerA.close();
+    await tester.pumpAndSettle();
+    await staleClose;
+
+    expect(ownerA.isVisible, isFalse);
+    expect(ownerB.isVisible, isTrue);
+    expect(newOwnerA.isVisible, isTrue);
+    expect(find.text('Refresh owner B v1'), findsOneWidget);
+    expect(find.text('New refresh owner A'), findsOneWidget);
+
+    ownerB.refresh();
+    await tester.pump();
+    expect(find.text('Refresh owner B v1'), findsNothing);
+    expect(find.text('Refresh owner B v2'), findsOneWidget);
+
+    var historicalOwnerClosed = false;
+    final historicalOwnerClosedProbe = ownerA.closed.then<void>((_) {
+      historicalOwnerClosed = true;
+    });
+    final ownerBClose = ownerB.close();
+    await tester.pumpAndSettle();
+    await ownerBClose;
+    await historicalOwnerClosedProbe;
+
+    expect(historicalOwnerClosed, isTrue);
+    expect(ownerB.isVisible, isFalse);
+    expect(newOwnerA.isVisible, isTrue);
+    expect(find.text('Refresh owner B v2'), findsNothing);
+    expect(find.text('New refresh owner A'), findsOneWidget);
+
+    final newOwnerAClose = newOwnerA.close();
+    await tester.pumpAndSettle();
+    await newOwnerAClose;
+  });
+
   testWidgets('loading command exposes its tag to existence checks', (
     tester,
   ) async {

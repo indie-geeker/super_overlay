@@ -336,7 +336,6 @@ class NavigatorScopeRegistry {
       ownerIdentity: ownerIdentity,
       scopeIdentity: scope.scopeIdentity,
       route: route,
-      invocationContext: route.subtreeContext ?? navigator.context,
     );
   }
 
@@ -374,7 +373,6 @@ class NavigatorScopeRegistry {
       ownerIdentity: ownerIdentity,
       scopeIdentity: scope.scopeIdentity,
       route: route,
-      invocationContext: context,
     );
   }
 

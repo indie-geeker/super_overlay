@@ -64,6 +64,35 @@ void main() {
 
     await _closePopups(tester);
   });
+
+  testWidgets('moving anchor keeps one popup open and tracks its position', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
+    final trigger = find.byKey(const ValueKey('moving-anchor-trigger'));
+
+    await tester.ensureVisible(trigger);
+    await tester.tap(trigger);
+    await tester.pumpAndSettle();
+
+    final popup = find.byKey(const ValueKey('moving-anchor-popup'));
+    expect(popup, findsOneWidget);
+    final popupElement = tester.element(popup);
+    final initialAnchorPosition = tester.getTopLeft(trigger);
+    final initialPopupPosition = tester.getTopLeft(popup);
+
+    await tester.tap(find.byKey(const ValueKey('moving-anchor-shift-control')));
+    await tester.pumpAndSettle();
+
+    final movedAnchorPosition = tester.getTopLeft(trigger);
+    final movedPopupPosition = tester.getTopLeft(popup);
+    expect(movedAnchorPosition.dx, isNot(initialAnchorPosition.dx));
+    expect(movedPopupPosition.dx, isNot(initialPopupPosition.dx));
+    expect(popup, findsOneWidget);
+    expect(tester.element(popup), same(popupElement));
+
+    await _closePopups(tester);
+  });
 }
 
 Future<void> _closePopups(WidgetTester tester) async {

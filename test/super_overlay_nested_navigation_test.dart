@@ -948,7 +948,7 @@ void main() {
     await harness.dispose(tester);
   });
 
-  testWidgets('unmounted invocation context closes its scoped overlay', (
+  testWidgets('unmounted invocation widget keeps its route-scoped overlay', (
     tester,
   ) async {
     final integration = SuperOverlay.integration();
@@ -1000,7 +1000,17 @@ void main() {
     expect((invocationContext as Element).mounted, isFalse);
     await tester.pumpAndSettle();
 
+    expect(closed, isFalse);
+    expect(handle.isVisible, isTrue);
+    expect(find.text('Invocation-owned dialog'), findsOneWidget);
+
+    final close = handle.close();
+    await tester.pumpAndSettle();
+    await close;
+    await handle.closed;
+
     expect(closed, isTrue);
+    expect(handle.isVisible, isFalse);
     expect(find.text('Invocation-owned dialog'), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
     await tester.pumpAndSettle();

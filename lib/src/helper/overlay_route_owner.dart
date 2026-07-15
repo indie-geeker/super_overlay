@@ -8,7 +8,6 @@ class OverlayRouteOwner {
     required this.ownerIdentity,
     required this.scopeIdentity,
     required this.route,
-    required this.invocationContext,
   });
 
   /// Active overlay host generation at capture time.
@@ -20,9 +19,6 @@ class OverlayRouteOwner {
   /// Navigator observer scope identity.
   final Object scopeIdentity;
 
-  /// Exact route containing [invocationContext].
+  /// Exact route captured for scoped ownership.
   final Route<dynamic> route;
-
-  /// Context from which the scoped facade was captured.
-  final BuildContext invocationContext;
 }

@@ -98,6 +98,7 @@ class _SuperToastOverlayBuilder {
       visible: controller.visible,
       closed: result.closed,
       identityTag: result.identityTag,
+      refresh: result.refresh ?? controller.refresh,
     );
   }
 

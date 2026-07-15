@@ -93,10 +93,7 @@ extension _OverlayManagerLifecycle on OverlayManager {
         final scopeTracked = NavigatorScopeRegistry.instance.isOwnerTracked(
           owner,
         );
-        final invocationContext = owner.invocationContext;
-        final invocationMounted =
-            invocationContext is! Element || invocationContext.mounted;
-        if (scopeTracked && invocationMounted) {
+        if (scopeTracked) {
           record.detachedFrameCount = 0;
           final previousState = record.presentationState;
           if (NavigatorScopeRegistry.instance.isOwnerCurrent(owner)) {
@@ -147,27 +144,23 @@ extension _OverlayManagerLifecycle on OverlayManager {
       final renderBox = _safeRenderBox(context);
       if (renderBox == null) {
         removeList.add(record);
-      } else if (_hasInvalidGeometry(renderBox)) {
-        if (record.type == OverlayType.attach) {
+      } else if (record.type == OverlayType.attach) {
+        final anchorRect = _anchorRectInOverlay(record, renderBox);
+        if (anchorRect == null) {
           removeList.add(record);
-        } else {
-          record.overlay.hide();
+          continue;
         }
+        record.overlay.appear();
+        final previousRect = record.lastRenderedAnchorRect;
+        if (previousRect == null ||
+            _rectDelta(previousRect, anchorRect) > _anchorMovementTolerance) {
+          record.lastRenderedAnchorRect = anchorRect;
+          record.overlay.mainOverlay.updateAttachTargetRect(anchorRect);
+        }
+      } else if (_hasInvalidGeometry(renderBox)) {
+        record.overlay.hide();
       } else {
         record.overlay.appear();
-        if (record.type == OverlayType.attach) {
-          final anchorRect = _anchorRectInOverlay(record, renderBox);
-          if (anchorRect == null) {
-            removeList.add(record);
-            continue;
-          }
-          final previousRect = record.lastRenderedAnchorRect;
-          if (previousRect == null ||
-              _rectDelta(previousRect, anchorRect) > _anchorMovementTolerance) {
-            record.lastRenderedAnchorRect = anchorRect;
-            record.overlay.mainOverlay.updateAttachTargetRect(anchorRect);
-          }
-        }
       }
     }
 
@@ -204,7 +197,8 @@ extension _OverlayManagerLifecycle on OverlayManager {
         targetRenderBox.getTransformTo(overlayRenderObject),
         Offset.zero & targetRenderBox.size,
       );
-      return _isValidRect(rect) ? rect : null;
+      final viewport = Offset.zero & overlayRenderObject.size;
+      return _isValidRect(rect) && rect.overlaps(viewport) ? rect : null;
     } catch (_) {
       return null;
     }

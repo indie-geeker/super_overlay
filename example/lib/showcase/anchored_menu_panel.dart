@@ -17,8 +17,10 @@ class AnchoredMenuPanel extends StatefulWidget {
 class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
   String _sort = 'Newest';
   String _attachmentAction = 'No action selected';
+  bool _movingAnchorAtEnd = false;
   OverlayHandle<void>? _sortHandle;
   OverlayHandle<void>? _attachmentHandle;
+  OverlayHandle<void>? _movingAnchorHandle;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +48,49 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
           ),
           const SizedBox(height: 8),
           Text('Current sort: $_sort'),
+          const SizedBox(height: 18),
+          Text(
+            'Dynamic Tracking',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  alignment:
+                      _movingAnchorAtEnd
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                  child: SizedBox(
+                    width: 168,
+                    child: Builder(
+                      builder:
+                          (targetContext) => _AnchorField(
+                            key: const ValueKey('moving-anchor-trigger'),
+                            label: 'Open Tracking Demo',
+                            icon: Icons.open_with_outlined,
+                            onTap: () => _showMovingAnchorPopup(targetContext),
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Move the anchor from the popup; it stays open and follows the target.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: ShowcaseColors.muted),
+          ),
           const SizedBox(height: 18),
           Text(
             'Attachment Source',
@@ -172,12 +217,45 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
     );
   }
 
+  void _showMovingAnchorPopup(BuildContext targetContext) {
+    late final OverlayHandle<void> handle;
+    handle = SuperOverlay.popup.show<void>(
+      targetContext: targetContext,
+      builder: (_) => const SizedBox.shrink(),
+      options: OverlayPopupOptions(
+        tag: 'showcase-moving-anchor',
+        strategy: OverlayStrategy.replaceExisting,
+        alignment: Alignment.bottomCenter,
+        replacementBuilder:
+            (info) => _MovingAnchorSurface(
+              key: const ValueKey('moving-anchor-popup'),
+              width: info.targetSize.width,
+              onMove: () {
+                if (mounted) {
+                  setState(() => _movingAnchorAtEnd = !_movingAnchorAtEnd);
+                }
+              },
+            ),
+      ),
+    );
+    _movingAnchorHandle = handle;
+    unawaited(
+      handle.closed.whenComplete(() {
+        if (identical(_movingAnchorHandle, handle)) {
+          _movingAnchorHandle = null;
+        }
+      }),
+    );
+  }
+
   @override
   void dispose() {
     unawaited(_sortHandle?.close());
     unawaited(_attachmentHandle?.close());
+    unawaited(_movingAnchorHandle?.close());
     _sortHandle = null;
     _attachmentHandle = null;
+    _movingAnchorHandle = null;
     super.dispose();
   }
 }
@@ -261,6 +339,43 @@ class _AnchoredMenuSurface extends StatelessWidget {
                 ),
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MovingAnchorSurface extends StatelessWidget {
+  const _MovingAnchorSurface({
+    super.key,
+    required this.width,
+    required this.onMove,
+  });
+
+  final double width;
+  final VoidCallback onMove;
+
+  @override
+  Widget build(BuildContext context) {
+    return OverlayCard(
+      width: width,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Popup stays open',
+            style: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const ValueKey('moving-anchor-shift-control'),
+            onPressed: onMove,
+            icon: const Icon(Icons.swap_horiz, size: 18),
+            label: const Text('Move Anchor'),
+          ),
         ],
       ),
     );

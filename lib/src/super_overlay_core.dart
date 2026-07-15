@@ -164,6 +164,21 @@ class SuperOverlay {
     T? result,
     bool force = false,
   }) {
+    final isBulkTarget = switch (target) {
+      OverlayCloseTarget.allDialogs ||
+      OverlayCloseTarget.allPopups ||
+      OverlayCloseTarget.allNotifications ||
+      OverlayCloseTarget.allToasts ||
+      OverlayCloseTarget.all => true,
+      _ => false,
+    };
+    if (isBulkTarget && result != null) {
+      throw StateError(
+        'Overlay close target ${target.name} closes multiple overlays and '
+        'cannot be used with a non-null $T result.',
+      );
+    }
+
     final generation = OverlayManager.instance.globalCommandGeneration(
       allowEmpty: true,
     );

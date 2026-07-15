@@ -77,7 +77,9 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
             builder: (context, constraints) {
               final selector = DropdownButtonFormField<OverlayNotificationType>(
                 key: const ValueKey('feedback-notification-selector'),
-                initialValue: _notificationType,
+                // `initialValue` is unavailable on the minimum Flutter 3.29.
+                // ignore: deprecated_member_use
+                value: _notificationType,
                 decoration: const InputDecoration(
                   labelText: 'Notification Type',
                   border: OutlineInputBorder(),

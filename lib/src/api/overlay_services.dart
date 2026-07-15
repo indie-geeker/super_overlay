@@ -185,8 +185,8 @@ class OverlayDialogService {
       close: lifecycle.close,
       refresh: controller.refresh,
       isVisible:
-          () => manager.isDialogVisible(
-            tag: identityTag,
+          () => manager.isCommandIdentityVisible(
+            identityTag: identityTag,
             generation: generation,
             type: OverlayType.custom,
           ),
@@ -328,8 +328,8 @@ class OverlayPopupService {
       close: lifecycle.close,
       refresh: controller.refresh,
       isVisible:
-          () => manager.isDialogVisible(
-            tag: identityTag,
+          () => manager.isCommandIdentityVisible(
+            identityTag: identityTag,
             generation: generation,
             type: OverlayType.attach,
           ),
@@ -456,10 +456,10 @@ class OverlayNotifyService {
       tag: identityTag,
       close: lifecycle.close,
       isVisible:
-          () => manager.checkExist(
-            tag: identityTag,
+          () => manager.isCommandIdentityVisible(
+            identityTag: identityTag,
             generation: generation,
-            types: const {OverlayType.notify},
+            type: OverlayType.notify,
           ),
     );
   }
@@ -519,11 +519,11 @@ class _OverlayToastService {
       status: DismissStatus.toast,
       tag: identityTag,
       close: lifecycle.close,
-      refresh: controller.refresh,
+      refresh: lifecycle.refresh,
       isVisible:
           () =>
               !lifecycle.isQueued &&
-              ToastTool.instance.isActiveTag(
+              ToastTool.instance.isActiveIdentityTag(
                 lifecycle.activeTag,
                 generation: generation,
               ),
@@ -607,11 +607,14 @@ class _CommandOverlayLifecycle<T> {
   bool _closeRequested = false;
   bool _fireStarted = false;
   T? _closeResult;
+  VoidCallback? _runtimeRefresh;
 
   Future<void> get visible => _visible.future;
   Future<T?> get closed => _closed.future;
   bool get isQueued => _fireStarted && !_visible.isCompleted;
   String get activeTag => _identityTag;
+
+  void refresh() => _runtimeRefresh?.call();
 
   void start() {
     unawaited(_run());
@@ -624,9 +627,9 @@ class _CommandOverlayLifecycle<T> {
       return _closed.future.then((_) {});
     }
 
-    return OverlayManager.instance.dismiss<T>(
+    return OverlayManager.instance.dismissCommandHandle<T>(
       status: status,
-      tag: _identityTag,
+      identityTag: _identityTag,
       result: result,
       generation: generation,
     );
@@ -645,6 +648,7 @@ class _CommandOverlayLifecycle<T> {
         return;
       }
       _identityTag = fired.identityTag ?? tag;
+      _runtimeRefresh = fired.refresh;
       unawaited(
         fired.visible.then(
           (_) {
@@ -680,10 +684,9 @@ class _CommandOverlayLifecycle<T> {
     if (_closeRequested) {
       return _fireIfOpen();
     }
-    await OverlayManager.instance.dismiss(
+    await OverlayManager.instance.dismissReplacementMatches(
       status: status,
-      tag: replaceTag,
-      force: true,
+      businessTag: replaceTag,
       generation: generation,
     );
     return _fireIfOpen();
@@ -759,44 +762,38 @@ OverlayHandle<T>? _existingOverlayHandle<T>({
     return null;
   }
 
-  final closed = OverlayManager.instance.existingClosedFuture<T>(
-    tag: tag,
+  final manager = OverlayManager.instance;
+  final existing = manager.existingCommandOverlay<T>(
+    businessTag: tag,
     type: type,
     generation: generation,
   );
-  if (closed == null) {
+  if (existing == null) {
     return null;
   }
 
-  final visible = OverlayManager.instance.existingVisibleFuture(
-    tag: tag,
-    type: type,
-    generation: generation,
-  );
-
-  final existingRefresh = OverlayManager.instance.existingRefresh(
-    tag: tag,
-    type: type,
-    generation: generation,
-  );
+  final identityTag = existing.identityTag;
 
   return _overlayHandle<T>(
     generation: generation,
-    visible: visible,
-    closed: closed,
+    visible: existing.visible,
+    closed: existing.closed,
     status: status,
-    tag: tag,
-    refresh: existingRefresh ?? refresh,
+    tag: identityTag,
+    close:
+        ([T? result]) => manager.dismissCommandHandle<T>(
+          status: status,
+          identityTag: identityTag,
+          result: result,
+          generation: generation,
+        ),
+    refresh: existing.refresh ?? refresh,
     isVisible:
-        () => switch (type) {
-          OverlayType.custom || OverlayType.attach => OverlayManager.instance
-              .isDialogVisible(tag: tag, generation: generation, type: type),
-          _ => OverlayManager.instance.checkExist(
-            tag: tag,
-            generation: generation,
-            types: {type},
-          ),
-        },
+        () => manager.isCommandIdentityVisible(
+          identityTag: identityTag,
+          generation: generation,
+          type: type,
+        ),
   );
 }
 

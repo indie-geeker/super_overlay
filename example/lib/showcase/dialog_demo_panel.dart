@@ -74,6 +74,11 @@ class _DialogDemoPanelState extends State<DialogDemoPanel> {
         strategy: OverlayStrategy.replaceExisting,
         barrierColor: maskColor,
         dismissOnMaskTap: _dismissible,
+        semanticsLabel: 'Confirmation dialog',
+        barrierSemanticsLabel:
+            _dismissible
+                ? 'Dismiss confirmation dialog'
+                : 'Confirmation dialog background',
       ),
     );
     _handle = handle;

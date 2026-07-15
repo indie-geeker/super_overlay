@@ -1,5 +1,7 @@
 # SuperOverlay
 
+English | [简体中文](README.zh-CN.md)
+
 SuperOverlay is a Flutter package for app-level dialogs, loading indicators,
 toasts, target-attached popups, highlighted guides, and notifications backed by
 a self-managed `OverlayEntry` host. It provides typed handles, route and widget
@@ -10,7 +12,7 @@ and moving-anchor tracking without installing a package-owned navigator key.
 
 ```yaml
 dependencies:
-  super_overlay: ^0.2.0
+  super_overlay: ^0.3.0
 ```
 
 The package requires Dart `>=3.7.0 <4.0.0` and Flutter `>=3.29.0`. Runtime
@@ -229,6 +231,11 @@ exactly-one-active Navigator-level signal.
 
 ## Command And Handle Basics
 
+For a non-null tag, `OverlayStrategy.stack` always creates another entry,
+`keepExisting` returns the existing same-surface, same-tag handle, and
+`replaceExisting` closes every same-surface, same-tag match before showing the
+replacement. A null tag has no conflict group.
+
 Keep the returned handle when the calling flow owns the overlay lifecycle:
 
 ```dart
@@ -280,18 +287,24 @@ await SuperOverlay.close(
 `OverlayBackBehavior.dismiss` closes the highest-priority consuming overlay,
 `block` keeps it visible and blocks the route, and `passThrough` leaves the back
 event to the application. Android predictive back is coordinated through the
-same `ModalRoute` `PopEntry` protocol used by `PopScope`. Escape uses the same
-overlay policy on keyboard platforms.
+same `ModalRoute` `PopEntry` protocol used by `PopScope`.
+
+On keyboard platforms, Escape is focus-local: it uses the same overlay policy
+only while keyboard focus is inside the overlay. `requestFocus` controls only
+initial focus capture. With `requestFocus: false`, the page retains focus
+initially, so Escape remains with the page until focus enters the overlay.
+SuperOverlay does not install a host-level keyboard dispatcher.
 
 Flutter notifies every `PopEntry` after a failed pop. An application `PopScope`
 or `Form` callback may therefore also receive `didPop == false` while
 SuperOverlay blocks the route. Keep failed-pop callbacks idempotent and avoid
 destructive side effects until `didPop` is true.
 
-Dialog and loading surfaces capture focus by default, use a closed-loop focus
-scope, block background semantics, expose a semantic route, and restore prior
-focus when possible. Supply labels when the surrounding content does not make
-the purpose clear:
+Modal dialogs and loading surfaces capture focus by default, use a closed-loop
+focus scope, block background semantics, expose a semantic route, and restore
+prior focus when possible. `semanticsLabel` labels the overlay's semantic
+container and becomes its route label for modal dialogs. Supply labels when the
+surrounding content does not make the purpose clear:
 
 ```dart
 const OverlayDialogOptions(
@@ -300,6 +313,13 @@ const OverlayDialogOptions(
   barrierSemanticsLabel: 'Dismiss delete confirmation',
 );
 ```
+
+Dialogs with `consumeEvents: false` are non-modal for both pointer input and
+semantics: the underlying page remains interactive and discoverable, and focus
+traversal is not trapped inside the overlay. `requestFocus` controls only
+initial focus capture; set it to `false` when the page should retain keyboard
+focus. Because non-modal traversal is not trapped, traversal can move focus
+back to the page; Escape then remains with the page.
 
 Popup focus is non-modal by default. Toasts and notifications are live regions
 and do not steal focus. Application content remains responsible for semantic
@@ -331,6 +351,9 @@ SuperOverlay.popup.show<void>(
 ```
 
 An unmounted or invalid target fails closed and removes its registry record.
+Partial clipping at any Overlay viewport edge remains valid and continues to
+track. Once the mounted target has no positive-area intersection with the
+Overlay viewport, it fails closed as unavailable.
 `maskIgnoreArea` is different: it remains fixed in overlay-host coordinates and
 does not move relative to the target.
 
