@@ -97,32 +97,19 @@ void main() {
     await _closeFeedback(tester);
   });
 
-  testWidgets(
-    'refreshActive updates its lane while handle.refresh owns separate content',
-    (tester) async {
-      await tester.pumpWidget(const MyApp());
+  testWidgets('instant feedback card omits integration controls', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
 
-      await tester.ensureVisible(find.text('创建两类刷新 Toast'));
-      await tester.tap(find.text('创建两类刷新 Toast'));
-      await tester.pumpAndSettle();
-      expect(find.text('refreshActive 内容 1'), findsOneWidget);
-      expect(find.text('Handle 内容 1'), findsOneWidget);
-
-      await tester.tap(find.text('运行 refreshActive'));
-      await tester.pumpAndSettle();
-      expect(find.text('refreshActive 内容 1'), findsNothing);
-      expect(find.text('refreshActive 内容 2'), findsOneWidget);
-      expect(find.text('Handle 内容 1'), findsOneWidget);
-
-      await tester.tap(find.text('调用 handle.refresh()'));
-      await tester.pumpAndSettle();
-      expect(find.text('refreshActive 内容 2'), findsOneWidget);
-      expect(find.text('Handle 内容 1'), findsNothing);
-      expect(find.text('Handle 内容 2'), findsOneWidget);
-
-      await _closeFeedback(tester);
-    },
-  );
+    expect(find.textContaining('refreshActive'), findsNothing);
+    expect(find.textContaining('handle.refresh()'), findsNothing);
+    expect(find.text('创建两类刷新 Toast'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('feedback-notification-selector')),
+      findsOneWidget,
+    );
+  });
 }
 
 Future<void> _closeFeedback(WidgetTester tester) async {
