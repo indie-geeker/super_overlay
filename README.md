@@ -1,5 +1,7 @@
 # SuperOverlay
 
+English | [简体中文](README.zh-CN.md)
+
 SuperOverlay is a Flutter package for app-level dialogs, loading indicators,
 toasts, target-attached popups, highlighted guides, and notifications backed by
 a self-managed `OverlayEntry` host. It provides typed handles, route and widget
@@ -228,6 +230,11 @@ priority. A custom stateful-shell container must provide the same
 exactly-one-active Navigator-level signal.
 
 ## Command And Handle Basics
+
+For a non-null tag, `OverlayStrategy.stack` always creates another entry,
+`keepExisting` returns the existing same-surface, same-tag handle, and
+`replaceExisting` closes every same-surface, same-tag match before showing the
+replacement. A null tag has no conflict group.
 
 Keep the returned handle when the calling flow owns the overlay lifecycle:
 

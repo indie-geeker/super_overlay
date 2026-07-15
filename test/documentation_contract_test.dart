@@ -158,23 +158,53 @@ void main() {
     'stateful-shell-branches',
   ];
 
-  test('README snippets are identical to compile-backed fixtures', () {
+  test('README exposes reciprocal English and Simplified Chinese editions', () {
+    final englishFile = File('README.md');
+    final chineseFile = File('README.zh-CN.md');
+
+    expect(englishFile.existsSync(), isTrue);
+    expect(
+      chineseFile.existsSync(),
+      isTrue,
+      reason: 'README.zh-CN.md must provide the Simplified Chinese edition.',
+    );
+
+    final english = englishFile.readAsStringSync();
+    final chinese = chineseFile.readAsStringSync();
+    expect(english, contains('[简体中文](README.zh-CN.md)'));
+    expect(chinese, contains('[English](README.md)'));
+  });
+
+  test('bilingual README snippets match compile-backed fixtures', () {
     final fixtureSource =
         File('test/documentation_contract_test.dart').readAsStringSync();
-    final readme = File('README.md').readAsStringSync();
 
-    for (final id in snippetIds) {
-      expect(
-        _extractSnippet(readme, id),
-        _extractSnippet(fixtureSource, id),
-        reason: 'README snippet $id drifted from its compiled fixture.',
-      );
+    for (final path in ['README.md', 'README.zh-CN.md']) {
+      final readme = File(path).readAsStringSync();
+      for (final id in snippetIds) {
+        expect(
+          _extractSnippet(readme, id),
+          _extractSnippet(fixtureSource, id),
+          reason: '$path snippet $id drifted from its compiled fixture.',
+        );
+      }
     }
+  });
+
+  test('bilingual README documents the moving-anchor viewport contract', () {
+    final english = File('README.md').readAsStringSync();
+    final chinese = File('README.zh-CN.md').readAsStringSync();
+
+    expect(english, contains('Partial clipping at any Overlay viewport edge'));
+    expect(english, contains('no positive-area intersection'));
+    expect(chinese, contains('在 Overlay 视口任一边缘部分裁剪'));
+    expect(chinese, contains('不再存在正面积交集'));
   });
 
   test('documented local links resolve and coverage matrix is linked', () {
     final files = [
       File('README.md'),
+      File('README.zh-CN.md'),
       File('example/README.md'),
       File('RELEASE.md'),
       File('SECURITY.md'),
@@ -207,10 +237,12 @@ void main() {
       }
     }
 
-    expect(
-      File('README.md').readAsStringSync(),
-      contains('tool/verification/example_coverage_matrix.md'),
-    );
+    for (final path in ['README.md', 'README.zh-CN.md']) {
+      expect(
+        File(path).readAsStringSync(),
+        contains('tool/verification/example_coverage_matrix.md'),
+      );
+    }
   });
 }
 

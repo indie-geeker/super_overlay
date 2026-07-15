@@ -23,11 +23,14 @@ void main() {
           r'^version:\s*([^\s]+)',
           multiLine: true,
         ).firstMatch(pubspec)!.group(1)!;
-    final readme = File('README.md').readAsStringSync();
     final exampleLock = File('example/pubspec.lock').readAsStringSync();
 
     expect(version, '0.3.0');
-    expect(readme, contains('super_overlay: ^0.3.0'));
+    for (final path in ['README.md', 'README.zh-CN.md']) {
+      final file = File(path);
+      expect(file.existsSync(), isTrue, reason: '$path is missing.');
+      expect(file.readAsStringSync(), contains('super_overlay: ^0.3.0'));
+    }
     final superOverlayLock = _packageStanza(exampleLock, 'super_overlay');
     expect(
       superOverlayLock,
@@ -106,23 +109,27 @@ Keep documentation tasks [ ] separate from device results.
     expect(_manualDataRows(section), ['| [ ] | iPhone | Pending |']);
   });
 
-  test('README assigns an explicit support tier to every platform', () {
-    final readme = File('README.md').readAsStringSync();
-    for (final platform in [
-      'Android',
-      'iOS',
-      'Web',
-      'macOS',
-      'Windows',
-      'Linux',
-    ]) {
-      expect(
-        readme,
-        contains(
-          RegExp('\\|\\s*$platform\\s*\\|\\s*(Supported|Best effort)\\s*\\|'),
-        ),
-        reason: '$platform needs an explicit support tier.',
-      );
+  test('bilingual README assigns a support tier to every platform', () {
+    for (final path in ['README.md', 'README.zh-CN.md']) {
+      final readme = File(path).readAsStringSync();
+      for (final platform in [
+        'Android',
+        'iOS',
+        'Web',
+        'macOS',
+        'Windows',
+        'Linux',
+      ]) {
+        expect(
+          readme,
+          contains(
+            RegExp(
+              '\\|\\s*$platform\\s*\\|\\s*(Supported|Best effort|支持|尽力支持)\\s*\\|',
+            ),
+          ),
+          reason: '$path must assign an explicit support tier to $platform.',
+        );
+      }
     }
   });
 
