@@ -25,12 +25,25 @@ class MainOverlay {
   VoidCallback? _refresh;
   SuperOverlayController? _controller;
   OverlayDialogWidgetController? _dialogController;
+  AttachDialogWidgetController? _attachController;
   ValueNotifier<Rect?>? _attachTargetRect;
+  final OverlayFocusLifecycle _focusLifecycle = OverlayFocusLifecycle();
+  WeakReference<FocusNode>? _focusRestoreTarget;
+  bool _focusRestoreTargetCaptured = false;
   Type? _resultType;
+  bool Function(Object? value)? _acceptsResult;
 
   bool get visible => _visible;
 
   set visible(bool value) {
+    if (_visible == value) {
+      return;
+    }
+    if (value) {
+      _focusLifecycle.requestFocusAfterShow();
+    } else {
+      _focusLifecycle.restoreFocusBeforeHide();
+    }
     _visible = value;
     _controller?.setPresentationEnabled(value);
   }
@@ -39,17 +52,22 @@ class MainOverlay {
     required ShowCustomParam param,
     required VoidCallback onMask,
   }) {
+    _captureFocusRestoreTarget();
     _replaceController(param.controller);
     _resultType = T;
+    _acceptsResult = (value) => value is T;
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _dialogController = OverlayDialogWidgetController();
+    _attachController = null;
     _attachTargetRect = null;
     _widget = OverlayAccessibilityScope(
       mode: param.accessibilityMode,
       requestFocus: param.requestFocus,
       semanticsLabel: param.semanticsLabel,
       handlesEscape: param.backType != BackType.ignore || param.onBack != null,
+      focusRestoreTarget: _focusRestoreTarget,
+      focusLifecycle: _focusLifecycle,
       child: OverlayDialogWidget(
         controller: _dialogController!,
         alignment: param.alignment,
@@ -75,6 +93,7 @@ class MainOverlay {
       ),
     );
     overlayEntry.markNeedsBuild();
+    _focusLifecycle.requestFocusAfterShow();
 
     return _completionFuture<T>(param);
   }
@@ -84,11 +103,14 @@ class MainOverlay {
     required VoidCallback onMask,
     required Future<void> Function() onTargetUnavailable,
   }) {
+    _captureFocusRestoreTarget();
     _replaceController(param.controller);
     _resultType = T;
+    _acceptsResult = (value) => value is T;
     _onDismiss = param.onDismiss;
     _refresh = param.controller?.refresh;
     _dialogController = null;
+    _attachController = AttachDialogWidgetController();
     final attachTargetRect = ValueNotifier<Rect?>(null);
     _attachTargetRect = attachTargetRect;
     _widget = OverlayAccessibilityScope(
@@ -96,16 +118,35 @@ class MainOverlay {
       requestFocus: param.requestFocus,
       semanticsLabel: param.semanticsLabel,
       handlesEscape: param.backType != BackType.ignore || param.onBack != null,
+      focusRestoreTarget: _focusRestoreTarget,
+      focusLifecycle: _focusLifecycle,
       child: AttachDialogWidget(
         param: param,
+        controller: _attachController!,
         targetRectListenable: attachTargetRect,
         onMask: onMask,
         onTargetUnavailable: onTargetUnavailable,
       ),
     );
     overlayEntry.markNeedsBuild();
+    _focusLifecycle.requestFocusAfterShow();
 
     return _completionFuture<T>(param);
+  }
+
+  void _captureFocusRestoreTarget() {
+    if (_focusRestoreTargetCaptured) {
+      return;
+    }
+    _focusRestoreTargetCaptured = true;
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    _focusRestoreTarget =
+        primaryFocus == null ? null : WeakReference<FocusNode>(primaryFocus);
+  }
+
+  void _clearFocusRestoreTarget() {
+    _focusRestoreTarget = null;
+    _focusRestoreTargetCaptured = false;
   }
 
   void _replaceController(SuperOverlayController? controller) {
@@ -167,6 +208,21 @@ class MainOverlay {
     return completer.future.then((value) => value as T?);
   }
 
+  void validateDismissResult<T>({required String? tag, required T? result}) {
+    final resultType = _resultType;
+    final acceptsResult = _acceptsResult;
+    if (result == null ||
+        resultType == null ||
+        acceptsResult == null ||
+        acceptsResult(result)) {
+      return;
+    }
+    throw StateError(
+      'Overlay tag "${tag ?? '<unknown>'}" uses result type $resultType '
+      'and cannot be closed with $T.',
+    );
+  }
+
   Duration _openDuration(ShowCustomParam param) {
     if (!param.useAnimation ||
         param.nonAnimationTypes.contains(NonAnimationType.open)) {
@@ -182,7 +238,11 @@ class MainOverlay {
     _onDismiss?.call();
     _onDismiss = null;
     await _dialogController?.dismiss(closeType: closeType);
+    await _attachController?.dismiss(closeType: closeType);
+    _focusLifecycle.restoreFocusBeforeHide();
+    _clearFocusRestoreTarget();
     _dialogController = null;
+    _attachController = null;
     _attachTargetRect = null;
     _refresh = null;
     _controller?.dismiss();
@@ -196,13 +256,16 @@ class MainOverlay {
     }
     _completer = null;
     _resultType = null;
+    _acceptsResult = null;
   }
 
   void disposeImmediately() {
     visible = false;
     _onDismiss = null;
     _dialogController = null;
+    _attachController = null;
     _attachTargetRect = null;
+    _clearFocusRestoreTarget();
     _refresh = null;
     _controller?.dismiss();
     _controller = null;
@@ -214,6 +277,7 @@ class MainOverlay {
     }
     _completer = null;
     _resultType = null;
+    _acceptsResult = null;
   }
 
   Widget getWidget() => visible ? _widget : const SizedBox.shrink();

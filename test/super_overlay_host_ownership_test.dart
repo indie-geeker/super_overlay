@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_overlay/super_overlay.dart';
+import 'package:super_overlay/src/config/attach_dialog_config.dart';
 import 'package:super_overlay/src/config/custom_dialog_config.dart';
 import 'package:super_overlay/src/config/enum_config.dart';
 import 'package:super_overlay/src/config/notify_config.dart';
@@ -126,57 +127,148 @@ void _expectSettledConflict() {
   expect(SuperOverlay.exists, throwsA(_unsupportedTopologyError));
 }
 
+enum _ClosingSurface { dialog, popup, notification }
+
 Future<void> _verifyCloseInFlightSettlesBeforePromotion(
   WidgetTester tester, {
-  required bool notify,
+  required _ClosingSurface surface,
 }) async {
   final retired = SuperOverlay.integration();
   final promoted = SuperOverlay.integration();
+  late BuildContext targetContext;
 
-  OverlayHandle<void> showSurface(String label) {
-    if (notify) {
-      return SuperOverlay.notify.success(
+  Widget host(Key key, SuperOverlayIntegration integration) {
+    return _host(
+      key: key,
+      integration: integration,
+      child: Builder(
+        builder: (context) {
+          targetContext = context;
+          return const SizedBox(width: 80, height: 40);
+        },
+      ),
+    );
+  }
+
+  OverlayHandle<void> showSurface(
+    String label, {
+    String tag = 'retired-in-flight-owner',
+    OverlayStrategy strategy = OverlayStrategy.stack,
+  }) {
+    return switch (surface) {
+      _ClosingSurface.dialog => SuperOverlay.dialog.show<void>(
+        builder: (_) => Text(label),
+        options: OverlayDialogOptions(tag: tag, strategy: strategy),
+      ),
+      _ClosingSurface.popup => SuperOverlay.popup.show<void>(
+        targetContext: targetContext,
+        builder: (_) => Text(label),
+        options: OverlayPopupOptions(tag: tag, strategy: strategy),
+      ),
+      _ClosingSurface.notification => SuperOverlay.notify.success(
         label,
-        options: const OverlayNotifyOptions(displayDuration: null),
-      );
-    }
-    return SuperOverlay.dialog.show<void>(builder: (_) => Text(label));
+        options: OverlayNotifyOptions(
+          tag: tag,
+          strategy: strategy,
+          displayDuration: null,
+        ),
+      ),
+    };
   }
 
   try {
-    await tester.pumpWidget(
-      _host(key: const ValueKey('in-flight-retired'), integration: retired),
-    );
+    await tester.pumpWidget(host(const ValueKey('in-flight-retired'), retired));
     final retiredHandle = showSurface('retired close in flight');
     await tester.pumpAndSettle();
     await retiredHandle.visible;
 
     var retiredClosedCount = 0;
-    retiredHandle.closed.then((_) => retiredClosedCount++);
-    final retiredClose = retiredHandle.close();
+    final retiredClosedProbe = retiredHandle.closed.then<void>((_) {
+      retiredClosedCount++;
+    });
+    var primaryCloseCount = 0;
+    final primaryClose = retiredHandle.close().then<void>((_) {
+      primaryCloseCount++;
+    });
     expect(retiredHandle.isVisible, isFalse);
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump();
 
-    await tester.pumpWidget(
-      _host(key: const ValueKey('in-flight-promoted'), integration: promoted),
+    final replacement = showSurface(
+      'retired replacement must not render',
+      strategy: OverlayStrategy.replaceExisting,
     );
+    Object? replacementVisibleError;
+    final replacementVisibleProbe = replacement.visible.then<void>(
+      (_) {},
+      onError: (Object error, StackTrace _) {
+        replacementVisibleError = error;
+      },
+    );
+    var replacementClosedCount = 0;
+    final replacementClosedProbe = replacement.closed.then<void>((_) {
+      replacementClosedCount++;
+    });
+    await tester.pump();
+
+    var joinedCloseCount = 0;
+    final joinedClose = retiredHandle.close().then<void>((_) {
+      joinedCloseCount++;
+    });
+    var replacementCloseCount = 0;
+    final replacementClose = replacement.close().then<void>((_) {
+      replacementCloseCount++;
+    });
+    await tester.pump(const Duration(milliseconds: 50));
     await tester.idle();
 
-    expect(
-      retiredClosedCount,
-      1,
-      reason:
-          'The retired generation must settle before the promoted host accepts commands.',
-    );
+    expect(retiredClosedCount, 0);
+    expect(primaryCloseCount, 0);
+    expect(joinedCloseCount, 0);
+    expect(replacementClosedCount, 0);
+    expect(replacementCloseCount, 0);
 
-    final promotedHandle = showSurface('promoted surface');
+    await tester.pumpWidget(
+      host(const ValueKey('in-flight-promoted'), promoted),
+    );
+    await tester.pump();
+    await tester.idle();
+
+    expect(retiredClosedCount, 1);
+    expect(primaryCloseCount, 1);
+    expect(joinedCloseCount, 1);
+    expect(replacementClosedCount, 1);
+    expect(replacementCloseCount, 1);
+    expect(replacementVisibleError, isA<StateError>());
+    expect(find.text('retired replacement must not render'), findsNothing);
+    await Future.wait<void>([
+      retiredClosedProbe,
+      primaryClose,
+      joinedClose,
+      replacementClosedProbe,
+      replacementClose,
+      replacementVisibleProbe,
+    ]);
+
+    final promotedHandle = showSurface(
+      'promoted surface',
+      tag: 'promoted-in-flight-owner',
+    );
     await tester.pumpAndSettle();
     await promotedHandle.visible;
-    await retiredClose;
 
     expect(retiredClosedCount, 1);
     expect(promotedHandle.isVisible, isTrue);
     expect(find.text('promoted surface'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.idle();
+
+    expect(retiredClosedCount, 1);
+    expect(primaryCloseCount, 1);
+    expect(joinedCloseCount, 1);
+    expect(replacementClosedCount, 1);
+    expect(replacementCloseCount, 1);
+    expect(promotedHandle.isVisible, isTrue);
 
     final promotedClose = promotedHandle.close();
     await tester.pumpAndSettle();
@@ -666,31 +758,61 @@ void main() {
     },
   );
 
-  testWidgets('dialog close in flight settles before host promotion', (
+  testWidgets('dialog teardown settles in-flight ownership operations', (
     tester,
   ) async {
     final original = overlayConfig.custom;
     overlayConfig.custom = const CustomDialogConfig(
-      animationTime: Duration(milliseconds: 200),
-      nonAnimationTypes: <NonAnimationType>[],
+      animationTime: Duration(milliseconds: 500),
+      nonAnimationTypes: <NonAnimationType>[
+        NonAnimationType.open,
+        NonAnimationType.routeClose,
+      ],
     );
     try {
-      await _verifyCloseInFlightSettlesBeforePromotion(tester, notify: false);
+      await _verifyCloseInFlightSettlesBeforePromotion(
+        tester,
+        surface: _ClosingSurface.dialog,
+      );
     } finally {
       overlayConfig.custom = original;
     }
   });
 
-  testWidgets('notification close in flight settles before host promotion', (
+  testWidgets('popup teardown settles in-flight ownership operations', (
+    tester,
+  ) async {
+    final original = overlayConfig.attach;
+    overlayConfig.attach = const AttachDialogConfig(
+      animationTime: Duration(milliseconds: 500),
+      nonAnimationTypes: <NonAnimationType>[
+        NonAnimationType.open,
+        NonAnimationType.routeClose,
+      ],
+    );
+    try {
+      await _verifyCloseInFlightSettlesBeforePromotion(
+        tester,
+        surface: _ClosingSurface.popup,
+      );
+    } finally {
+      overlayConfig.attach = original;
+    }
+  });
+
+  testWidgets('notification teardown settles in-flight ownership operations', (
     tester,
   ) async {
     final original = overlayConfig.notify;
     overlayConfig.notify = const NotifyConfig(
-      animationTime: Duration(milliseconds: 200),
-      nonAnimationTypes: <NonAnimationType>[],
+      animationTime: Duration(milliseconds: 500),
+      nonAnimationTypes: <NonAnimationType>[NonAnimationType.open],
     );
     try {
-      await _verifyCloseInFlightSettlesBeforePromotion(tester, notify: true);
+      await _verifyCloseInFlightSettlesBeforePromotion(
+        tester,
+        surface: _ClosingSurface.notification,
+      );
     } finally {
       overlayConfig.notify = original;
     }

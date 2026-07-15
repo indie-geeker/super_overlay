@@ -1,20 +1,83 @@
 part of 'overlay_manager.dart';
 
 extension _OverlayManagerLookup on OverlayManager {
-  _NotifyRecord? _findNotify({String? tag, int? generation}) {
+  _NotifyRecord? _findInFlightNotifyByIdentity({
+    required String identityTag,
+    required int generation,
+  }) {
+    for (final record in _inFlightNotifyRecords) {
+      if (record.generation == generation &&
+          record.matchesIdentityTag(identityTag)) {
+        return record;
+      }
+    }
+    return null;
+  }
+
+  _OverlayRecord? _findInFlightRecordByIdentity({
+    required OverlayType? type,
+    required String identityTag,
+    required int generation,
+  }) {
+    for (final record in _inFlightDialogRecords) {
+      if (record.generation == generation &&
+          (type == null || record.type == type) &&
+          record.matchesIdentityTag(identityTag)) {
+        return record;
+      }
+    }
+    return null;
+  }
+
+  _NotifyRecord? _findNotifyByBusinessTag({
+    required String businessTag,
+    required int generation,
+  }) {
+    for (final record in _notifyQueue.toList(growable: false).reversed) {
+      if (record.generation == generation &&
+          record.matchesBusinessTag(businessTag)) {
+        return record;
+      }
+    }
+    return null;
+  }
+
+  _OverlayRecord? _findRecordByBusinessTag({
+    required OverlayType type,
+    required String businessTag,
+    required int generation,
+  }) {
+    for (final record in _dialogQueue.toList(growable: false).reversed) {
+      if (record.generation == generation &&
+          record.type == type &&
+          record.matchesBusinessTag(businessTag)) {
+        return record;
+      }
+    }
+    return null;
+  }
+
+  _NotifyRecord? _findNotify({
+    String? tag,
+    int? generation,
+    bool identityTagOnly = false,
+  }) {
     if (_notifyQueue.isEmpty) {
       return null;
     }
     final records = _notifyQueue.toList(growable: false);
     if (tag != null) {
       for (var index = records.length - 1; index >= 0; index--) {
-        if (records[index].tag == tag &&
+        if (records[index].matchesIdentityTag(tag) &&
             (generation == null || records[index].generation == generation)) {
           return records[index];
         }
       }
+      if (identityTagOnly) {
+        return null;
+      }
       for (var index = records.length - 1; index >= 0; index--) {
-        if (records[index].businessTag == tag &&
+        if (records[index].matchesBusinessTag(tag) &&
             (generation == null || records[index].generation == generation)) {
           return records[index];
         }
@@ -34,6 +97,7 @@ extension _OverlayManagerLookup on OverlayManager {
     required String? tag,
     required bool force,
     int? generation,
+    bool identityTagOnly = false,
   }) {
     if (_dialogQueue.isEmpty) {
       return null;
@@ -43,15 +107,18 @@ extension _OverlayManagerLookup on OverlayManager {
     if (tag != null) {
       for (var index = records.length - 1; index >= 0; index--) {
         final record = records[index];
-        if (record.tag == tag &&
+        if (record.matchesIdentityTag(tag) &&
             (generation == null || record.generation == generation) &&
             (type == null || record.type == type)) {
           return record;
         }
       }
+      if (identityTagOnly) {
+        return null;
+      }
       for (var index = records.length - 1; index >= 0; index--) {
         final record = records[index];
-        if (record.businessTag == tag &&
+        if (record.matchesBusinessTag(tag) &&
             (generation == null || record.generation == generation) &&
             (type == null || record.type == type)) {
           return record;

@@ -165,7 +165,10 @@ class _SuperCustomOverlayBuilder {
         onDismiss: _onDismiss,
         onMask: _onMask,
         awaitCompletion: _awaitCompletion,
-        accessibilityMode: OverlayAccessibilityMode.modal,
+        accessibilityMode:
+            _usePenetrate
+                ? OverlayAccessibilityMode.popup
+                : OverlayAccessibilityMode.modal,
         requestFocus: _requestFocus,
         semanticsLabel: _semanticsLabel,
         barrierSemanticsLabel: _barrierSemanticsLabel,
