@@ -24,8 +24,8 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
           padding: const EdgeInsets.all(20),
           children: [
             FeaturePanel(
-              title: '页面绑定',
-              subtitle: '新路由覆盖时隐藏，返回后恢复',
+              title: 'Route Binding',
+              subtitle: 'Hides under a covering route and returns afterward',
               icon: Icons.layers_outlined,
               accent: ShowcaseColors.primary,
               child: Wrap(
@@ -35,20 +35,20 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
                   FilledButton.icon(
                     onPressed: _showRouteBoundOverlay,
                     icon: const Icon(Icons.link_outlined),
-                    label: const Text('显示页面绑定弹窗'),
+                    label: const Text('Show Route-bound Dialog'),
                   ),
                   OutlinedButton.icon(
                     onPressed: _pushCoveringRoute,
                     icon: const Icon(Icons.vertical_align_top),
-                    label: const Text('覆盖新路由'),
+                    label: const Text('Push Covering Route'),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
             FeaturePanel(
-              title: '控件绑定',
-              subtitle: '目标控件卸载后 overlay 自动移除',
+              title: 'Widget Binding',
+              subtitle: 'The overlay closes when its target widget unmounts',
               icon: Icons.widgets_outlined,
               accent: ShowcaseColors.info,
               child: Wrap(
@@ -63,7 +63,7 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
                           onPressed:
                               () => _showWidgetBoundOverlay(targetContext),
                           icon: const Icon(Icons.ads_click_outlined),
-                          label: const Text('显示控件绑定弹窗'),
+                          label: const Text('Show Widget-bound Dialog'),
                         );
                       },
                     ),
@@ -76,15 +76,20 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
                           ? Icons.visibility_off_outlined
                           : Icons.visibility_outlined,
                     ),
-                    label: Text(_showWidgetTarget ? '卸载目标控件' : '恢复目标控件'),
+                    label: Text(
+                      _showWidgetTarget
+                          ? 'Remove Target Widget'
+                          : 'Restore Target Widget',
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
             FeaturePanel(
-              title: '返回键处理',
-              subtitle: 'dismiss 关闭、block 阻止、passThrough 交给页面',
+              title: 'Back Handling',
+              subtitle:
+                  'dismiss closes, block intercepts, and passThrough defers to the page',
               icon: Icons.keyboard_return_outlined,
               accent: ShowcaseColors.danger,
               child: Wrap(
@@ -119,8 +124,9 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
     SuperOverlay.dialog.show<void>(
       builder:
           (_) => const SmallOverlay(
-            title: '页面绑定弹窗',
-            message: '覆盖新路由时隐藏，返回这个页面时恢复。',
+            title: 'Route-bound Dialog',
+            message:
+                'It hides under a covering route and returns with this page.',
           ),
       options: const OverlayDialogOptions(
         tag: 'route-bound',
@@ -138,8 +144,12 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
       MaterialPageRoute<void>(
         builder:
             (_) => Scaffold(
-              appBar: AppBar(title: const Text('覆盖路由')),
-              body: const Center(child: Text('返回后页面绑定弹窗会重新出现')),
+              appBar: AppBar(title: const Text('Covering Route')),
+              body: const Center(
+                child: Text(
+                  'The route-bound dialog returns after you go back.',
+                ),
+              ),
             ),
       ),
     );
@@ -148,8 +158,10 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
   void _showWidgetBoundOverlay(BuildContext targetContext) {
     SuperOverlay.dialog.show<void>(
       builder:
-          (_) =>
-              const SmallOverlay(title: '控件绑定弹窗', message: '这个弹窗跟随目标控件生命周期。'),
+          (_) => const SmallOverlay(
+            title: 'Widget-bound Dialog',
+            message: 'This dialog follows the target widget lifecycle.',
+          ),
       options: OverlayDialogOptions(
         tag: 'widget-bound',
         bindToWidget: targetContext,
@@ -167,9 +179,12 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
           (_) => SmallOverlay(
             title: 'OverlayBackBehavior.${behavior.name}',
             message: switch (behavior) {
-              OverlayBackBehavior.dismiss => '按返回键会先关闭 overlay。',
-              OverlayBackBehavior.block => '按返回键会被 overlay 拦截。',
-              OverlayBackBehavior.passThrough => '按返回键交给页面继续处理。',
+              OverlayBackBehavior.dismiss =>
+                'The back action closes the overlay first.',
+              OverlayBackBehavior.block =>
+                'The overlay intercepts the back action.',
+              OverlayBackBehavior.passThrough =>
+                'The page continues handling the back action.',
             },
           ),
       options: OverlayDialogOptions(

@@ -9,10 +9,12 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(const MyApp());
-    await tester.ensureVisible(find.text('打开生命周期案例'));
-    await tester.tap(find.text('打开生命周期案例'));
+    await tester.ensureVisible(find.text('Open Lifecycle Demo'));
+    await tester.tap(find.text('Open Lifecycle Demo'));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('Back dismiss'), 200);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Back dismiss'));
     await tester.pumpAndSettle();
     expect(find.text('OverlayBackBehavior.dismiss'), findsOneWidget);
@@ -21,6 +23,8 @@ void main() {
     expect(find.text('OverlayBackBehavior.dismiss'), findsNothing);
     expect(find.text('Lifecycle Binding'), findsWidgets);
 
+    await tester.scrollUntilVisible(find.text('Back block'), 200);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Back block'));
     await tester.pumpAndSettle();
     expect(find.text('OverlayBackBehavior.block'), findsOneWidget);
@@ -35,12 +39,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('Back passThrough'), 200);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Back passThrough'));
     await tester.pumpAndSettle();
     expect(find.text('OverlayBackBehavior.passThrough'), findsOneWidget);
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
-    expect(find.text('Lifecycle Binding'), findsNothing);
+    expect(find.text('Back dismiss'), findsNothing);
     expect(find.text('SuperOverlay Showcase'), findsOneWidget);
     expect(find.text('OverlayBackBehavior.passThrough'), findsNothing);
   });

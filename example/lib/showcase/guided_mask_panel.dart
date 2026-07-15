@@ -26,8 +26,9 @@ class _GuidedMaskPanelState extends State<GuidedMaskPanel> {
   Widget build(BuildContext context) {
     return FeaturePanel(
       key: const ValueKey('guided-mask-panel'),
-      title: '高亮引导',
-      subtitle: '只允许点击当前高亮目标，完成后自动推进下一步',
+      title: 'Guided Highlight',
+      subtitle:
+          'Only the highlighted target is interactive, then the guide advances automatically',
       icon: Icons.center_focus_strong_outlined,
       accent: ShowcaseColors.danger,
       child: Column(
@@ -39,21 +40,21 @@ class _GuidedMaskPanelState extends State<GuidedMaskPanel> {
             children: [
               GuideTarget(
                 key: _guideKeys[0],
-                label: '高亮入口',
+                label: 'Highlight Entry',
                 icon: Icons.touch_app_outlined,
                 active: _guideStep == 0,
                 onPressed: () => _handleGuideTargetTap(0),
               ),
               GuideTarget(
                 key: _guideKeys[1],
-                label: '配置参数',
+                label: 'Configure Options',
                 icon: Icons.tune_outlined,
                 active: _guideStep == 1,
                 onPressed: () => _handleGuideTargetTap(1),
               ),
               GuideTarget(
                 key: _guideKeys[2],
-                label: '状态面板',
+                label: 'Status Panel',
                 icon: Icons.analytics_outlined,
                 active: _guideStep == 2,
                 onPressed: () => _handleGuideTargetTap(2),
@@ -64,7 +65,7 @@ class _GuidedMaskPanelState extends State<GuidedMaskPanel> {
           FilledButton.icon(
             onPressed: () => unawaited(_showGuideStep(0)),
             icon: const Icon(Icons.play_arrow_outlined),
-            label: const Text('开始引导'),
+            label: const Text('Start Guide'),
           ),
         ],
       ),
@@ -89,7 +90,7 @@ class _GuidedMaskPanelState extends State<GuidedMaskPanel> {
         builder:
             (_) => const ToastSurface(
               icon: Icons.verified_outlined,
-              text: '引导已完成',
+              text: 'Guide complete',
               accent: ShowcaseColors.primary,
             ),
         options: const OverlayToastOptions(

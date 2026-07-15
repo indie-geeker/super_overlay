@@ -11,27 +11,31 @@ class FakeCatalogRemoteDataSource {
       CatalogRequestMode.success => const [
         CatalogItemDto(
           id: 'trail-pack',
-          title: '山地徒步背包',
-          subtitle: '局部图片加载成功，页面保持可操作。',
-          imageLabel: '远程图片 A',
+          title: 'Mountain Hiking Backpack',
+          subtitle:
+              'The card image loads successfully while the page remains interactive.',
+          imageLabel: 'Remote Image A',
         ),
         CatalogItemDto(
           id: 'rain-shell',
-          title: '轻量防雨外套',
-          subtitle: '模拟图片加载失败，只影响当前卡片。',
-          imageLabel: '远程图片 B',
+          title: 'Lightweight Rain Shell',
+          subtitle: 'A simulated image failure affects only this card.',
+          imageLabel: 'Remote Image B',
           imageShouldFail: true,
         ),
         CatalogItemDto(
           id: 'camp-lamp',
-          title: '营地照明灯',
-          subtitle: '列表内容已经返回，图片状态独立处理。',
-          imageLabel: '远程图片 C',
+          title: 'Camp Lantern',
+          subtitle:
+              'List content is ready while each image manages its own state.',
+          imageLabel: 'Remote Image C',
         ),
       ],
       CatalogRequestMode.empty => const [],
       CatalogRequestMode.failure =>
-        throw const CatalogLoadFailure('远程服务暂时不可用，请稍后重试。'),
+        throw const CatalogLoadFailure(
+          'The remote service is temporarily unavailable. Try again later.',
+        ),
     };
   }
 }

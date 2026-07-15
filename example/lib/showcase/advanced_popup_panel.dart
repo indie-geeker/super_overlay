@@ -18,8 +18,9 @@ class AdvancedPopupPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FeaturePanel(
-      title: 'Popup 几何能力',
-      subtitle: '定点、替换内容、缩放原点和遮罩透传',
+      title: 'Popup Geometry',
+      subtitle:
+          'Point targets, replacement content, scale origins, and mask pass-through',
       icon: Icons.architecture_outlined,
       accent: ShowcaseColors.violet,
       child: Wrap(
@@ -29,14 +30,14 @@ class AdvancedPopupPanel extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: () => _showPointPopup(),
             icon: const Icon(Icons.my_location_outlined),
-            label: const Text('定点 Popup'),
+            label: const Text('Point Popup'),
           ),
           Builder(
             builder:
                 (targetContext) => OutlinedButton.icon(
                   onPressed: () => _showAdjustedPopup(targetContext),
                   icon: const Icon(Icons.flip_to_front_outlined),
-                  label: const Text('替换/调整 Popup'),
+                  label: const Text('Replacement / Adjustment Popup'),
                 ),
           ),
           Builder(
@@ -44,13 +45,13 @@ class AdvancedPopupPanel extends StatelessWidget {
                 (targetContext) => OutlinedButton.icon(
                   onPressed: () => _showScaleOriginPopup(targetContext),
                   icon: const Icon(Icons.open_with_outlined),
-                  label: const Text('缩放原点 Popup'),
+                  label: const Text('Scale Origin Popup'),
                 ),
           ),
           OutlinedButton.icon(
             onPressed: () => _showMaskIgnorePopup(context),
             icon: const Icon(Icons.layers_clear_outlined),
-            label: const Text('忽略遮罩区域'),
+            label: const Text('Ignore Mask Area'),
           ),
         ],
       ),
@@ -61,8 +62,8 @@ class AdvancedPopupPanel extends StatelessWidget {
     SuperOverlay.popup.show<void>(
       builder:
           (_) => const PopupDemoSurface(
-            title: '定点 Popup',
-            message: '定点 Popup 内容',
+            title: 'Point Popup',
+            message: 'Point Popup Content',
             icon: Icons.my_location_outlined,
           ),
       options: const OverlayPopupOptions(
@@ -79,8 +80,8 @@ class AdvancedPopupPanel extends StatelessWidget {
       targetContext: targetContext,
       builder:
           (_) => const PopupDemoSurface(
-            title: '原始 Popup',
-            message: '这个内容会被 replacement 替换',
+            title: 'Original Popup',
+            message: 'Replacement content will replace this surface',
             icon: Icons.flip_to_front_outlined,
           ),
       options: OverlayPopupOptions(
@@ -91,8 +92,9 @@ class AdvancedPopupPanel extends StatelessWidget {
               '${info.targetSize.width.round()}x'
               '${info.targetSize.height.round()}';
           return PopupDemoSurface(
-            title: '替换/调整 Popup',
-            message: '替换后调整到右上方，目标尺寸 $target',
+            title: 'Replacement / Adjustment Popup',
+            message:
+                'Moves to the upper-right after replacement. Target size: $target',
             icon: Icons.flip_to_front_outlined,
           );
         },
@@ -107,8 +109,8 @@ class AdvancedPopupPanel extends StatelessWidget {
       targetContext: targetContext,
       builder:
           (_) => const PopupDemoSurface(
-            title: '缩放原点 Popup',
-            message: '从 Popup 右上角展开动画',
+            title: 'Scale Origin Popup',
+            message: "Expands from the popup's upper-right corner",
             icon: Icons.open_with_outlined,
           ),
       options: const OverlayPopupOptions(
@@ -124,8 +126,8 @@ class AdvancedPopupPanel extends StatelessWidget {
     SuperOverlay.popup.show<void>(
       builder:
           (_) => const PopupDemoSurface(
-            title: '忽略遮罩区域',
-            message: '顶部 96px 不被遮罩拦截',
+            title: 'Ignore Mask Area',
+            message: 'Top 96px remains interactive through the mask',
             icon: Icons.layers_clear_outlined,
           ),
       options: OverlayPopupOptions(

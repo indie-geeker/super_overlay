@@ -56,8 +56,9 @@ class _NestedHomePage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           FeaturePanel(
-            title: '内层首页',
-            subtitle: 'SuperOverlay.of(context) 从目标 Navigator 下方捕获 owner',
+            title: 'Nested Home',
+            subtitle:
+                'SuperOverlay.of(context) captures the owner below the target Navigator',
             icon: Icons.home_work_outlined,
             accent: ShowcaseColors.primary,
             child: Wrap(
@@ -66,7 +67,7 @@ class _NestedHomePage extends StatelessWidget {
               children: [
                 FilledButton(
                   onPressed: () => _showScopedDialog(context),
-                  child: const Text('显示内层首页 scoped 弹窗'),
+                  child: const Text('Show Nested Home Scoped Dialog'),
                 ),
                 OutlinedButton(
                   onPressed:
@@ -76,7 +77,7 @@ class _NestedHomePage extends StatelessWidget {
                           builder: (_) => const _NestedDetailPage(),
                         ),
                       ),
-                  child: const Text('进入内层详情'),
+                  child: const Text('Open Nested Detail'),
                 ),
               ],
             ),
@@ -90,8 +91,9 @@ class _NestedHomePage extends StatelessWidget {
     SuperOverlay.of(context).dialog.show<void>(
       builder:
           (_) => const SmallOverlay(
-            title: '内层首页 scoped 弹窗',
-            message: '进入详情时挂起，返回内层首页后恢复。',
+            title: 'Nested Home Scoped Dialog',
+            message:
+                'It suspends on the detail route and returns with Nested Home.',
           ),
       options: const OverlayDialogOptions(
         tag: 'nested-home-dialog',
@@ -115,8 +117,8 @@ class _NestedDetailPage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           FeaturePanel(
-            title: '内层详情',
-            subtitle: '详情路由弹窗会在该 owner route pop 时关闭',
+            title: 'Nested Detail',
+            subtitle: 'The detail dialog closes when its owner route is popped',
             icon: Icons.article_outlined,
             accent: ShowcaseColors.info,
             child: Wrap(
@@ -125,11 +127,11 @@ class _NestedDetailPage extends StatelessWidget {
               children: [
                 FilledButton(
                   onPressed: () => _showScopedDialog(context),
-                  child: const Text('显示详情 scoped 弹窗'),
+                  child: const Text('Show Detail Scoped Dialog'),
                 ),
                 OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('返回内层首页'),
+                  child: const Text('Back to Nested Home'),
                 ),
               ],
             ),
@@ -143,8 +145,9 @@ class _NestedDetailPage extends StatelessWidget {
     SuperOverlay.of(context).dialog.show<void>(
       builder:
           (_) => const SmallOverlay(
-            title: '详情路由 scoped 弹窗',
-            message: '返回内层首页时，这条记录随详情 owner route 一起关闭。',
+            title: 'Detail Route Scoped Dialog',
+            message:
+                'This record closes with the detail owner route when returning home.',
           ),
       options: const OverlayDialogOptions(
         tag: 'nested-detail-dialog',

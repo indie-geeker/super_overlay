@@ -9,23 +9,23 @@ void main() {
     'nested scoped dialogs suspend resume and close with owner route',
     (tester) async {
       await tester.pumpWidget(const MyApp());
-      await tester.ensureVisible(find.text('打开嵌套 Navigator 案例'));
-      await tester.tap(find.text('打开嵌套 Navigator 案例'));
+      await tester.ensureVisible(find.text('Open Nested Navigator Demo'));
+      await tester.tap(find.text('Open Nested Navigator Demo'));
       await tester.pumpAndSettle();
 
       expect(find.text('Nested Navigator'), findsWidgets);
-      await tester.tap(find.text('显示内层首页 scoped 弹窗'));
+      await tester.tap(find.text('Show Nested Home Scoped Dialog'));
       await tester.pumpAndSettle();
-      expect(find.text('内层首页 scoped 弹窗'), findsOneWidget);
+      expect(find.text('Nested Home Scoped Dialog'), findsOneWidget);
 
-      await tester.tap(find.text('进入内层详情'));
+      await tester.tap(find.text('Open Nested Detail'));
       await tester.pumpAndSettle();
-      expect(find.text('内层详情'), findsWidgets);
-      expect(find.text('内层首页 scoped 弹窗'), findsNothing);
+      expect(find.text('Nested Detail'), findsWidgets);
+      expect(find.text('Nested Home Scoped Dialog'), findsNothing);
 
-      await tester.tap(find.text('返回内层首页'));
+      await tester.tap(find.text('Back to Nested Home'));
       await tester.pumpAndSettle();
-      expect(find.text('内层首页 scoped 弹窗'), findsOneWidget);
+      expect(find.text('Nested Home Scoped Dialog'), findsOneWidget);
 
       await SuperOverlay.close(
         target: OverlayCloseTarget.dialog,
@@ -34,15 +34,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('进入内层详情'));
+      await tester.tap(find.text('Open Nested Detail'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('显示详情 scoped 弹窗'));
+      await tester.tap(find.text('Show Detail Scoped Dialog'));
       await tester.pumpAndSettle();
-      expect(find.text('详情路由 scoped 弹窗'), findsOneWidget);
+      expect(find.text('Detail Route Scoped Dialog'), findsOneWidget);
 
-      await tester.tap(find.text('返回内层首页'));
+      await tester.tap(find.text('Back to Nested Home'));
       await tester.pumpAndSettle();
-      expect(find.text('详情路由 scoped 弹窗'), findsNothing);
+      expect(find.text('Detail Route Scoped Dialog'), findsNothing);
       expect(SuperOverlay.exists(tag: 'nested-detail-dialog'), isFalse);
     },
   );

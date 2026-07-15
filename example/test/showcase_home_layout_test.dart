@@ -9,12 +9,16 @@ void main() {
   ) async {
     await tester.pumpWidget(const MyApp());
 
-    for (final label in ['常用场景', '交互增强', '高级能力']) {
+    for (final label in [
+      'Common Scenarios',
+      'Interaction Guidance',
+      'Advanced Capabilities',
+    ]) {
       expect(find.text(label), findsOneWidget);
     }
     for (final removed in [
       'Live Status',
-      'Await 事件',
+      'Await Events',
       'Show all notification types',
       'Overlay modes',
       'Live log',

@@ -148,7 +148,7 @@ class _AsyncImageCardState extends State<AsyncImageCard> {
           children: [
             SizedBox(
               width: 112,
-              height: 88,
+              height: 104,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   color: ShowcaseColors.codeSurface,
@@ -187,7 +187,7 @@ class _AsyncImageCardState extends State<AsyncImageCard> {
           TextButton.icon(
             onPressed: _startLoad,
             icon: const Icon(Icons.refresh, size: 18),
-            label: const Text('重新加载图片'),
+            label: const Text('Reload Image'),
           ),
         ],
       ],
@@ -205,7 +205,7 @@ class _AsyncImageCardState extends State<AsyncImageCard> {
             child: CircularProgressIndicator(strokeWidth: 2.4),
           ),
           SizedBox(height: 8),
-          Text('图片加载中', style: TextStyle(fontSize: 12)),
+          Text('Image Loading', style: TextStyle(fontSize: 12)),
         ],
       ),
       ImageLoadState.ready => Column(
@@ -215,7 +215,7 @@ class _AsyncImageCardState extends State<AsyncImageCard> {
           const SizedBox(height: 6),
           Text(widget.item.imageLabel, style: const TextStyle(fontSize: 12)),
           const SizedBox(height: 2),
-          const Text('图片加载完成', style: TextStyle(fontSize: 12)),
+          const Text('Image Loaded', style: TextStyle(fontSize: 12)),
         ],
       ),
       ImageLoadState.failed => const Column(
@@ -223,7 +223,7 @@ class _AsyncImageCardState extends State<AsyncImageCard> {
         children: [
           Icon(Icons.broken_image_outlined, color: ShowcaseColors.danger),
           SizedBox(height: 6),
-          Text('图片加载失败', style: TextStyle(fontSize: 12)),
+          Text('Image Failed', style: TextStyle(fontSize: 12)),
         ],
       ),
     };

@@ -42,31 +42,42 @@ void main() {
 
     expect(find.text('SuperOverlay Showcase'), findsOneWidget);
 
-    for (final label in ['替换最新', '依次排队', '同时显示', '显示通知', '打开控制实验室']) {
+    for (final label in [
+      'Replace Latest',
+      'Queue',
+      'Stack',
+      'Show Notification',
+      'Open Control Lab',
+    ]) {
       expect(find.text(label), findsOneWidget);
     }
 
-    await tester.ensureVisible(find.text('运行 Toast 演示'));
-    await tester.tap(find.text('运行 Toast 演示'));
+    await tester.ensureVisible(find.text('Run Toast Demo'));
+    await tester.tap(find.text('Run Toast Demo'));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('保存结果 3'), findsOneWidget);
+    expect(find.text('Save result 3'), findsOneWidget);
 
     await SuperOverlay.close(target: OverlayCloseTarget.allToasts, force: true);
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('打开控制实验室'));
-    await tester.tap(find.text('打开控制实验室'));
+    await tester.ensureVisible(find.text('Open Control Lab'));
+    await tester.tap(find.text('Open Control Lab'));
     await tester.pumpAndSettle();
 
-    for (final label in ['定点 Popup', '替换/调整 Popup', '缩放原点 Popup', '忽略遮罩区域']) {
+    for (final label in [
+      'Point Popup',
+      'Replacement / Adjustment Popup',
+      'Scale Origin Popup',
+      'Ignore Mask Area',
+    ]) {
       await tester.ensureVisible(find.text(label));
       expect(find.text(label), findsOneWidget);
     }
 
-    await tester.ensureVisible(find.text('定点 Popup'));
-    await tester.tap(find.text('定点 Popup'));
+    await tester.ensureVisible(find.text('Point Popup'));
+    await tester.tap(find.text('Point Popup'));
     await tester.pumpAndSettle();
-    expect(find.text('定点 Popup 内容'), findsOneWidget);
+    expect(find.text('Point Popup Content'), findsOneWidget);
 
     await SuperOverlay.close(target: OverlayCloseTarget.allPopups, force: true);
     await tester.pumpAndSettle();
@@ -77,29 +88,35 @@ void main() {
   ) async {
     await tester.pumpWidget(const MyApp());
 
-    await tester.ensureVisible(find.text('打开控制实验室'));
-    await tester.tap(find.text('打开控制实验室'));
+    await tester.ensureVisible(find.text('Open Control Lab'));
+    await tester.tap(find.text('Open Control Lab'));
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('忽略遮罩区域'));
-    await tester.tap(find.text('忽略遮罩区域'));
+    await tester.ensureVisible(find.text('Ignore Mask Area'));
+    await tester.tap(find.text('Ignore Mask Area'));
     await tester.pumpAndSettle();
-    expect(find.text('顶部 96px 不被遮罩拦截'), findsOneWidget);
+    expect(
+      find.text('Top 96px remains interactive through the mask'),
+      findsOneWidget,
+    );
 
     await tester.tapAt(const Offset(28, 28));
     await tester.pumpAndSettle();
     expect(find.text('SuperOverlay Showcase'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('打开控制实验室'));
-    await tester.tap(find.text('打开控制实验室'));
+    await tester.ensureVisible(find.text('Open Control Lab'));
+    await tester.tap(find.text('Open Control Lab'));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('忽略遮罩区域'));
-    await tester.tap(find.text('忽略遮罩区域'));
+    await tester.ensureVisible(find.text('Ignore Mask Area'));
+    await tester.tap(find.text('Ignore Mask Area'));
     await tester.pumpAndSettle();
 
     await tester.tapAt(const Offset(10, 150));
     await tester.pumpAndSettle();
-    expect(find.text('顶部 96px 不被遮罩拦截'), findsNothing);
+    expect(
+      find.text('Top 96px remains interactive through the mask'),
+      findsNothing,
+    );
   });
 
   testWidgets('example demonstrates the SuperOverlay feature set', (
@@ -110,45 +127,45 @@ void main() {
     expect(find.text('SuperOverlay Showcase'), findsOneWidget);
     expect(find.text('super_overlay'), findsOneWidget);
     expect(find.text('Overlay features in one place'), findsNothing);
-    expect(find.text('自定义弹窗'), findsOneWidget);
-    expect(find.text('即时反馈'), findsOneWidget);
-    expect(find.text('锚点菜单'), findsOneWidget);
-    expect(find.text('高亮引导'), findsOneWidget);
-    expect(find.text('生命周期绑定'), findsOneWidget);
-    expect(find.text('网络请求状态'), findsOneWidget);
+    expect(find.text('Custom Dialog'), findsOneWidget);
+    expect(find.text('Instant Feedback'), findsOneWidget);
+    expect(find.text('Anchored Menus'), findsOneWidget);
+    expect(find.text('Guided Highlight'), findsOneWidget);
+    expect(find.text('Lifecycle Binding'), findsOneWidget);
+    expect(find.text('Network Request State'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('打开确认弹窗'));
-    await tester.tap(find.text('打开确认弹窗'));
+    await tester.ensureVisible(find.text('Open Confirmation Dialog'));
+    await tester.tap(find.text('Open Confirmation Dialog'));
     await tester.pumpAndSettle();
-    expect(find.text('确认本次操作？'), findsOneWidget);
+    expect(find.text('Confirm this action?'), findsOneWidget);
 
-    await tester.tap(find.text('确认'));
+    await tester.tap(find.text('Confirm'));
     await tester.pumpAndSettle();
-    expect(find.text('确认本次操作？'), findsNothing);
-    expect(find.text('handle.closed 返回结果：true'), findsOneWidget);
+    expect(find.text('Confirm this action?'), findsNothing);
+    expect(find.text('handle.closed result: true'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('运行 Toast 演示'));
-    await tester.tap(find.text('运行 Toast 演示'));
+    await tester.ensureVisible(find.text('Run Toast Demo'));
+    await tester.tap(find.text('Run Toast Demo'));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('保存结果 3'), findsOneWidget);
+    expect(find.text('Save result 3'), findsOneWidget);
 
     await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('同时显示'));
-    await tester.tap(find.text('同时显示'));
-    await tester.tap(find.text('运行 Toast 演示'));
+    await tester.ensureVisible(find.text('Stack'));
+    await tester.tap(find.text('Stack'));
+    await tester.tap(find.text('Run Toast Demo'));
     await tester.pump(const Duration(milliseconds: 100));
-    expect(find.text('后台同步完成'), findsOneWidget);
-    expect(find.text('权限校验通过'), findsOneWidget);
-    expect(find.text('缓存预热完成'), findsOneWidget);
+    expect(find.text('Background sync complete'), findsOneWidget);
+    expect(find.text('Permission check passed'), findsOneWidget);
+    expect(find.text('Cache warm-up complete'), findsOneWidget);
     expect(
-      tester.getTopLeft(find.text('权限校验通过')).dy,
-      greaterThan(tester.getTopLeft(find.text('后台同步完成')).dy),
+      tester.getTopLeft(find.text('Permission check passed')).dy,
+      greaterThan(tester.getTopLeft(find.text('Background sync complete')).dy),
     );
     expect(
-      tester.getTopLeft(find.text('缓存预热完成')).dy,
-      greaterThan(tester.getTopLeft(find.text('权限校验通过')).dy),
+      tester.getTopLeft(find.text('Cache warm-up complete')).dy,
+      greaterThan(tester.getTopLeft(find.text('Permission check passed')).dy),
     );
 
     await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
@@ -167,36 +184,36 @@ void main() {
     await SuperOverlay.close(target: OverlayCloseTarget.allPopups);
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('高亮入口'));
+    await tester.ensureVisible(find.text('Highlight Entry'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('开始引导'));
+    await tester.tap(find.text('Start Guide'));
     await tester.pumpAndSettle();
-    expect(find.text('第 1 步'), findsOneWidget);
+    expect(find.text('Step 1'), findsOneWidget);
 
-    await tester.tap(find.text('高亮入口'));
+    await tester.tap(find.text('Highlight Entry'));
     await tester.pumpAndSettle();
-    expect(find.text('第 2 步'), findsOneWidget);
+    expect(find.text('Step 2'), findsOneWidget);
 
     await SuperOverlay.close(target: OverlayCloseTarget.allPopups, force: true);
     await tester.pumpAndSettle();
 
-    await tester.ensureVisible(find.text('打开生命周期案例'));
-    await tester.tap(find.text('打开生命周期案例'));
+    await tester.ensureVisible(find.text('Open Lifecycle Demo'));
+    await tester.tap(find.text('Open Lifecycle Demo'));
     await tester.pumpAndSettle();
     expect(find.text('Lifecycle Binding'), findsWidgets);
 
-    await tester.tap(find.text('显示页面绑定弹窗'));
+    await tester.tap(find.text('Show Route-bound Dialog'));
     await tester.pumpAndSettle();
-    expect(find.text('页面绑定弹窗'), findsOneWidget);
+    expect(find.text('Route-bound Dialog'), findsOneWidget);
 
-    await tester.tap(find.text('覆盖新路由'));
+    await tester.tap(find.text('Push Covering Route'));
     await tester.pumpAndSettle();
-    expect(find.text('覆盖路由'), findsOneWidget);
-    expect(find.text('页面绑定弹窗'), findsNothing);
+    expect(find.text('Covering Route'), findsOneWidget);
+    expect(find.text('Route-bound Dialog'), findsNothing);
 
     await tester.pageBack();
     await tester.pumpAndSettle();
-    expect(find.text('页面绑定弹窗'), findsOneWidget);
+    expect(find.text('Route-bound Dialog'), findsOneWidget);
 
     await SuperOverlay.close(
       target: OverlayCloseTarget.dialog,
@@ -205,15 +222,15 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('显示控件绑定弹窗'));
+    await tester.tap(find.text('Show Widget-bound Dialog'));
     await tester.pumpAndSettle();
-    expect(find.text('控件绑定弹窗'), findsOneWidget);
+    expect(find.text('Widget-bound Dialog'), findsOneWidget);
 
-    await tester.tap(find.text('卸载目标控件'));
+    await tester.tap(find.text('Remove Target Widget'));
     await tester.pump();
     await tester.pump();
-    expect(find.text('控件绑定弹窗'), findsNothing);
-    expect(find.text('恢复目标控件'), findsOneWidget);
+    expect(find.text('Widget-bound Dialog'), findsNothing);
+    expect(find.text('Restore Target Widget'), findsOneWidget);
   });
 
   testWidgets(
@@ -221,46 +238,51 @@ void main() {
     (tester) async {
       await tester.pumpWidget(const MyApp());
 
-      await tester.ensureVisible(find.text('打开网络状态案例'));
-      await tester.tap(find.text('打开网络状态案例'));
+      await tester.ensureVisible(find.text('Open Network State Demo'));
+      await tester.tap(find.text('Open Network State Demo'));
       await tester.pumpAndSettle();
 
       expect(find.text('Network State Demo'), findsWidgets);
-      expect(find.text('加载数据'), findsOneWidget);
+      expect(find.text('Load Data'), findsOneWidget);
 
-      await tester.tap(find.text('加载数据'));
+      await tester.tap(find.text('Load Data'));
       await tester.pump();
-      expect(find.text('加载商品列表...'), findsOneWidget);
+      expect(find.text('Loading catalog...'), findsOneWidget);
 
       await tester.pump(const Duration(milliseconds: 650));
-      expect(find.text('加载完成'), findsOneWidget);
-      expect(find.text('山地徒步背包'), findsOneWidget);
-      expect(find.text('图片加载中'), findsWidgets);
+      expect(find.text('Load complete'), findsOneWidget);
+      expect(find.text('Mountain Hiking Backpack'), findsOneWidget);
+      expect(find.text('Image Loading'), findsWidgets);
 
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.text('图片加载完成'), findsWidgets);
-      expect(find.text('图片加载失败'), findsOneWidget);
+      expect(find.text('Image Loaded'), findsWidgets);
+      expect(find.text('Image Failed'), findsOneWidget);
 
       await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('空数据'));
+      await tester.tap(find.text('Empty'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('加载数据'));
+      await tester.tap(find.text('Load Data'));
       await tester.pump(const Duration(milliseconds: 650));
-      expect(find.text('暂无数据'), findsOneWidget);
-      expect(find.text('当前筛选条件没有返回内容'), findsOneWidget);
+      expect(find.text('No Data'), findsOneWidget);
+      expect(find.text('No items match the current filter.'), findsOneWidget);
 
       await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('失败'));
+      await tester.tap(find.text('Failure'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('加载数据'));
+      await tester.tap(find.text('Load Data'));
       await tester.pump(const Duration(milliseconds: 650));
-      expect(find.text('加载失败'), findsOneWidget);
-      expect(find.text('远程服务暂时不可用，请稍后重试。'), findsOneWidget);
-      expect(find.text('重新加载'), findsOneWidget);
+      expect(find.text('Load Failed'), findsOneWidget);
+      expect(
+        find.text(
+          'The remote service is temporarily unavailable. Try again later.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Reload'), findsOneWidget);
 
       await SuperOverlay.close(target: OverlayCloseTarget.allToasts);
       await tester.pumpAndSettle();

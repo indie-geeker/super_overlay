@@ -9,23 +9,23 @@ void main() {
   ) async {
     await tester.pumpWidget(const MyApp());
 
-    await tester.ensureVisible(find.text('打开确认弹窗'));
-    await tester.tap(find.text('打开确认弹窗'));
+    await tester.ensureVisible(find.text('Open Confirmation Dialog'));
+    await tester.tap(find.text('Open Confirmation Dialog'));
     await tester.pumpAndSettle();
 
-    expect(find.text('确认本次操作？'), findsOneWidget);
-    await tester.tap(find.text('确认'));
+    expect(find.text('Confirm this action?'), findsOneWidget);
+    await tester.tap(find.text('Confirm'));
     await tester.pumpAndSettle();
 
-    expect(find.text('handle.closed 返回结果：true'), findsOneWidget);
-    expect(find.text('确认本次操作？'), findsNothing);
+    expect(find.text('handle.closed result: true'), findsOneWidget);
+    expect(find.text('Confirm this action?'), findsNothing);
 
-    await tester.tap(find.text('打开确认弹窗'));
+    await tester.tap(find.text('Open Confirmation Dialog'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('取消'));
+    await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
 
-    expect(find.text('handle.closed 返回结果：false'), findsOneWidget);
-    expect(find.text('确认本次操作？'), findsNothing);
+    expect(find.text('handle.closed result: false'), findsOneWidget);
+    expect(find.text('Confirm this action?'), findsNothing);
   });
 }

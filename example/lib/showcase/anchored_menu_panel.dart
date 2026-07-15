@@ -15,8 +15,8 @@ class AnchoredMenuPanel extends StatefulWidget {
 }
 
 class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
-  String _sort = '最新发布';
-  String _attachmentAction = '尚未选择';
+  String _sort = 'Newest';
+  String _attachmentAction = 'No action selected';
   OverlayHandle<void>? _sortHandle;
   OverlayHandle<void>? _attachmentHandle;
 
@@ -24,14 +24,14 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
   Widget build(BuildContext context) {
     return FeaturePanel(
       key: const ValueKey('anchored-menu-panel'),
-      title: '锚点菜单',
-      subtitle: '下拉选择和上拉操作始终绑定具体触发控件',
+      title: 'Anchored Menus',
+      subtitle: 'Dropdown and upward menus stay attached to their trigger',
       icon: Icons.vertical_align_center_outlined,
       accent: ShowcaseColors.info,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('排序方式', style: Theme.of(context).textTheme.labelLarge),
+          Text('Sort By', style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 8),
           _constrainTrigger(
             Builder(
@@ -45,15 +45,18 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
             ),
           ),
           const SizedBox(height: 8),
-          Text('当前排序：$_sort'),
+          Text('Current sort: $_sort'),
           const SizedBox(height: 18),
-          Text('附件来源', style: Theme.of(context).textTheme.labelLarge),
+          Text(
+            'Attachment Source',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
           const SizedBox(height: 8),
           const TextField(
             key: ValueKey('attachment-message-field'),
             decoration: InputDecoration(
-              labelText: '消息内容',
-              hintText: '先输入消息，再选择附件来源',
+              labelText: 'Message',
+              hintText: 'Enter a message before choosing an attachment source',
               border: OutlineInputBorder(),
               isDense: true,
             ),
@@ -64,7 +67,7 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
               builder:
                   (targetContext) => _AnchorField(
                     key: const ValueKey('attachment-menu-trigger'),
-                    label: '添加附件',
+                    label: 'Add Attachment',
                     icon: Icons.arrow_drop_up,
                     onTap: () => _showAttachmentMenu(targetContext),
                   ),
@@ -72,13 +75,13 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
           ),
           const SizedBox(height: 8),
           Text(
-            '聚焦输入框后打开菜单，可验证键盘弹出时的上拉定位。',
+            'Focus the field first to verify upward placement while the keyboard is open.',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: ShowcaseColors.muted),
           ),
           const SizedBox(height: 8),
-          Text('最近操作：$_attachmentAction'),
+          Text('Last action: $_attachmentAction'),
         ],
       ),
     );
@@ -108,9 +111,9 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
               key: const ValueKey('sort-menu-popup'),
               width: info.targetSize.width,
               items: const [
-                ('最新发布', Icons.schedule_outlined),
-                ('价格从低到高', Icons.south_east_outlined),
-                ('评分最高', Icons.star_outline),
+                ('Newest', Icons.schedule_outlined),
+                ('Price: Low to High', Icons.south_east_outlined),
+                ('Top Rated', Icons.star_outline),
               ],
               selected: _sort,
               onSelected: (value) {
@@ -146,9 +149,9 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
               key: const ValueKey('attachment-menu-popup'),
               width: info.targetSize.width,
               items: const [
-                ('拍照', Icons.photo_camera_outlined),
-                ('从相册选择', Icons.photo_library_outlined),
-                ('选择文件', Icons.attach_file_outlined),
+                ('Camera', Icons.photo_camera_outlined),
+                ('Photo Library', Icons.photo_library_outlined),
+                ('Choose File', Icons.attach_file_outlined),
               ],
               onSelected: (value) {
                 if (mounted) {

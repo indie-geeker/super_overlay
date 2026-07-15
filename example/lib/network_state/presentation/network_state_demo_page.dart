@@ -41,8 +41,9 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
           padding: const EdgeInsets.all(20),
           children: [
             NetworkDemoSection(
-              title: '全局请求反馈',
-              subtitle: '请求中使用 overlay loading，结果用 toast 反馈。',
+              title: 'Global Request Feedback',
+              subtitle:
+                  'Use an overlay loading state during the request, then report the result with a Toast.',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -51,15 +52,15 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
                     segments: const [
                       ButtonSegment<CatalogRequestMode>(
                         value: CatalogRequestMode.success,
-                        label: Text('成功'),
+                        label: Text('Success'),
                       ),
                       ButtonSegment<CatalogRequestMode>(
                         value: CatalogRequestMode.empty,
-                        label: Text('空数据'),
+                        label: Text('Empty'),
                       ),
                       ButtonSegment<CatalogRequestMode>(
                         value: CatalogRequestMode.failure,
-                        label: Text('失败'),
+                        label: Text('Failure'),
                       ),
                     ],
                     selected: {_mode},
@@ -72,15 +73,16 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
                   FilledButton.icon(
                     onPressed: _requesting ? null : _loadItems,
                     icon: const Icon(Icons.cloud_download_outlined),
-                    label: const Text('加载数据'),
+                    label: const Text('Load Data'),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
             NetworkDemoSection(
-              title: '页面内状态',
-              subtitle: '缺省页和错误页留在业务页面内渲染，不进入 overlay API。',
+              title: 'Page-owned States',
+              subtitle:
+                  'Empty and error states stay in the page instead of entering the overlay API.',
               child: _buildContent(),
             ),
           ],
@@ -93,8 +95,8 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
     if (!_loaded) {
       return const NetworkStateView(
         icon: Icons.inbox_outlined,
-        title: '等待加载',
-        description: '选择一种请求结果后点击加载数据。',
+        title: 'Waiting to Load',
+        description: 'Choose a request result, then load the data.',
       );
     }
 
@@ -102,9 +104,9 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
     if (errorMessage != null) {
       return NetworkStateView(
         icon: Icons.wifi_off_outlined,
-        title: '加载失败',
+        title: 'Load Failed',
         description: errorMessage,
-        actionLabel: '重新加载',
+        actionLabel: 'Reload',
         onAction: _requesting ? null : _loadItems,
       );
     }
@@ -112,9 +114,9 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
     if (_items.isEmpty) {
       return NetworkStateView(
         icon: Icons.search_off_outlined,
-        title: '暂无数据',
-        description: '当前筛选条件没有返回内容',
-        actionLabel: '重新加载',
+        title: 'No Data',
+        description: 'No items match the current filter.',
+        actionLabel: 'Reload',
         onAction: _requesting ? null : _loadItems,
       );
     }
@@ -140,7 +142,7 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
     });
 
     final loading = SuperOverlay.loading.show(
-      message: '加载商品列表...',
+      message: 'Loading catalog...',
       options: const OverlayLoadingOptions(
         minimumVisibleDuration: Duration(milliseconds: 500),
         backBehavior: OverlayBackBehavior.block,
@@ -157,7 +159,7 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
         _loaded = true;
         _items = items;
       });
-      feedback = items.isEmpty ? '没有返回数据' : '加载完成';
+      feedback = items.isEmpty ? 'No data returned' : 'Load complete';
     } on CatalogLoadFailure catch (error) {
       if (!mounted) {
         return;
@@ -167,7 +169,7 @@ class _NetworkStateDemoPageState extends State<NetworkStateDemoPage> {
         _items = const [];
         _errorMessage = error.message;
       });
-      feedback = '加载失败，请重试';
+      feedback = 'Load failed. Try again.';
     } finally {
       await loading.close();
       if (mounted) {

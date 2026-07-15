@@ -30,8 +30,9 @@ class ShowcaseHomePage extends StatelessWidget {
               const ShowcaseHeader(),
               const SizedBox(height: 24),
               const ShowcaseSectionTitle(
-                title: '常用场景',
-                subtitle: '从业务反馈、锚点菜单、弹窗和网络状态开始',
+                title: 'Common Scenarios',
+                subtitle:
+                    'Start with feedback, anchored menus, dialogs, and network state',
               ),
               const SizedBox(height: 12),
               const _ResponsivePair(
@@ -45,15 +46,17 @@ class ShowcaseHomePage extends StatelessWidget {
               ),
               const SizedBox(height: 28),
               const ShowcaseSectionTitle(
-                title: '交互增强',
-                subtitle: '用高亮遮罩组织不可跳步的新手引导',
+                title: 'Interaction Guidance',
+                subtitle:
+                    'Use a highlight mask to guide users through required steps',
               ),
               const SizedBox(height: 12),
               const GuidedMaskPanel(),
               const SizedBox(height: 28),
               const ShowcaseSectionTitle(
-                title: '高级能力',
-                subtitle: '深入路由生命周期、标签策略和 Handle 控制',
+                title: 'Advanced Capabilities',
+                subtitle:
+                    'Explore route lifecycles, tag strategies, and Handle control',
               ),
               const SizedBox(height: 12),
               _ResponsivePair(
@@ -72,22 +75,22 @@ class ShowcaseHomePage extends StatelessWidget {
   Widget _buildNetworkStatePanel(BuildContext context) {
     return FeaturePanel(
       key: const ValueKey('network-state-panel'),
-      title: '网络请求状态',
-      subtitle: '请求 loading、缺省页、错误页和局部图片状态',
+      title: 'Network Request State',
+      subtitle: 'Request loading, empty, error, and per-image states',
       icon: Icons.cloud_sync_outlined,
       accent: ShowcaseColors.primary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '缺省与错误内容在页面内渲染，Overlay 只负责 loading 和 Toast。',
+            'Empty and error content stays in the page; Overlay handles loading and Toast feedback.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: () => _pushPage(context, const NetworkStateDemoPage()),
             icon: const Icon(Icons.open_in_new),
-            label: const Text('打开网络状态案例'),
+            label: const Text('Open Network State Demo'),
           ),
         ],
       ),
@@ -97,22 +100,22 @@ class ShowcaseHomePage extends StatelessWidget {
   Widget _buildLifecyclePanel(BuildContext context) {
     return FeaturePanel(
       key: const ValueKey('lifecycle-panel'),
-      title: '生命周期绑定',
-      subtitle: '页面绑定、控件绑定和返回键处理',
+      title: 'Lifecycle Binding',
+      subtitle: 'Route binding, widget binding, and back handling',
       icon: Icons.route_outlined,
       accent: ShowcaseColors.violet,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '观察 Overlay 如何随路由覆盖、目标控件卸载和返回键策略变化。',
+            'Observe how Overlays react to covering routes, unmounted targets, and back policies.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: () => _pushPage(context, const LifecycleDemoPage()),
             icon: const Icon(Icons.open_in_new),
-            label: const Text('打开生命周期案例'),
+            label: const Text('Open Lifecycle Demo'),
           ),
         ],
       ),
@@ -122,22 +125,23 @@ class ShowcaseHomePage extends StatelessWidget {
   Widget _buildControlLabPanel(BuildContext context) {
     return FeaturePanel(
       key: const ValueKey('control-lab-panel'),
-      title: 'Overlay 控制实验室',
-      subtitle: '用真实业务场景理解策略、Handle 和生命周期',
+      title: 'Overlay Control Lab',
+      subtitle:
+          'Understand strategies, Handles, and lifecycles through scenarios',
       icon: Icons.integration_instructions_outlined,
       accent: ShowcaseColors.info,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '比较重复触发策略，再亲手刷新、关闭和 await 一个 Overlay。',
+            'Compare duplicate strategies, then refresh, close, and await an Overlay.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: () => _pushPage(context, const OverlayControlLabPage()),
             icon: const Icon(Icons.open_in_new),
-            label: const Text('打开控制实验室'),
+            label: const Text('Open Control Lab'),
           ),
         ],
       ),
@@ -149,15 +153,15 @@ class ShowcaseHomePage extends StatelessWidget {
       key: const ValueKey('nested-navigation-panel'),
       title: 'Nested Navigator',
       subtitle:
-          '一个根 SuperOverlayIntegration，通过 navigatorObserver() '
-          '跟踪内层路由',
+          'One root SuperOverlayIntegration tracks nested routes through '
+          'navigatorObserver()',
       icon: Icons.account_tree_outlined,
       accent: ShowcaseColors.primary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '观察 scoped 弹窗如何随内层路由挂起、恢复，并在 owner route 关闭时清理。',
+            'Observe scoped dialogs suspend, resume, and close with their owner routes.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 12),
@@ -168,7 +172,7 @@ class ShowcaseHomePage extends StatelessWidget {
                   NestedNavigationDemoPage(integration: integration),
                 ),
             icon: const Icon(Icons.open_in_new),
-            label: const Text('打开嵌套 Navigator 案例'),
+            label: const Text('Open Nested Navigator Demo'),
           ),
         ],
       ),

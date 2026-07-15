@@ -6,7 +6,7 @@ import '../lib/main.dart';
 
 Future<void> _openControlLab(WidgetTester tester) async {
   await tester.pumpWidget(const MyApp());
-  final entry = find.text('打开控制实验室');
+  final entry = find.text('Open Control Lab');
   await tester.ensureVisible(entry);
   await tester.tap(entry);
   await tester.pumpAndSettle();
@@ -18,16 +18,16 @@ void main() {
   ) async {
     await _openControlLab(tester);
 
-    expect(find.text('Overlay 控制实验室'), findsWidgets);
-    expect(find.text('重复触发应该怎样处理？'), findsOneWidget);
-    expect(find.text('已经显示的 Overlay 怎样控制？'), findsOneWidget);
-    expect(find.text('等待生命周期'), findsOneWidget);
+    expect(find.text('Overlay Control Lab'), findsWidgets);
+    expect(find.text('How should repeated triggers behave?'), findsOneWidget);
+    expect(find.text('How do you control a visible Overlay?'), findsOneWidget);
+    expect(find.text('Await Lifecycle'), findsOneWidget);
     expect(find.text('Show all notification types'), findsNothing);
 
-    await tester.tap(find.text('模拟连续触发两次'));
+    await tester.tap(find.text('Simulate Two Triggers'));
     await tester.pumpAndSettle();
-    expect(find.text('登录提示 #1'), findsOneWidget);
-    expect(find.text('登录提示 #2'), findsOneWidget);
+    expect(find.text('Login Prompt #1'), findsOneWidget);
+    expect(find.text('Login Prompt #2'), findsOneWidget);
     await SuperOverlay.close(
       target: OverlayCloseTarget.allDialogs,
       tag: 'control-lab-auth',
@@ -35,11 +35,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('保留已有'));
-    await tester.tap(find.text('模拟连续触发两次'));
+    await tester.tap(find.text('Keep Existing'));
+    await tester.tap(find.text('Simulate Two Triggers'));
     await tester.pumpAndSettle();
-    expect(find.text('登录提示 #1'), findsOneWidget);
-    expect(find.text('登录提示 #2'), findsNothing);
+    expect(find.text('Login Prompt #1'), findsOneWidget);
+    expect(find.text('Login Prompt #2'), findsNothing);
     await SuperOverlay.close(
       target: OverlayCloseTarget.allDialogs,
       tag: 'control-lab-auth',
@@ -47,11 +47,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('替换已有'));
-    await tester.tap(find.text('模拟连续触发两次'));
+    await tester.tap(find.text('Replace Existing'));
+    await tester.tap(find.text('Simulate Two Triggers'));
     await tester.pumpAndSettle();
-    expect(find.text('登录提示 #1'), findsNothing);
-    expect(find.text('登录提示 #2'), findsOneWidget);
+    expect(find.text('Login Prompt #1'), findsNothing);
+    expect(find.text('Login Prompt #2'), findsOneWidget);
 
     await SuperOverlay.close(
       target: OverlayCloseTarget.allDialogs,
@@ -67,7 +67,7 @@ void main() {
     await _openControlLab(tester);
 
     final external = SuperOverlay.toast(
-      '外部业务 Toast',
+      'External Business Toast',
       options: const OverlayToastOptions(
         tag: 'external-owner',
         displayPolicy: OverlayToastDisplayPolicy.stack,
@@ -76,22 +76,22 @@ void main() {
     );
     await tester.pump();
 
-    final start = find.text('开始上传');
+    final start = find.text('Start Upload');
     await tester.ensureVisible(start);
     await tester.tap(start);
     await tester.pump();
-    expect(find.text('上传进度 0%'), findsOneWidget);
-    expect(find.text('外部业务 Toast'), findsOneWidget);
+    expect(find.text('Upload progress 0%'), findsOneWidget);
+    expect(find.text('External Business Toast'), findsOneWidget);
 
-    await tester.tap(find.text('推进进度'));
+    await tester.tap(find.text('Advance Progress'));
     await tester.pump();
-    expect(find.text('上传进度 35%'), findsOneWidget);
-    expect(find.text('外部业务 Toast'), findsOneWidget);
+    expect(find.text('Upload progress 35%'), findsOneWidget);
+    expect(find.text('External Business Toast'), findsOneWidget);
 
-    await tester.tap(find.text('取消上传'));
+    await tester.tap(find.text('Cancel Upload'));
     await tester.pumpAndSettle();
-    expect(find.text('上传进度 35%'), findsNothing);
-    expect(find.text('外部业务 Toast'), findsOneWidget);
+    expect(find.text('Upload progress 35%'), findsNothing);
+    expect(find.text('External Business Toast'), findsOneWidget);
 
     await external.close();
     await tester.pumpAndSettle();
@@ -102,18 +102,21 @@ void main() {
   ) async {
     await _openControlLab(tester);
 
-    final start = find.text('开始 Await 演示');
+    final start = find.text('Start Await Demo');
     await tester.ensureVisible(start);
     await tester.tap(start);
     await tester.pumpAndSettle();
 
-    expect(find.text('1. Handle 已创建'), findsOneWidget);
-    expect(find.text('2. 首帧已经显示'), findsOneWidget);
+    expect(find.text('1. Handle created'), findsOneWidget);
+    expect(find.text('2. First frame visible'), findsOneWidget);
 
-    await tester.tap(find.text('关闭 Await Overlay'));
+    await tester.tap(find.text('Close Await Overlay'));
     await tester.pumpAndSettle();
-    expect(find.text('3. 已请求关闭 Overlay'), findsOneWidget);
-    expect(find.text('4. Overlay 已关闭，closed Future 已完成'), findsOneWidget);
+    expect(find.text('3. Overlay close requested'), findsOneWidget);
+    expect(
+      find.text('4. Overlay closed; closed Future completed'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('leaving control lab only closes overlays owned by that page', (
@@ -122,7 +125,7 @@ void main() {
     await _openControlLab(tester);
 
     final external = SuperOverlay.toast(
-      '页面外部 Overlay',
+      'External Page Overlay',
       options: const OverlayToastOptions(
         tag: 'external-owner',
         displayPolicy: OverlayToastDisplayPolicy.stack,
@@ -131,17 +134,17 @@ void main() {
     );
     await tester.pump();
 
-    final start = find.text('开始上传');
+    final start = find.text('Start Upload');
     await tester.ensureVisible(start);
     await tester.tap(start);
     await tester.pump();
-    expect(find.text('上传进度 0%'), findsOneWidget);
+    expect(find.text('Upload progress 0%'), findsOneWidget);
 
     await tester.pageBack();
     await tester.pumpAndSettle();
 
-    expect(find.text('上传进度 0%'), findsNothing);
-    expect(find.text('页面外部 Overlay'), findsOneWidget);
+    expect(find.text('Upload progress 0%'), findsNothing);
+    expect(find.text('External Page Overlay'), findsOneWidget);
     expect(external.isVisible, isTrue);
 
     await external.close();

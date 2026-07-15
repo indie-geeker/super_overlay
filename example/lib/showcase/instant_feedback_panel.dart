@@ -23,30 +23,34 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
   ToastDemoPolicy _policy = ToastDemoPolicy.replaceLatest;
   OverlayNotificationType _notificationType = OverlayNotificationType.success;
   OverlayHandle<void>? _notificationHandle;
-  String _status = '选择一种策略，然后运行对应的反馈场景。';
+  String _status = 'Choose a policy, then run its feedback scenario.';
 
   @override
   Widget build(BuildContext context) {
     return FeaturePanel(
       key: const ValueKey('instant-feedback-panel'),
-      title: '即时反馈',
-      subtitle: '保存、上传和系统事件中的 Toast 与 Notify',
+      title: 'Instant Feedback',
+      subtitle:
+          'Toast and Notify feedback for saves, uploads, and system events',
       icon: Icons.notifications_active_outlined,
       accent: ShowcaseColors.warning,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Toast 展示策略', style: Theme.of(context).textTheme.labelLarge),
+          Text(
+            'Toast Display Policy',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
           const SizedBox(height: 8),
           SegmentedButton<ToastDemoPolicy>(
             showSelectedIcon: false,
             segments: const [
               ButtonSegment(
                 value: ToastDemoPolicy.replaceLatest,
-                label: Text('替换最新'),
+                label: Text('Replace Latest'),
               ),
-              ButtonSegment(value: ToastDemoPolicy.queue, label: Text('依次排队')),
-              ButtonSegment(value: ToastDemoPolicy.stack, label: Text('同时显示')),
+              ButtonSegment(value: ToastDemoPolicy.queue, label: Text('Queue')),
+              ButtonSegment(value: ToastDemoPolicy.stack, label: Text('Stack')),
             ],
             selected: {_policy},
             onSelectionChanged: (values) {
@@ -57,14 +61,17 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
           FilledButton.icon(
             onPressed: () => unawaited(_runToastDemo()),
             icon: const Icon(Icons.play_arrow_outlined),
-            label: const Text('运行 Toast 演示'),
+            label: const Text('Run Toast Demo'),
           ),
           const SizedBox(height: 12),
           DemoStatusBanner(message: _status),
           const SizedBox(height: 16),
           const Divider(),
           const SizedBox(height: 12),
-          Text('顶部通知', style: Theme.of(context).textTheme.labelLarge),
+          Text(
+            'Top Notification',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
           const SizedBox(height: 8),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -72,7 +79,7 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
                 key: const ValueKey('feedback-notification-selector'),
                 initialValue: _notificationType,
                 decoration: const InputDecoration(
-                  labelText: '通知类型',
+                  labelText: 'Notification Type',
                   border: OutlineInputBorder(),
                   isDense: true,
                 ),
@@ -92,7 +99,7 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
               final action = FilledButton.icon(
                 onPressed: _showNotification,
                 icon: const Icon(Icons.campaign_outlined),
-                label: const Text('显示通知'),
+                label: const Text('Show Notification'),
               );
               if (constraints.maxWidth < 420) {
                 return Column(
@@ -128,29 +135,43 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
       case ToastDemoPolicy.replaceLatest:
         for (var index = 1; index <= 3; index++) {
           _showToast(
-            message: '保存结果 $index',
+            message: 'Save result $index',
             icon: Icons.save_outlined,
             accent: ShowcaseColors.primary,
             policy: OverlayToastDisplayPolicy.replaceLatest,
           );
         }
-        _setStatus('连续保存三次，只保留最后一次反馈。');
+        _setStatus(
+          'Only the latest of three consecutive save results remains.',
+        );
       case ToastDemoPolicy.queue:
         for (var index = 1; index <= 3; index++) {
           _showToast(
-            message: '文件 $index 已上传',
+            message: 'File $index uploaded',
             icon: Icons.cloud_upload_outlined,
             accent: ShowcaseColors.warning,
             policy: OverlayToastDisplayPolicy.queue,
             duration: const Duration(milliseconds: 900),
           );
         }
-        _setStatus('三个上传结果会按照完成顺序依次显示。');
+        _setStatus('Three upload results appear in completion order.');
       case ToastDemoPolicy.stack:
         const items = [
-          ('后台同步完成', Icons.sync_outlined, ShowcaseColors.info),
-          ('权限校验通过', Icons.verified_user_outlined, ShowcaseColors.primary),
-          ('缓存预热完成', Icons.bolt_outlined, ShowcaseColors.danger),
+          (
+            'Background sync complete',
+            Icons.sync_outlined,
+            ShowcaseColors.info,
+          ),
+          (
+            'Permission check passed',
+            Icons.verified_user_outlined,
+            ShowcaseColors.primary,
+          ),
+          (
+            'Cache warm-up complete',
+            Icons.bolt_outlined,
+            ShowcaseColors.danger,
+          ),
         ];
         for (final item in items) {
           _showToast(
@@ -161,7 +182,9 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
             alignment: Alignment.topRight,
           );
         }
-        _setStatus('三个独立后台任务会同时显示，并自动错开位置。');
+        _setStatus(
+          'Three independent background tasks appear together with offset positions.',
+        );
     }
   }
 
@@ -214,7 +237,7 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
         options: options,
       ),
     };
-    _setStatus('已显示${_notificationLabel(_notificationType)}通知。');
+    _setStatus('${_notificationLabel(_notificationType)} notification shown.');
   }
 
   void _setStatus(String status) {
@@ -241,20 +264,21 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
 
 String _notificationLabel(OverlayNotificationType type) {
   return switch (type) {
-    OverlayNotificationType.success => '成功',
-    OverlayNotificationType.failure => '失败',
-    OverlayNotificationType.warning => '警告',
-    OverlayNotificationType.error => '错误',
-    OverlayNotificationType.alert => '提醒',
+    OverlayNotificationType.success => 'Success',
+    OverlayNotificationType.failure => 'Failure',
+    OverlayNotificationType.warning => 'Warning',
+    OverlayNotificationType.error => 'Error',
+    OverlayNotificationType.alert => 'Alert',
   };
 }
 
 String _notificationMessage(OverlayNotificationType type) {
   return switch (type) {
-    OverlayNotificationType.success => '成功通知：操作已完成',
-    OverlayNotificationType.failure => '失败通知：结果未通过',
-    OverlayNotificationType.warning => '警告通知：请检查输入',
-    OverlayNotificationType.error => '错误通知：操作失败',
-    OverlayNotificationType.alert => '提醒通知：有新的待办事项',
+    OverlayNotificationType.success =>
+      'Success notification: operation complete',
+    OverlayNotificationType.failure => 'Failure notification: result rejected',
+    OverlayNotificationType.warning => 'Warning notification: check your input',
+    OverlayNotificationType.error => 'Error notification: operation failed',
+    OverlayNotificationType.alert => 'Alert notification: new task available',
   };
 }

@@ -27,29 +27,31 @@ class DialogSurface extends StatelessWidget {
             children: [
               const Icon(Icons.dashboard_customize_outlined),
               const SizedBox(width: 10),
-              Text(
-                '确认本次操作？',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              Expanded(
+                child: Text(
+                  'Confirm this action?',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 14),
-          Text('点击外部：${dismissible ? '允许关闭' : '不会关闭'}'),
-          Text('背景高亮：${dimmed ? '开启' : '关闭'}'),
+          Text('Outside tap: ${dismissible ? 'dismisses' : 'ignored'}'),
+          Text('Background barrier: ${dimmed ? 'shown' : 'hidden'}'),
           const SizedBox(height: 18),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               TextButton(
                 onPressed: () => onResult(false),
-                child: const Text('取消'),
+                child: const Text('Cancel'),
               ),
               const SizedBox(width: 8),
               FilledButton(
                 onPressed: () => onResult(true),
-                child: const Text('确认'),
+                child: const Text('Confirm'),
               ),
             ],
           ),
@@ -93,7 +95,12 @@ class ToastSurface extends StatelessWidget {
           children: [
             Icon(icon, size: 18, color: accent),
             const SizedBox(width: 8),
-            Text(text, style: const TextStyle(color: ShowcaseColors.text)),
+            Flexible(
+              child: Text(
+                text,
+                style: const TextStyle(color: ShowcaseColors.text),
+              ),
+            ),
           ],
         ),
       ),
@@ -126,26 +133,29 @@ class ChoicePopup extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '选择过滤条件',
+            'Choose Filters',
             style: Theme.of(
               context,
             ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
-          Text('单选方案', style: Theme.of(context).textTheme.labelLarge),
+          Text('Single Choice', style: Theme.of(context).textTheme.labelLarge),
           const SizedBox(height: 8),
           SegmentedButton<int>(
             showSelectedIcon: false,
             segments: const [
-              ButtonSegment<int>(value: 0, label: Text('方案 1')),
-              ButtonSegment<int>(value: 1, label: Text('方案 2')),
-              ButtonSegment<int>(value: 2, label: Text('方案 3')),
+              ButtonSegment<int>(value: 0, label: Text('Option 1')),
+              ButtonSegment<int>(value: 1, label: Text('Option 2')),
+              ButtonSegment<int>(value: 2, label: Text('Option 3')),
             ],
             selected: {selected},
             onSelectionChanged: (values) => onSelected(values.first),
           ),
           const SizedBox(height: 10),
-          Text('多选能力', style: Theme.of(context).textTheme.labelLarge),
+          Text(
+            'Multiple Capabilities',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
           const SizedBox(height: 4),
           for (var index = 0; index < 3; index++)
             Material(
@@ -153,7 +163,7 @@ class ChoicePopup extends StatelessWidget {
               child: CheckboxListTile(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
-                title: Text('能力 ${index + 1}'),
+                title: Text('Capability ${index + 1}'),
                 value: multi.contains(index),
                 onChanged: (value) => onToggle(index, value ?? false),
               ),
@@ -161,7 +171,10 @@ class ChoicePopup extends StatelessWidget {
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: FilledButton(onPressed: onApply, child: const Text('应用选择')),
+            child: FilledButton(
+              onPressed: onApply,
+              child: const Text('Apply Selection'),
+            ),
           ),
         ],
       ),
@@ -207,11 +220,11 @@ class GuideBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final title = '第 ${step + 1} 步';
+    final title = 'Step ${step + 1}';
     final body = switch (step) {
-      0 => '点击高亮入口，遮罩外部不会关闭。',
-      1 => '继续点击参数按钮，焦点会转移到下一块。',
-      _ => '最后点击状态面板，完成引导流程。',
+      0 => 'Tap Highlight Entry. The outside mask will not dismiss the guide.',
+      1 => 'Continue with Configure Options to move focus to the next target.',
+      _ => 'Finish by tapping Status Panel.',
     };
     return OverlayCard(
       width: 260,
@@ -276,7 +289,7 @@ class PopupDemoSurface extends StatelessWidget {
               onPressed: () {
                 SuperOverlay.close(target: OverlayCloseTarget.popup);
               },
-              child: const Text('关闭'),
+              child: const Text('Close'),
             ),
           ),
         ],
@@ -313,7 +326,7 @@ class SmallOverlay extends StatelessWidget {
             child: TextButton(
               onPressed:
                   () => SuperOverlay.close(target: OverlayCloseTarget.dialog),
-              child: const Text('关闭'),
+              child: const Text('Close'),
             ),
           ),
         ],

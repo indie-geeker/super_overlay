@@ -18,27 +18,28 @@ class _DialogDemoPanelState extends State<DialogDemoPanel> {
   OverlayHandle<bool>? _handle;
   bool _dismissible = true;
   bool _dimmed = true;
-  String _resultStatus = '尚未等待确认结果。';
+  String _resultStatus = 'Waiting for a confirmation result.';
 
   @override
   Widget build(BuildContext context) {
     return FeaturePanel(
       key: const ValueKey('dialog-demo-panel'),
-      title: '自定义弹窗',
-      subtitle: '对话框的外部关闭、遮罩和内容完全由业务决定',
+      title: 'Custom Dialog',
+      subtitle:
+          'The product controls outside dismissal, the barrier, and the content',
       icon: Icons.dashboard_customize_outlined,
       accent: ShowcaseColors.primary,
       child: Column(
         children: [
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('点击弹窗外部允许关闭'),
+            title: const Text('Tap outside to dismiss'),
             value: _dismissible,
             onChanged: (value) => setState(() => _dismissible = value),
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('显示背景遮罩'),
+            title: const Text('Show background barrier'),
             value: _dimmed,
             onChanged: (value) => setState(() => _dimmed = value),
           ),
@@ -48,7 +49,7 @@ class _DialogDemoPanelState extends State<DialogDemoPanel> {
             child: FilledButton.icon(
               onPressed: _showDialog,
               icon: const Icon(Icons.open_in_full),
-              label: const Text('打开确认弹窗'),
+              label: const Text('Open Confirmation Dialog'),
             ),
           ),
           const SizedBox(height: 12),
@@ -81,7 +82,7 @@ class _DialogDemoPanelState extends State<DialogDemoPanel> {
       if (mounted && identical(_handle, handle)) {
         setState(() {
           _handle = null;
-          _resultStatus = 'handle.closed 返回结果：$result';
+          _resultStatus = 'handle.closed result: $result';
         });
       }
     }());

@@ -29,12 +29,13 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
   OverlayHandle<void>? _uploadHandle;
   OverlayHandle<void>? _awaitHandle;
   var _uploadProgress = 0;
-  var _strategyResult = '选择策略后，用同一个业务 tag 连续触发两次。';
+  var _strategyResult =
+      'Choose a strategy, then trigger the same business tag twice.';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Overlay 控制实验室')),
+      appBar: AppBar(title: const Text('Overlay Control Lab')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -65,8 +66,9 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
 
   Widget _buildStrategyPanel() {
     return FeaturePanel(
-      title: '重复触发应该怎样处理？',
-      subtitle: '登录失败提示连续到达时，tag 策略决定保留哪些',
+      title: 'How should repeated triggers behave?',
+      subtitle:
+          'When login errors arrive back-to-back, the tag strategy decides which remain',
       icon: Icons.layers_outlined,
       accent: ShowcaseColors.info,
       child: Column(
@@ -77,15 +79,15 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
             segments: const [
               ButtonSegment(
                 value: _DuplicateStrategy.stack,
-                label: Text('允许多个'),
+                label: Text('Stack'),
               ),
               ButtonSegment(
                 value: _DuplicateStrategy.keepExisting,
-                label: Text('保留已有'),
+                label: Text('Keep Existing'),
               ),
               ButtonSegment(
                 value: _DuplicateStrategy.replaceExisting,
-                label: Text('替换已有'),
+                label: Text('Replace Existing'),
               ),
             ],
             selected: {_strategy},
@@ -97,7 +99,7 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
           FilledButton.icon(
             onPressed: () => unawaited(_runStrategyScenario()),
             icon: const Icon(Icons.replay_outlined),
-            label: const Text('模拟连续触发两次'),
+            label: const Text('Simulate Two Triggers'),
           ),
           const SizedBox(height: 10),
           DemoStatusBanner(message: _strategyResult),
@@ -108,8 +110,9 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
 
   Widget _buildHandlePanel() {
     return FeaturePanel(
-      title: '已经显示的 Overlay 怎样控制？',
-      subtitle: '上传进度只刷新自己的 Handle，不影响其他 Toast',
+      title: 'How do you control a visible Overlay?',
+      subtitle:
+          'Upload progress refreshes only its own Handle without affecting other Toasts',
       icon: Icons.upload_outlined,
       accent: ShowcaseColors.primary,
       child: Column(
@@ -121,26 +124,26 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
             children: [
               FilledButton(
                 onPressed: () => unawaited(_startUpload()),
-                child: const Text('开始上传'),
+                child: const Text('Start Upload'),
               ),
               OutlinedButton(
                 onPressed: _uploadHandle == null ? null : _advanceUpload,
-                child: const Text('推进进度'),
+                child: const Text('Advance Progress'),
               ),
               OutlinedButton(
                 onPressed:
                     _uploadHandle == null
                         ? null
                         : () => unawaited(_cancelUpload()),
-                child: const Text('取消上传'),
+                child: const Text('Cancel Upload'),
               ),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             _uploadHandle == null
-                ? '当前没有活动上传'
-                : '当前进度：$_uploadProgress% · exists(${SuperOverlay.exists(tag: _uploadTag)})',
+                ? 'No active upload'
+                : 'Progress: $_uploadProgress% · exists(${SuperOverlay.exists(tag: _uploadTag)})',
           ),
         ],
       ),
@@ -149,8 +152,9 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
 
   Widget _buildAwaitPanel() {
     return FeaturePanel(
-      title: '等待生命周期',
-      subtitle: 'visible 和 closed 让后续业务代码等待真实节点',
+      title: 'Await Lifecycle',
+      subtitle:
+          'visible and closed let subsequent code await real lifecycle milestones',
       icon: Icons.av_timer_outlined,
       accent: ShowcaseColors.warning,
       child: Column(
@@ -162,11 +166,11 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
                     ? () => unawaited(_startAwaitDemo())
                     : null,
             icon: const Icon(Icons.play_arrow_outlined),
-            label: const Text('开始 Await 演示'),
+            label: const Text('Start Await Demo'),
           ),
           const SizedBox(height: 10),
           if (_awaitEvents.isEmpty)
-            const Text('时间线会在这里逐步出现。')
+            const Text('Timeline events appear here.')
           else
             for (final event in _awaitEvents)
               Padding(
@@ -180,8 +184,8 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
 
   Widget _buildCleanupPanel() {
     return FeaturePanel(
-      title: '清理边界',
-      subtitle: '默认只关闭当前页面拥有的 Overlay',
+      title: 'Cleanup Boundary',
+      subtitle: 'By default, close only Overlays owned by this page',
       icon: Icons.cleaning_services_outlined,
       accent: ShowcaseColors.danger,
       child: Column(
@@ -189,11 +193,11 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
         children: [
           FilledButton.tonal(
             onPressed: () => unawaited(_closeOwnedOverlays()),
-            child: const Text('清理本页 Overlay'),
+            child: const Text('Clean Up Page Overlays'),
           ),
           const SizedBox(height: 12),
           Text(
-            '危险操作：全局清理会关闭其他业务模块创建的 Overlay。',
+            'Danger: global cleanup closes Overlays created by other product modules.',
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: ShowcaseColors.danger),
@@ -201,7 +205,7 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
           const SizedBox(height: 8),
           OutlinedButton(
             onPressed: () => unawaited(_confirmGlobalCleanup()),
-            child: const Text('关闭全部 Overlay'),
+            child: const Text('Close All Overlays'),
           ),
         ],
       ),
@@ -216,17 +220,23 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
 
     switch (_strategy) {
       case _DuplicateStrategy.stack:
-        _showStrategyDialog('登录提示 #1', OverlayStrategy.stack);
-        _showStrategyDialog('登录提示 #2', OverlayStrategy.stack);
-        _setStrategyResult('结果：两次提示都保留，适合独立事件。');
+        _showStrategyDialog('Login Prompt #1', OverlayStrategy.stack);
+        _showStrategyDialog('Login Prompt #2', OverlayStrategy.stack);
+        _setStrategyResult(
+          'Result: both prompts remain for independent events.',
+        );
       case _DuplicateStrategy.keepExisting:
-        _showStrategyDialog('登录提示 #1', OverlayStrategy.stack);
-        _showStrategyDialog('登录提示 #2', OverlayStrategy.keepExisting);
-        _setStrategyResult('结果：忽略第二次重复触发，保留已有提示。');
+        _showStrategyDialog('Login Prompt #1', OverlayStrategy.stack);
+        _showStrategyDialog('Login Prompt #2', OverlayStrategy.keepExisting);
+        _setStrategyResult(
+          'Result: the duplicate is ignored and the first prompt remains.',
+        );
       case _DuplicateStrategy.replaceExisting:
-        _showStrategyDialog('登录提示 #1', OverlayStrategy.replaceExisting);
-        _showStrategyDialog('登录提示 #2', OverlayStrategy.replaceExisting);
-        _setStrategyResult('结果：第二次触发替换第一次，只保留最新提示。');
+        _showStrategyDialog('Login Prompt #1', OverlayStrategy.replaceExisting);
+        _showStrategyDialog('Login Prompt #2', OverlayStrategy.replaceExisting);
+        _setStrategyResult(
+          'Result: the second trigger replaces the first prompt.',
+        );
     }
   }
 
@@ -247,13 +257,15 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text('相同 tag 的下一次触发会按当前策略处理。'),
+                const Text(
+                  'The next trigger with this tag follows the selected strategy.',
+                ),
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () => unawaited(handle.close()),
-                    child: const Text('关闭这条提示'),
+                    child: const Text('Close This Prompt'),
                   ),
                 ),
               ],
@@ -276,7 +288,7 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
       builder:
           (_) => ToastSurface(
             icon: Icons.cloud_upload_outlined,
-            text: '上传进度 $_uploadProgress%',
+            text: 'Upload progress $_uploadProgress%',
             accent: ShowcaseColors.primary,
           ),
       options: const OverlayToastOptions(
@@ -318,7 +330,7 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
   Future<void> _startAwaitDemo() async {
     _awaitEvents
       ..clear()
-      ..add('1. Handle 已创建');
+      ..add('1. Handle created');
     late final OverlayHandle<void> handle;
     handle = SuperOverlay.dialog.show<void>(
       builder:
@@ -335,13 +347,15 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text('关闭后，页面才继续执行 closed 之后的逻辑。'),
+                const Text(
+                  'The page continues past closed only after this Overlay closes.',
+                ),
                 const SizedBox(height: 12),
                 Align(
                   alignment: Alignment.centerRight,
                   child: FilledButton(
                     onPressed: () => unawaited(_closeAwaitOverlay()),
-                    child: const Text('关闭 Await Overlay'),
+                    child: const Text('Close Await Overlay'),
                   ),
                 ),
               ],
@@ -355,7 +369,7 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
     try {
       await handle.visible;
       if (mounted && identical(_awaitHandle, handle)) {
-        setState(() => _awaitEvents.add('2. 首帧已经显示'));
+        setState(() => _awaitEvents.add('2. First frame visible'));
       }
     } on StateError {
       // A quick page exit may close the handle before its first rendered frame.
@@ -368,7 +382,7 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
       return;
     }
     if (mounted) {
-      setState(() => _awaitEvents.add('3. 已请求关闭 Overlay'));
+      setState(() => _awaitEvents.add('3. Overlay close requested'));
     }
     await handle.close();
     if (!mounted || !identical(_awaitHandle, handle)) {
@@ -376,7 +390,7 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
     }
     await handle.closed;
     setState(() {
-      _awaitEvents.add('4. Overlay 已关闭，closed Future 已完成');
+      _awaitEvents.add('4. Overlay closed; closed Future completed');
       _awaitHandle = null;
     });
   }
@@ -415,16 +429,18 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('关闭全部 Overlay？'),
-            content: const Text('这会同时关闭其他业务模块拥有的 Overlay。'),
+            title: const Text('Close all Overlays?'),
+            content: const Text(
+              'This also closes Overlays owned by other product modules.',
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('取消'),
+                child: const Text('Cancel'),
               ),
               FilledButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('确认全部关闭'),
+                child: const Text('Confirm Global Cleanup'),
               ),
             ],
           ),

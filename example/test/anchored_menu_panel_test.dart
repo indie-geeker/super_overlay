@@ -23,10 +23,10 @@ void main() {
       greaterThanOrEqualTo(tester.getBottomLeft(trigger).dy),
     );
 
-    await tester.tap(find.text('评分最高'));
+    await tester.tap(find.text('Top Rated'));
     await tester.pumpAndSettle();
     expect(popup, findsNothing);
-    expect(find.text('当前排序：评分最高'), findsOneWidget);
+    expect(find.text('Current sort: Top Rated'), findsOneWidget);
 
     await _closePopups(tester);
   });
@@ -57,10 +57,10 @@ void main() {
     );
     expect(tester.testTextInput.isVisible, isTrue);
 
-    await tester.tap(find.text('从相册选择'));
+    await tester.tap(find.text('Photo Library'));
     await tester.pumpAndSettle();
     expect(popup, findsNothing);
-    expect(find.text('最近操作：从相册选择'), findsOneWidget);
+    expect(find.text('Last action: Photo Library'), findsOneWidget);
 
     await _closePopups(tester);
   });

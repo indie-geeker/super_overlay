@@ -11,21 +11,21 @@ void main() {
   ) async {
     await tester.pumpWidget(const _GuideOwnershipHarness());
 
-    await tester.tap(find.text('开始引导'));
+    await tester.tap(find.text('Start Guide'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('高亮入口'));
+    await tester.tap(find.text('Highlight Entry'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('配置参数'));
+    await tester.tap(find.text('Configure Options'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('状态面板'));
+    await tester.tap(find.text('Status Panel'));
     await tester.pumpAndSettle();
 
-    expect(find.text('引导已完成'), findsOneWidget);
+    expect(find.text('Guide complete'), findsOneWidget);
 
     await tester.tap(find.byKey(const ValueKey('remove-guide-panel')));
     await tester.pumpAndSettle();
 
-    expect(find.text('引导已完成'), findsNothing);
+    expect(find.text('Guide complete'), findsNothing);
   });
 }
 
@@ -53,7 +53,7 @@ class _GuideOwnershipHarnessState extends State<_GuideOwnershipHarness> {
                 TextButton(
                   key: const ValueKey('remove-guide-panel'),
                   onPressed: () => setState(() => _showGuide = false),
-                  child: const Text('移除引导面板'),
+                  child: const Text('Remove Guide Panel'),
                 ),
                 if (_showGuide) const GuidedMaskPanel(),
               ],
