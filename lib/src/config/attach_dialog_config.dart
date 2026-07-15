@@ -5,7 +5,7 @@ import 'enum_config.dart';
 class AttachDialogConfig {
   const AttachDialogConfig({
     this.alignment = Alignment.bottomCenter,
-    this.animationType = AnimationType.centerScaleOtherSlide,
+    this.animationType = AnimationType.size,
     this.animationTime = const Duration(milliseconds: 200),
     this.useAnimation = true,
     this.usePenetrate = false,

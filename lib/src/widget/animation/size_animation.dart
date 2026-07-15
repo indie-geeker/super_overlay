@@ -14,7 +14,13 @@ class SizeAnimation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizeTransition(axis: _axis, sizeFactor: controller, child: child);
+    return SizeTransition(
+      axis: _axis,
+      axisAlignment: _axisAlignment,
+      fixedCrossAxisSizeFactor: 1,
+      sizeFactor: controller,
+      child: child,
+    );
   }
 
   Axis get _axis {
@@ -23,5 +29,21 @@ class SizeAnimation extends StatelessWidget {
       return Axis.horizontal;
     }
     return Axis.vertical;
+  }
+
+  double get _axisAlignment {
+    if (alignment == Alignment.bottomLeft ||
+        alignment == Alignment.bottomCenter ||
+        alignment == Alignment.bottomRight ||
+        alignment == Alignment.centerRight) {
+      return -1;
+    }
+    if (alignment == Alignment.topLeft ||
+        alignment == Alignment.topCenter ||
+        alignment == Alignment.topRight ||
+        alignment == Alignment.centerLeft) {
+      return 1;
+    }
+    return 0;
   }
 }
