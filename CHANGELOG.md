@@ -1,3 +1,18 @@
+## 0.3.1
+
+* Preserve already-rendered dialog/popup state during route suspension while
+  disabling hidden focus, semantics, hit testing, and tickers.
+* Fix Loading and notification handle refresh, and honor explicit null
+  notification durations as persistent notifications.
+* Constrain popups to safe-area/keyboard bounds with automatic edge flipping;
+  update Toast layout reactively when the keyboard opens, resizes, or closes.
+* Capture scoped inherited themes for dialog and popup content, including
+  replacement and adjustment builders.
+* Keep Flutter 3.29-compatible size transitions without new-SDK analysis
+  failures and allow recorded device evidence to pass repository validation.
+* Keep popup placement stable throughout reveal animations and base Toast slide
+  distance on content size when the keyboard is visible.
+
 ## 0.3.0
 
 * Add owned `SuperOverlayIntegration` objects, disposable scoped Navigator

@@ -75,6 +75,7 @@ extension on ShowToastParam {
           (context) =>
               ToastHelper(consumeEvent: consumeEvent, child: builder(context)),
       alignment: alignment,
+      avoidKeyboard: true,
       clickMaskDismiss: clickMaskDismiss,
       animationType: animationType,
       nonAnimationTypes: nonAnimationTypes,

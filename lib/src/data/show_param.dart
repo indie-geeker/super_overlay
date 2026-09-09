@@ -96,6 +96,8 @@ class ShowCustomParam extends ShowParamBase {
     required this.backType,
     required this.onBack,
     this.routeOwner,
+    this.themes,
+    this.avoidKeyboard = false,
   });
 
   final bool debounce;
@@ -112,6 +114,8 @@ class ShowCustomParam extends ShowParamBase {
   final BackType backType;
   final SuperOverlayOnBack? onBack;
   final OverlayRouteOwner? routeOwner;
+  final CapturedThemes? themes;
+  final bool avoidKeyboard;
 
   ShowCustomParam copyWith({
     WidgetBuilder? builder,
@@ -183,6 +187,8 @@ class ShowCustomParam extends ShowParamBase {
       backType: backType ?? this.backType,
       onBack: onBack ?? this.onBack,
       routeOwner: routeOwner ?? this.routeOwner,
+      themes: themes,
+      avoidKeyboard: avoidKeyboard,
     );
   }
 }
@@ -222,6 +228,7 @@ class ShowAttachParam extends ShowCustomParam {
     required super.backType,
     required super.onBack,
     super.routeOwner,
+    super.themes,
     required this.targetContext,
     required this.targetRectBuilder,
     required this.targetPointBuilder,

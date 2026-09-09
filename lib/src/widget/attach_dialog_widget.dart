@@ -12,7 +12,7 @@ import 'animation/fade_animation.dart';
 import 'animation/highlight_mask_animation.dart';
 import 'animation/scale_animation.dart';
 import 'animation/slide_animation.dart';
-import 'animation/size_animation.dart';
+import 'animation/popup_reveal_animation.dart';
 import 'helper/attach_widget.dart';
 import 'helper/dialog_scope.dart';
 import 'helper/mask_event.dart';
@@ -102,6 +102,15 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
       return const SizedBox.shrink();
     }
 
+    final media = MediaQuery.of(context);
+    double inset(double padding, double keyboard) =>
+        padding > keyboard ? padding : keyboard;
+    final viewInsets = EdgeInsets.fromLTRB(
+      inset(media.viewPadding.left, media.viewInsets.left),
+      inset(media.viewPadding.top, media.viewInsets.top),
+      inset(media.viewPadding.right, media.viewInsets.right),
+      inset(media.viewPadding.bottom, media.viewInsets.bottom),
+    );
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -112,6 +121,8 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
             alignment: _effectiveAlignment,
             alignmentMode: param.alignmentMode,
             onLayout: _handleLayout,
+            viewInsets: viewInsets,
+            allowFlip: _adjustedAlignment == null,
           ),
           child: Material(
             type: MaterialType.transparency,
@@ -123,6 +134,29 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
   }
 
   Alignment get _effectiveAlignment => _adjustedAlignment ?? param.alignment;
+
+  Alignment get _animationAlignment {
+    final alignment = _effectiveAlignment;
+    final info = _layoutInfo;
+    if (info == null) {
+      return alignment;
+    }
+    final target = info.targetOffset & info.targetSize;
+    final popup = info.popupOffset & info.popupSize;
+    if (alignment.y == 1 && popup.bottom <= target.top) {
+      return Alignment(alignment.x, -1);
+    }
+    if (alignment.y == -1 && popup.top >= target.bottom) {
+      return Alignment(alignment.x, 1);
+    }
+    if (alignment == Alignment.centerRight && popup.right <= target.left) {
+      return Alignment.centerLeft;
+    }
+    if (alignment == Alignment.centerLeft && popup.left >= target.right) {
+      return Alignment.centerRight;
+    }
+    return alignment;
+  }
 
   void _scheduleTargetFailure() {
     if (_targetFailureScheduled) {
@@ -175,7 +209,7 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
         _bodyController,
         child,
         _animationParam = AnimationParam(
-          alignment: _effectiveAlignment,
+          alignment: _animationAlignment,
           animationTime: param.animationTime,
         ),
       );
@@ -191,9 +225,9 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
         alignment: _scaleAlignment,
         child: child,
       ),
-      AnimationType.size => SizeAnimation(
+      AnimationType.size => PopupRevealAnimation(
         controller: _bodyController,
-        alignment: _effectiveAlignment,
+        alignment: _animationAlignment,
         child: child,
       ),
       AnimationType.centerFadeOtherSlide =>
@@ -201,7 +235,7 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
             ? FadeAnimation(controller: _bodyController, child: child)
             : SlideAnimation(
               controller: _bodyController,
-              alignment: _effectiveAlignment,
+              alignment: _animationAlignment,
               child: child,
             ),
       AnimationType.centerScaleOtherSlide =>
@@ -213,7 +247,7 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
             )
             : SlideAnimation(
               controller: _bodyController,
-              alignment: _effectiveAlignment,
+              alignment: _animationAlignment,
               child: child,
             ),
     };

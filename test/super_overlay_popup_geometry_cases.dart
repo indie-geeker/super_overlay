@@ -438,7 +438,7 @@ void registerPopupGeometryTests() {
     await _closePopupHandle(tester, handle);
   });
 
-  testWidgets('popup near bottom edge clamps to screen bounds', (tester) async {
+  testWidgets('popup near bottom edge flips above its target', (tester) async {
     late BuildContext targetContext;
     const popupKey = Key('bottom-edge-popup');
 
@@ -483,8 +483,7 @@ void registerPopupGeometryTests() {
     await tester.pumpAndSettle();
 
     final popupRect = tester.getRect(find.byKey(popupKey));
-    final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
-    expect(popupRect.bottom, screen.height);
+    expect(popupRect.bottom, 570);
 
     await _closePopupHandle(tester, handle);
   });

@@ -30,7 +30,7 @@ class _SuperNotifyOverlayBuilder {
     return this;
   }
 
-  _SuperNotifyOverlayBuilder withDisplayTime(Duration displayTime) {
+  _SuperNotifyOverlayBuilder withDisplayTime(Duration? displayTime) {
     _displayTime = displayTime;
     return this;
   }

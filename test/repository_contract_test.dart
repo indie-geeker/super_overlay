@@ -16,7 +16,7 @@ void main() {
     },
   );
 
-  test('0.3.0 candidate metadata agrees across package surfaces', () {
+  test('package metadata agrees across package surfaces', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
     final version =
         RegExp(
@@ -25,16 +25,16 @@ void main() {
         ).firstMatch(pubspec)!.group(1)!;
     final exampleLock = File('example/pubspec.lock').readAsStringSync();
 
-    expect(version, '0.3.0');
+    expect(version, '0.3.1');
     for (final path in ['README.md', 'README.zh-CN.md']) {
       final file = File(path);
       expect(file.existsSync(), isTrue, reason: '$path is missing.');
-      expect(file.readAsStringSync(), contains('super_overlay: ^0.3.0'));
+      expect(file.readAsStringSync(), contains('super_overlay: ^0.3.1'));
     }
     final superOverlayLock = _packageStanza(exampleLock, 'super_overlay');
     expect(
       superOverlayLock,
-      contains(RegExp(r'^    version: "0\.3\.0"$', multiLine: true)),
+      contains(RegExp(r'^    version: "0\.3\.1"$', multiLine: true)),
     );
   });
 
@@ -52,7 +52,7 @@ packages:
     expect(_packageStanza(lock, 'super_overlay'), isNot(contains('0.3.0')));
   });
 
-  test('changelog has one unpublished 0.3.0 section before 0.2.0', () {
+  test('changelog separates pending changes from tagged version history', () {
     final changelog = File('CHANGELOG.md').readAsStringSync();
     final headings =
         RegExp(
@@ -61,6 +61,8 @@ packages:
         ).allMatches(changelog).map((match) => match.group(1)!).toList();
 
     expect(headings.where((heading) => heading == '0.3.0'), hasLength(1));
+    expect(headings.first, '0.3.1');
+    expect(headings.where((heading) => heading == '0.3.1'), hasLength(1));
     expect(headings, isNot(contains('Unreleased')));
     expect(headings, contains('0.2.0'));
     expect(headings.indexOf('0.3.0'), lessThan(headings.indexOf('0.2.0')));
@@ -90,10 +92,41 @@ packages:
     expect(claimOnlyRows, anyElement(contains('Stateful shell')));
 
     expect(
-      [...requiredRows, ...claimOnlyRows],
-      everyElement(matches(RegExp(r'^\|\s*\[ \]\s*\|'))),
-      reason:
-          'Manual evidence must stay pending until a maintainer records it.',
+      _manualEvidenceErrors([...requiredRows, ...claimOnlyRows]),
+      isEmpty,
+      reason: 'Completed manual rows require device, OS, and linked evidence.',
+    );
+  });
+
+  test('completed manual rows accept recorded device evidence', () {
+    expect(
+      _manualEvidenceErrors(const [
+        '| [x] | iPhone portrait | Show notification | No overlap | Device: iPhone 16; OS: iOS 18; Evidence: [recording](evidence/iphone.mp4) |',
+        '| [X] | Desktop | Keyboard | Focus restored | Platform: macOS; OS: 15.0; Evidence: [screenshot](evidence/mac.png) |',
+      ]),
+      isEmpty,
+    );
+  });
+
+  test('completed manual rows reject placeholder or incomplete evidence', () {
+    for (final evidence in [
+      'Device/OS and screenshot',
+      'Device: iPhone 16; OS: iOS 18',
+      'Device: TBD; OS: iOS 18; Evidence: [recording](evidence/iphone.mp4)',
+      'Device: iPhone 16; OS: iOS 18; Evidence: [recording]()',
+    ]) {
+      expect(
+        _manualEvidenceErrors([
+          '| [x] | iPhone | Scenario | Expected | $evidence |',
+        ]),
+        isNotEmpty,
+      );
+    }
+    expect(
+      _manualEvidenceErrors(const [
+        '| [ ] | iPhone | Scenario | Expected | Pending |',
+      ]),
+      isEmpty,
     );
   });
 
@@ -217,13 +250,13 @@ Keep documentation tasks [ ] separate from device results.
     );
   });
 
-  test('release intake and coverage matrix track the 0.3.0 README', () {
+  test('release intake and coverage matrix track the 0.3.1 README', () {
     final issueForm =
         File('.github/ISSUE_TEMPLATE/issue.yml').readAsStringSync();
     final coverageMatrix =
         File('tool/verification/example_coverage_matrix.md').readAsStringSync();
 
-    expect(issueForm, contains('placeholder: "0.3.0"'));
+    expect(issueForm, contains('placeholder: "0.3.1"'));
     expect(coverageMatrix, isNot(contains('[Quick Start]')));
     expect(coverageMatrix, isNot(contains('[Conflict Policy]')));
     expect(coverageMatrix, contains('[Install](../../README.md#install)'));
@@ -279,4 +312,38 @@ List<String> _manualDataRows(String section) {
       .map((line) => line.trim())
       .where(dataRow.hasMatch)
       .toList();
+}
+
+List<String> _manualEvidenceErrors(Iterable<String> rows) {
+  final errors = <String>[];
+  for (final row in rows) {
+    if (RegExp(r'^\|\s*\[ \]\s*\|').hasMatch(row)) {
+      continue;
+    }
+    final cells = row.split('|');
+    final evidence = cells[cells.length - 2].trim();
+    bool recordedField(String field) {
+      final value =
+          RegExp(
+            '(?:$field):\\s*([^;]+)',
+            caseSensitive: false,
+          ).firstMatch(evidence)?.group(1)?.trim();
+      return value != null &&
+          value.isNotEmpty &&
+          !RegExp(
+            r'^(TBD|pending|unknown|placeholder|n/a)$',
+            caseSensitive: false,
+          ).hasMatch(value);
+    }
+
+    if (!recordedField('Device|Platform') ||
+        !recordedField('OS') ||
+        !RegExp(
+          r'Evidence:\s*\[[^\]]+\]\([^\s)]+\)',
+          caseSensitive: false,
+        ).hasMatch(evidence)) {
+      errors.add(row);
+    }
+  }
+  return errors;
 }

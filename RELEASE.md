@@ -6,8 +6,22 @@ is recorded.
 
 ## Current Candidate Status
 
-Version `0.3.0` is the current unpublished release candidate. It has not been
-tagged or published and is not release-complete.
+The confirmed candidate version is **`0.3.1`**. Package metadata, both README
+installation snippets, `example/pubspec.lock`, the issue-template version hint,
+and repository tests are synchronized to this version.
+
+This patch fixes existing lifecycle, refresh, keyboard geometry, theme, and
+animation behavior without changing public call signatures or SDK floors.
+`CHANGELOG.md` contains an undated `0.3.1` section and preserves the tagged
+`0.3.0` history. The local `v0.3.0` tag points to
+`8cae00365263e20b00d81254849dd3b52d8a4bd3`; a local tag alone does not establish
+pub.dev publication status.
+
+Publication remains pending the required device evidence and remote CI for the
+final candidate commit. Do not treat the historical results below as proof for
+the current working tree.
+
+## Historical Verification
 
 The complete local automated RC gate passed on 2026-07-14 with Flutter 3.41.6
 and Dart 3.11.4:

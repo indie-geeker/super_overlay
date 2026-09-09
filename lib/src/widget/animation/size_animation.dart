@@ -16,6 +16,9 @@ class SizeAnimation extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizeTransition(
       axis: _axis,
+      // Flutter 3.29 has no alignment parameter. Keep the compatibility API
+      // until the minimum SDK can use its replacement.
+      // ignore: deprecated_member_use
       axisAlignment: _axisAlignment,
       fixedCrossAxisSizeFactor: 1,
       sizeFactor: controller,

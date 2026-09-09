@@ -31,6 +31,7 @@ part 'builder/super_notify_overlay_builder.dart';
 part 'builder/super_popup_overlay_builder.dart';
 part 'builder/super_toast_overlay_builder.dart';
 part 'api/overlay_services.dart';
+part 'api/overlay_command_lifecycle.dart';
 part 'api/scoped_super_overlay.dart';
 part 'api/super_overlay_integration.dart';
 
@@ -53,6 +54,10 @@ class SuperOverlay {
       OverlayManager.instance.captureRouteOwner(
         context,
         operation: 'SuperOverlay.of(context)',
+      ),
+      InheritedTheme.capture(
+        from: context,
+        to: OverlayManager.instance.contextCustom,
       ),
     );
   }
@@ -98,8 +103,13 @@ class SuperOverlay {
   static _SuperCustomOverlayBuilder _custom({
     required WidgetBuilder builder,
     OverlayRouteOwner? routeOwner,
+    CapturedThemes? themes,
   }) {
-    return _SuperCustomOverlayBuilder(builder: builder, routeOwner: routeOwner);
+    return _SuperCustomOverlayBuilder(
+      builder: builder,
+      routeOwner: routeOwner,
+      themes: themes,
+    );
   }
 
   static _SuperLoadingOverlayBuilder _loading({
@@ -133,11 +143,13 @@ class SuperOverlay {
     BuildContext? targetContext,
     required WidgetBuilder builder,
     OverlayRouteOwner? routeOwner,
+    CapturedThemes? themes,
   }) {
     return _SuperPopupOverlayBuilder(
       targetContext: targetContext,
       builder: builder,
       routeOwner: routeOwner,
+      themes: themes,
     );
   }
 

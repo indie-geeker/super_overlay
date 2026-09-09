@@ -71,3 +71,9 @@ release messaging.
 For each completed row, replace the Evidence placeholder with the device model,
 OS version, and a screenshot or recording path. If a row fails, record the
 exact orientation, scroll position, keyboard state, and reproduction steps.
+
+Completed rows must use concrete values in the Evidence cell:
+`Device: <model>; OS: <version>; Evidence: [recording](<path-or-url>)`.
+Desktop rows may use `Platform:` instead of `Device:`. Pending rows may retain
+placeholders; checked rows must identify the environment and link the evidence.
+Repository checks validate this format, not the authenticity of hardware results.

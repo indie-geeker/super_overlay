@@ -11,6 +11,7 @@ import 'animation/scale_animation.dart';
 import 'animation/slide_animation.dart';
 import 'animation/size_animation.dart';
 import 'helper/mask_event.dart';
+import 'helper/keyboard_aware_position.dart';
 
 class OverlayDialogWidget extends StatefulWidget {
   const OverlayDialogWidget({
@@ -31,9 +32,11 @@ class OverlayDialogWidget extends StatefulWidget {
     required this.barrierDismissible,
     required this.barrierSemanticsLabel,
     required this.onMask,
+    this.avoidKeyboard = false,
   });
 
   final Widget child;
+  final bool avoidKeyboard;
   final OverlayDialogWidgetController controller;
   final Alignment alignment;
   final bool usePenetrate;
@@ -98,17 +101,28 @@ class _OverlayDialogWidgetState extends State<OverlayDialogWidget>
               top: viewPadding.top,
               right: viewPadding.right,
             ),
-            child: Align(
-              alignment: widget.alignment,
-              child: Material(
-                type: MaterialType.transparency,
-                child: _buildBodyAnimation(),
-              ),
-            ),
+            child: _buildPositionedBody(context),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildPositionedBody(BuildContext context) {
+    final body = Material(
+      type: MaterialType.transparency,
+      child: _buildBodyAnimation(),
+    );
+    if (widget.avoidKeyboard) {
+      return CustomSingleChildLayout(
+        delegate: KeyboardAwarePositionDelegate(
+          alignment: widget.alignment,
+          keyboardInset: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: body,
+      );
+    }
+    return Align(alignment: widget.alignment, child: body);
   }
 
   Widget _buildMask() {

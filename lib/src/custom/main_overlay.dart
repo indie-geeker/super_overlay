@@ -10,6 +10,7 @@ import '../kit/super_overlay_entry.dart';
 import '../kit/view_utils.dart';
 import '../widget/attach_dialog_widget.dart';
 import '../widget/helper/dialog_scope.dart';
+import '../widget/helper/overlay_presentation.dart';
 import '../widget/helper/overlay_accessibility_scope.dart';
 import '../widget/overlay_dialog_widget.dart';
 
@@ -20,6 +21,7 @@ class MainOverlay {
 
   bool _visible = true;
   Widget _widget = const SizedBox.shrink();
+  CapturedThemes? _themes;
   Completer<dynamic>? _completer;
   VoidCallback? _onDismiss;
   VoidCallback? _refresh;
@@ -52,6 +54,7 @@ class MainOverlay {
     required ShowCustomParam param,
     required VoidCallback onMask,
   }) {
+    _themes = param.themes;
     _captureFocusRestoreTarget();
     _replaceController(param.controller);
     _resultType = T;
@@ -70,6 +73,7 @@ class MainOverlay {
       focusLifecycle: _focusLifecycle,
       child: OverlayDialogWidget(
         controller: _dialogController!,
+        avoidKeyboard: param.avoidKeyboard,
         alignment: param.alignment,
         usePenetrate: param.usePenetrate,
         useAnimation: param.useAnimation,
@@ -103,6 +107,7 @@ class MainOverlay {
     required VoidCallback onMask,
     required Future<void> Function() onTargetUnavailable,
   }) {
+    _themes = param.themes;
     _captureFocusRestoreTarget();
     _replaceController(param.controller);
     _resultType = T;
@@ -248,6 +253,7 @@ class MainOverlay {
     _controller?.dismiss();
     _controller = null;
     _widget = const SizedBox.shrink();
+    _themes = null;
     overlayEntry.markNeedsBuild();
 
     final completer = _completer;
@@ -270,6 +276,7 @@ class MainOverlay {
     _controller?.dismiss();
     _controller = null;
     _widget = const SizedBox.shrink();
+    _themes = null;
 
     final completer = _completer;
     if (completer != null && !completer.isCompleted) {
@@ -280,5 +287,8 @@ class MainOverlay {
     _acceptsResult = null;
   }
 
-  Widget getWidget() => visible ? _widget : const SizedBox.shrink();
+  Widget getWidget() => OverlayPresentation(
+    visible: visible,
+    child: _themes?.wrap(_widget) ?? _widget,
+  );
 }

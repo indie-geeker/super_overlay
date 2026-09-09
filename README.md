@@ -12,7 +12,7 @@ and moving-anchor tracking without installing a package-owned navigator key.
 
 ```yaml
 dependencies:
-  super_overlay: ^0.3.0
+  super_overlay: ^0.3.1
 ```
 
 The package requires Dart `>=3.7.0 <4.0.0` and Flutter `>=3.29.0`. Runtime
@@ -135,6 +135,19 @@ Scoped route-bound dialogs and popups suspend while their route is covered,
 resume when it becomes current, and close when the owner route or observer is
 removed. Route-neutral toast, loading, and notification surfaces remain rooted
 at the one app host.
+
+Suspension preserves the state of content that has already been displayed,
+including form input and scroll position. Suspended content has no pointer,
+semantic, keyboard-focus, or ticker activity. Content suspended before its first
+frame remains unbuilt until its route becomes active.
+
+`SuperOverlay.of(context)` also captures local `InheritedTheme` overrides at
+facade creation, including for popup replacement/adjustment content. Obtain a
+new facade after changing a local theme. Arbitrary inherited state (such as a
+page-local provider or localization override) is not captured: pass required
+values explicitly or wrap the content. The content builder runs in the root
+host, so use the owning handle to close it and an application-owned context or
+Navigator key for navigation.
 
 ## go_router ShellRoute
 
@@ -357,15 +370,32 @@ Overlay viewport, it fails closed as unavailable.
 `maskIgnoreArea` is different: it remains fixed in overlay-host coordinates and
 does not move relative to the target.
 
+Popup content is constrained to the host's safe area and current keyboard
+insets. When the requested edge has insufficient space and the opposite edge
+fits, default placement flips to that edge. An alignment returned from
+`adjustmentBuilder` overrides automatic flipping; final placement is still
+clamped to the usable viewport. Wrap long content in a scrollable widget to
+keep every action reachable within these constraints. Anchor and highlight
+coordinates remain in the host coordinate system.
+
+Toast layout responds to keyboard opening, height changes, and dismissal without
+retaining an offset after the keyboard closes. Top-aligned feedback keeps its
+position while it already fits above the keyboard.
+
 ## Refresh Contracts
 
 `OverlayToastDisplayPolicy.refreshActive` starts a new toast command in the
 policy-owned refresh lane or replaces that lane's content. It is not a handle
 content refresh.
 
-`handle.refresh()` rebuilds only content owned by that existing handle. Use it
+`handle.refresh()` rebuilds only content owned by that existing handle, across
+dialog, popup, loading, notification, and toast surfaces. Use it
 for progress or mutable presentation state without starting another command.
 The runnable example displays both families side by side.
+
+For persistent notifications, set
+`OverlayNotifyOptions(displayDuration: null)`. Omitting the option retains the
+2500 ms default; an explicit null disables automatic dismissal.
 
 ## Handle Lifecycle
 

@@ -271,6 +271,8 @@ class OverlayNotifyOptions {
   final Alignment alignment;
 
   /// How long the notification should stay visible.
+  ///
+  /// An explicit null disables automatic dismissal.
   final Duration? displayDuration;
 
   /// How this notification responds to a system back event.

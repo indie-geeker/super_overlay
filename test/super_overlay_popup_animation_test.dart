@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:super_overlay/src/widget/animation/popup_reveal_animation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:super_overlay/super_overlay.dart';
 
@@ -34,7 +36,7 @@ void main() {
 
     OverlayHandle<void>? currentHandle;
 
-    Future<SizeTransition> openPopup(Alignment alignment) async {
+    Future<({Rect content, Rect reveal})> openPopup(Alignment alignment) async {
       currentHandle = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
         builder:
@@ -49,10 +51,24 @@ void main() {
 
       final transition = find.ancestor(
         of: find.byKey(const ValueKey('animated-popup')),
-        matching: find.byType(SizeTransition),
+        matching: find.byType(PopupRevealAnimation),
       );
       expect(transition, findsOneWidget);
-      return tester.widget<SizeTransition>(transition);
+      await tester.pump(const Duration(milliseconds: 100));
+      final clip =
+          find
+              .descendant(of: transition, matching: find.byType(ClipRect))
+              .first;
+      return (
+        content: tester.getRect(find.byKey(const ValueKey('animated-popup'))),
+        reveal:
+            (() {
+              final render = tester.renderObject<RenderClipRect>(clip);
+              return render
+                  .describeApproximatePaintClip(render.child!)!
+                  .shift(render.localToGlobal(Offset.zero));
+            })(),
+      );
     }
 
     Future<void> closeCurrentPopup() async {
@@ -67,25 +83,26 @@ void main() {
     }
 
     final below = await openPopup(Alignment.bottomCenter);
-    expect(below.axis, Axis.vertical);
-    expect(below.axisAlignment, -1);
-    expect(below.fixedCrossAxisSizeFactor, 1);
+    expect(below.reveal.height, greaterThan(0));
+    expect(below.reveal.height, lessThan(below.content.height));
+    expect(below.reveal.top, closeTo(below.content.top, 0.01));
+    expect(below.reveal.width, below.content.width);
     await closeCurrentPopup();
 
     final above = await openPopup(Alignment.topCenter);
-    expect(above.axis, Axis.vertical);
-    expect(above.axisAlignment, 1);
+    expect(above.reveal.bottom, closeTo(above.content.bottom, 0.01));
+    expect(above.reveal.height, lessThan(above.content.height));
     await closeCurrentPopup();
 
     final right = await openPopup(Alignment.centerRight);
-    expect(right.axis, Axis.horizontal);
-    expect(right.axisAlignment, -1);
-    expect(right.fixedCrossAxisSizeFactor, 1);
+    expect(right.reveal.left, closeTo(right.content.left, 0.01));
+    expect(right.reveal.width, lessThan(right.content.width));
+    expect(right.reveal.height, right.content.height);
     await closeCurrentPopup();
 
     final left = await openPopup(Alignment.centerLeft);
-    expect(left.axis, Axis.horizontal);
-    expect(left.axisAlignment, 1);
+    expect(left.reveal.right, closeTo(left.content.right, 0.01));
+    expect(left.reveal.width, lessThan(left.content.width));
     await closeCurrentPopup();
   });
 }

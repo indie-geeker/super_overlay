@@ -11,7 +11,7 @@ Toast、目标挂载 Popup、高亮引导和通知。它使用自行管理的 `O
 
 ```yaml
 dependencies:
-  super_overlay: ^0.3.0
+  super_overlay: ^0.3.1
 ```
 
 包要求 Dart `>=3.7.0 <4.0.0` 和 Flutter `>=3.29.0`。运行时依赖仅限
@@ -127,6 +127,15 @@ final handle = SuperOverlay.of(context).dialog.show<bool>(
 带路由归属的 scoped 对话框和 Popup 会在所属路由被覆盖时暂停，在路由重新成为
 当前路由时恢复，并在 owner 路由或 observer 被移除时关闭。Toast、Loading 和通知
 等路由中立表面仍归属于唯一的 app host。
+
+暂停会保留已经展示过的内容状态，包括表单输入和滚动位置，同时停用命中测试、
+语义、键盘焦点和 ticker。首次展示前就被暂停的内容，仍会等到路由重新激活后才构建。
+
+`SuperOverlay.of(context)` 会在创建 facade 时捕获局部 `InheritedTheme`，包括
+Popup 的替换内容和调整内容。局部主题变化后应重新获取 facade。页面局部 Provider、
+本地化覆盖等其他继承状态不会自动捕获，应显式传入所需值或自行包装内容。
+内容 builder 位于根 host 中，关闭应使用所属 handle；导航应使用应用持有的 context
+或 Navigator key。
 
 ## go_router ShellRoute
 
@@ -334,13 +343,25 @@ SuperOverlay.popup.show<void>(
 目标会被视为不可用并 fail closed。`maskIgnoreArea` 不同：它固定在 Overlay host
 坐标中，不随目标移动。
 
+Popup 内容受 host 安全区和当前键盘区域约束。请求方向空间不足且反方向放得下时，
+默认定位会翻转；`adjustmentBuilder` 返回的 alignment 优先于自动翻转，但最终位置
+仍限制在可用区域内。长内容应自行使用可滚动组件，保证所有操作在有限高度下仍可访问。
+锚点和高亮坐标仍使用 host 坐标系。
+
+Toast 会响应键盘打开、高度变化和收起；收起后不会残留偏移。顶部反馈在未被键盘
+遮挡时保持原位置。
+
 ## 刷新契约
 
 `OverlayToastDisplayPolicy.refreshActive` 会在策略拥有的刷新 lane 中启动一个新
 Toast 命令，或替换该 lane 的内容。它不是 handle 的内容刷新。
 
-`handle.refresh()` 只重建该现有 handle 拥有的内容。它适合更新进度或可变展示
+`handle.refresh()` 只重建该现有 handle 拥有的内容，适用于 Dialog、Popup、
+Loading、通知和 Toast。它适合更新进度或可变展示
 状态，不会启动另一个命令。可运行示例并排展示了这两类行为。
+
+需要常驻通知时，设置 `OverlayNotifyOptions(displayDuration: null)`。
+省略该选项仍使用 2500 毫秒默认值；显式传入 null 会禁用自动关闭。
 
 ## Handle 生命周期
 

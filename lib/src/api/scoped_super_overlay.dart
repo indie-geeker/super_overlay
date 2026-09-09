@@ -4,10 +4,12 @@ part of '../super_overlay_core.dart';
 ///
 /// Obtain this facade with a context below the Navigator that owns the route.
 /// A context above a nested or shell Navigator resolves to its parent scope.
+/// Local inherited themes are captured when the facade is created. Other
+/// inherited dependencies must be supplied explicitly to the overlay content.
 class ScopedSuperOverlay {
-  ScopedSuperOverlay._(OverlayRouteOwner routeOwner)
-    : dialog = ScopedOverlayDialogService._(routeOwner),
-      popup = ScopedOverlayPopupService._(routeOwner);
+  ScopedSuperOverlay._(OverlayRouteOwner routeOwner, CapturedThemes themes)
+    : dialog = ScopedOverlayDialogService._(routeOwner, themes),
+      popup = ScopedOverlayPopupService._(routeOwner, themes);
 
   /// Dialog commands owned by the captured route.
   final ScopedOverlayDialogService dialog;
@@ -62,9 +64,10 @@ class ScopedSuperOverlay {
 
 /// Route-owned dialog commands captured by [SuperOverlay.of].
 class ScopedOverlayDialogService {
-  const ScopedOverlayDialogService._(this._routeOwner);
+  const ScopedOverlayDialogService._(this._routeOwner, this._themes);
 
   final OverlayRouteOwner _routeOwner;
+  final CapturedThemes _themes;
 
   /// Shows a dialog owned by the facade's captured Navigator route.
   OverlayHandle<T> show<T>({
@@ -75,15 +78,17 @@ class ScopedOverlayDialogService {
       builder: builder,
       options: options,
       routeOwner: _routeOwner,
+      themes: _themes,
     );
   }
 }
 
 /// Route-owned popup commands captured by [SuperOverlay.of].
 class ScopedOverlayPopupService {
-  const ScopedOverlayPopupService._(this._routeOwner);
+  const ScopedOverlayPopupService._(this._routeOwner, this._themes);
 
   final OverlayRouteOwner _routeOwner;
+  final CapturedThemes _themes;
 
   /// Shows a popup owned by the facade's captured Navigator route.
   OverlayHandle<T> show<T>({
@@ -96,6 +101,7 @@ class ScopedOverlayPopupService {
       builder: builder,
       options: options,
       routeOwner: _routeOwner,
+      themes: _themes,
     );
   }
 }

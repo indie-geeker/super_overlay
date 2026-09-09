@@ -4,11 +4,13 @@ class _SuperCustomOverlayBuilder {
   _SuperCustomOverlayBuilder({
     required WidgetBuilder builder,
     OverlayRouteOwner? routeOwner,
+    this.themes,
   }) : _builder = builder,
        _routeOwner = routeOwner;
 
   WidgetBuilder _builder;
   final OverlayRouteOwner? _routeOwner;
+  final CapturedThemes? themes;
   Color? _maskColor;
   Widget? _maskWidget;
   bool _clickMaskDismiss = overlayConfig.custom.clickMaskDismiss;
@@ -187,6 +189,7 @@ class _SuperCustomOverlayBuilder {
         backType: _backType,
         onBack: _onBack,
         routeOwner: _routeOwner,
+        themes: themes,
       ),
     );
   }
