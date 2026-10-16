@@ -142,7 +142,7 @@ void main() {
     final secondFocus = FocusNode(debugLabel: 'second dialog control');
     final handle = SuperOverlay.dialog.show<void>(
       builder:
-          (_) => Column(
+          (_, _) => Column(
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               TextButton(
@@ -227,7 +227,7 @@ void main() {
 
     final handle = SuperOverlay.dialog.show<void>(
       builder:
-          (_) => TextButton(
+          (_, _) => TextButton(
             focusNode: dialogFocus,
             onPressed: () {},
             child: const Text('Non-modal dialog control'),
@@ -282,7 +282,7 @@ void main() {
 
     final handle = SuperOverlay.dialog.show<void>(
       builder:
-          (_) => TextButton(
+          (_, _) => TextButton(
             focusNode: dialogFocus,
             onPressed: () {},
             child: const Text('Upper non-modal control'),
@@ -316,7 +316,7 @@ void main() {
   ) async {
     final harness = await _pumpApp(tester);
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Escape dialog'),
+      builder: (_, _) => const Text('Escape dialog'),
     );
     await tester.pumpAndSettle();
 
@@ -335,7 +335,7 @@ void main() {
     final harness = await _pumpApp(tester);
     final popup = SuperOverlay.popup.show<void>(
       targetContext: harness.targetContext,
-      builder: (_) => const Text('Non-modal popup'),
+      builder: (_, _) => const Text('Non-modal popup'),
     );
     await tester.pumpAndSettle();
 
@@ -385,7 +385,7 @@ void main() {
     expect(harness.pageFocus.hasFocus, isTrue);
 
     final dialog = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Passive dialog'),
+      builder: (_, _) => const Text('Passive dialog'),
       options: const OverlayDialogOptions(requestFocus: false),
     );
     await tester.pumpAndSettle();
@@ -569,7 +569,7 @@ void main() {
       () => rootEscapeCount++,
     );
     final blocked = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Blocked dialog'),
+      builder: (_, _) => const Text('Blocked dialog'),
       options: const OverlayDialogOptions(
         backBehavior: OverlayBackBehavior.block,
       ),
@@ -586,7 +586,7 @@ void main() {
     await closeBlocked;
 
     final passThrough = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Pass-through dialog'),
+      builder: (_, _) => const Text('Pass-through dialog'),
       options: const OverlayDialogOptions(
         backBehavior: OverlayBackBehavior.passThrough,
       ),
@@ -604,6 +604,88 @@ void main() {
     await harness.dispose(tester);
   });
 
+  for (final surface in ['dialog', 'popup', 'loading']) {
+    for (final behavior in [
+      OverlayBackBehavior.dismiss,
+      OverlayBackBehavior.block,
+    ]) {
+      testWidgets(
+        'Escape through focused $surface reaches lower ${behavior.name} and then the app',
+        (tester) async {
+          var rootEscapeCount = 0;
+          final harness = await _pumpAppWithRootEscape(
+            tester,
+            () => rootEscapeCount++,
+          );
+          final focus = FocusNode();
+          addTearDown(() async {
+            await harness.dispose(tester);
+            focus.dispose();
+          });
+          final lower = SuperOverlay.dialog.show<void>(
+            builder: (_, _) => const Text('Lower consumer'),
+            options: OverlayDialogOptions(backBehavior: behavior),
+          );
+          await tester.pumpAndSettle();
+          Widget content(BuildContext context) => Focus(
+            focusNode: focus,
+            child: const Text('Pass-through content'),
+          );
+          final upper = switch (surface) {
+            'popup' => SuperOverlay.popup.show<void>(
+              targetContext: harness.targetContext,
+              builder: (context, _) => content(context),
+              options: const OverlayPopupOptions(
+                backBehavior: OverlayBackBehavior.passThrough,
+                requestFocus: true,
+              ),
+            ),
+            'loading' => SuperOverlay.loading.show(
+              builder: content,
+              options: const OverlayLoadingOptions(
+                backBehavior: OverlayBackBehavior.passThrough,
+              ),
+            ),
+            _ => SuperOverlay.dialog.show<void>(
+              builder: (context, _) => content(context),
+              options: const OverlayDialogOptions(
+                backBehavior: OverlayBackBehavior.passThrough,
+              ),
+            ),
+          };
+          await tester.pumpAndSettle();
+          focus.requestFocus();
+          await tester.pump();
+          expect(focus.hasFocus, isTrue);
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+          expect(lower.isVisible, behavior == OverlayBackBehavior.block);
+          expect(upper.isVisible, isTrue);
+          expect(rootEscapeCount, 0);
+
+          if (behavior == OverlayBackBehavior.block) {
+            await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+            await tester.pumpAndSettle();
+            expect(lower.isVisible, isTrue);
+            expect(rootEscapeCount, 0);
+            final closing = lower.close();
+            await tester.pumpAndSettle();
+            await closing;
+          }
+          // Once no consumer remains, the same focused overlay must let the app
+          // receive Escape rather than swallowing it or closing itself.
+          expect(focus.hasFocus, isTrue);
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pumpAndSettle();
+          expect(rootEscapeCount, 1);
+          expect(upper.isVisible, isTrue);
+          expect(tester.takeException(), isNull);
+        },
+      );
+    }
+  }
+
   testWidgets('popup handles Escape only while focus is inside it', (
     tester,
   ) async {
@@ -616,7 +698,7 @@ void main() {
     final popup = SuperOverlay.popup.show<void>(
       targetContext: harness.targetContext,
       builder:
-          (_) => TextButton(
+          (_, _) => TextButton(
             focusNode: popupFocus,
             onPressed: () {},
             child: const Text('Popup control'),
@@ -643,7 +725,7 @@ void main() {
     final requestedPopup = SuperOverlay.popup.show<void>(
       targetContext: harness.targetContext,
       builder:
-          (_) => TextButton(
+          (_, _) => TextButton(
             focusNode: requestedFocus,
             onPressed: () {},
             child: const Text('Requested popup control'),
@@ -677,7 +759,7 @@ void main() {
     expect(_semanticsNodeWithLabel(tester, 'Page control'), isNotNull);
 
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Semantic dialog content'),
+      builder: (_, _) => const Text('Semantic dialog content'),
       options: const OverlayDialogOptions(
         semanticsLabel: 'Account confirmation',
         barrierSemanticsLabel: 'Close account confirmation',
@@ -705,7 +787,7 @@ void main() {
           harness.targetContext,
         ).modalBarrierDismissLabel;
     final defaultBarrier = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Default barrier dialog'),
+      builder: (_, _) => const Text('Default barrier dialog'),
     );
     await tester.pumpAndSettle();
     final defaultBarrierNode =
@@ -757,7 +839,7 @@ void main() {
     );
 
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Non-modal dialog content'),
+      builder: (_, _) => const Text('Non-modal dialog content'),
       options: const OverlayDialogOptions(
         alignment: Alignment.topCenter,
         consumeEvents: false,
@@ -920,7 +1002,7 @@ void main() {
 
       final dialog = SuperOverlay.of(nestedContext).dialog.show<void>(
         builder:
-            (_) => TextButton(
+            (_, _) => TextButton(
               focusNode: dialogFocus,
               onPressed: () {},
               child: const Text('Scoped dialog control'),

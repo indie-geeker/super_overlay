@@ -22,50 +22,56 @@ class ShowcaseHomePage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('SuperOverlay Showcase')),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const ShowcaseHeader(),
-              const SizedBox(height: 24),
-              const ShowcaseSectionTitle(
-                title: 'Common Scenarios',
-                subtitle:
-                    'Start with feedback, anchored menus, dialogs, and network state',
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: 1120,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const ShowcaseHeader(),
+                  const SizedBox(height: 24),
+                  const ShowcaseSectionTitle(
+                    title: 'Common Scenarios',
+                    subtitle:
+                        'Start with feedback, anchored menus, dialogs, and network state',
+                  ),
+                  const SizedBox(height: 12),
+                  const _ResponsivePair(
+                    first: InstantFeedbackPanel(),
+                    second: AnchoredMenuPanel(),
+                  ),
+                  const SizedBox(height: 16),
+                  _ResponsivePair(
+                    first: const DialogDemoPanel(),
+                    second: _buildNetworkStatePanel(context),
+                  ),
+                  const SizedBox(height: 28),
+                  const ShowcaseSectionTitle(
+                    title: 'Interaction Guidance',
+                    subtitle:
+                        'Use a highlight mask to guide users through required steps',
+                  ),
+                  const SizedBox(height: 12),
+                  const GuidedMaskPanel(),
+                  const SizedBox(height: 28),
+                  const ShowcaseSectionTitle(
+                    title: 'Advanced Capabilities',
+                    subtitle:
+                        'Explore route lifecycles, tag strategies, and Handle control',
+                  ),
+                  const SizedBox(height: 12),
+                  _ResponsivePair(
+                    first: _buildLifecyclePanel(context),
+                    second: _buildControlLabPanel(context),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildNestedNavigationPanel(context),
+                ],
               ),
-              const SizedBox(height: 12),
-              const _ResponsivePair(
-                first: InstantFeedbackPanel(),
-                second: AnchoredMenuPanel(),
-              ),
-              const SizedBox(height: 16),
-              _ResponsivePair(
-                first: const DialogDemoPanel(),
-                second: _buildNetworkStatePanel(context),
-              ),
-              const SizedBox(height: 28),
-              const ShowcaseSectionTitle(
-                title: 'Interaction Guidance',
-                subtitle:
-                    'Use a highlight mask to guide users through required steps',
-              ),
-              const SizedBox(height: 12),
-              const GuidedMaskPanel(),
-              const SizedBox(height: 28),
-              const ShowcaseSectionTitle(
-                title: 'Advanced Capabilities',
-                subtitle:
-                    'Explore route lifecycles, tag strategies, and Handle control',
-              ),
-              const SizedBox(height: 12),
-              _ResponsivePair(
-                first: _buildLifecyclePanel(context),
-                second: _buildControlLabPanel(context),
-              ),
-              const SizedBox(height: 16),
-              _buildNestedNavigationPanel(context),
-            ],
+            ),
           ),
         ),
       ),

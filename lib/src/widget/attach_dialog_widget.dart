@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../config/enum_config.dart';
 import '../data/animation_param.dart';
 import '../data/show_param.dart';
+import '../helper/overlay_anchor_geometry.dart';
 import '../helper/overlay_manager.dart';
 import '../kit/typedef.dart';
 import 'animation/fade_animation.dart';
@@ -72,7 +73,9 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
       oldWidget.targetRectListenable.removeListener(_handleTargetRectChanged);
       widget.targetRectListenable.addListener(_handleTargetRectChanged);
     }
-    if (oldWidget.param != widget.param) {
+    if (oldWidget.param != widget.param ||
+        oldWidget.onTargetUnavailable != widget.onTargetUnavailable) {
+      _targetFailureScheduled = false;
       _layoutInfo = null;
       _pendingLayoutInfo = null;
       _adjustedAlignment = null;
@@ -166,9 +169,10 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
     param.controller?.failVisible(
       'The popup could not become visible because its target geometry is unavailable.',
     );
+    final onTargetUnavailable = widget.onTargetUnavailable;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        unawaited(widget.onTargetUnavailable());
+        unawaited(onTargetUnavailable());
       }
     });
   }
@@ -396,29 +400,18 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
     var targetOffset = trackedRect?.topLeft ?? Offset.zero;
     var targetSize = trackedRect?.size ?? Size.zero;
 
-    if (!hasTargetInfo) {
-      final renderObject =
-          targetContext?.mounted == true
-              ? targetContext?.findRenderObject()
-              : null;
-      if (renderObject is RenderBox &&
-          renderObject.attached &&
-          renderObject.hasSize) {
-        final overlayRenderBox = _overlayRenderBox(context);
-        if (overlayRenderBox == null) {
-          return null;
-        }
-        final rect = MatrixUtils.transformRect(
-          renderObject.getTransformTo(overlayRenderBox),
-          Offset.zero & renderObject.size,
-        );
-        final offset = rect.topLeft;
-        final size = rect.size;
-        if (_isValidOffset(offset) && _isValidSize(size)) {
-          targetOffset = offset;
-          targetSize = size;
-          hasTargetInfo = true;
-        }
+    if (targetContext != null) {
+      if (!targetContext.mounted) return null;
+      if (!hasTargetInfo) {
+        final target = OverlayAnchorGeometry.renderBox(targetContext);
+        final rect =
+            target == null
+                ? null
+                : OverlayAnchorGeometry.inOverlay(target, context);
+        if (rect == null) return null;
+        targetOffset = rect.topLeft;
+        targetSize = rect.size;
+        hasTargetInfo = true;
       }
     }
 
@@ -439,24 +432,8 @@ class _AttachDialogWidgetState extends State<AttachDialogWidget>
     return _isValidRect(targetRect) ? targetRect : null;
   }
 
-  RenderBox? _overlayRenderBox(BuildContext context) {
-    try {
-      final renderObject = Overlay.of(context).context.findRenderObject();
-      if (renderObject is RenderBox &&
-          renderObject.attached &&
-          renderObject.hasSize) {
-        return renderObject;
-      }
-    } catch (_) {}
-    return null;
-  }
-
   bool _isValidOffset(Offset offset) {
     return offset.dx.isFinite && offset.dy.isFinite;
-  }
-
-  bool _isValidSize(Size size) {
-    return size.width.isFinite && size.height.isFinite;
   }
 
   bool _isValidRect(Rect rect) {

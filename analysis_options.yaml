@@ -1,4 +1,11 @@
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # This independent project requires a newer SDK and is checked separately.
+    - tool/compatibility/**
+    - docs/local/**
+    - build/**
+
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

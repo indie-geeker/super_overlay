@@ -16,6 +16,8 @@ import '../kit/super_overlay_entry.dart';
 import '../kit/typedef.dart';
 import '../kit/view_utils.dart';
 import 'navigator_scope_registry.dart';
+import 'overlay_anchor_geometry.dart';
+import 'overlay_dismissal_operation.dart';
 import 'overlay_route_owner.dart';
 
 part 'overlay_manager_dismiss.dart';
@@ -43,6 +45,22 @@ class OverlayManager {
   _OverlayHostTopology _topology = _OverlayHostTopology.empty;
   var _nextGeneration = 1;
   var _nextTagId = 0;
+
+  @visibleForTesting
+  Map<String, int> get debugResourceCounts => {
+    'hosts': _hosts.length,
+    'dialogs': _dialogQueue.length,
+    'notifications': _notifyQueue.length,
+    'closingDialogs': _inFlightDialogRecords.length,
+    'closingNotifications': _inFlightNotifyRecords.length,
+    'timers':
+        [
+          ..._dialogQueue.map((record) => record.displayTimer),
+          ..._notifyQueue.map((record) => record.displayTimer),
+          ..._inFlightDialogRecords.map((record) => record.displayTimer),
+          ..._inFlightNotifyRecords.map((record) => record.displayTimer),
+        ].where((timer) => timer?.isActive ?? false).length,
+  };
 
   SuperOverlayEntry get entryLoading => _commandHost.entryLoading;
   CustomLoading get loadingOverlay => _commandHost.loadingOverlay;
@@ -218,7 +236,7 @@ class OverlayManager {
         );
       case _OverlayHostTopology.empty:
         throw StateError(
-          'SuperOverlay is not initialized. Use SuperOverlay.init() in MaterialApp.builder.',
+          'SuperOverlay is not initialized. Install integration.builder and integration.observer on your app.',
         );
     }
   }
@@ -389,6 +407,46 @@ class OverlayManager {
     return result;
   }
 
+  OverlayCallbackOwner captureCustomCallbackOwner({
+    required CustomOverlay overlay,
+    required int generation,
+  }) {
+    for (final record in _dialogQueue) {
+      if (record.generation == generation &&
+          identical(record.overlay, overlay)) {
+        return OverlayCallbackOwner._(
+          generation: generation,
+          presentation: overlay.callbackPresentation,
+          dialog: WeakReference(record),
+        );
+      }
+    }
+    return OverlayCallbackOwner._(
+      generation: generation,
+      presentation: overlay.callbackPresentation,
+    );
+  }
+
+  OverlayCallbackOwner captureNotifyCallbackOwner({
+    required CustomNotify overlay,
+    required int generation,
+  }) {
+    for (final record in _notifyQueue) {
+      if (record.generation == generation &&
+          identical(record.overlay, overlay)) {
+        return OverlayCallbackOwner._(
+          generation: generation,
+          presentation: overlay.callbackPresentation,
+          notify: WeakReference(record),
+        );
+      }
+    }
+    return OverlayCallbackOwner._(
+      generation: generation,
+      presentation: overlay.callbackPresentation,
+    );
+  }
+
   Future<T?> showNotify<T>({required ShowNotifyParam param}) {
     final generation = requireActiveGeneration();
     validateCommandRoute(
@@ -451,7 +509,7 @@ class OverlayManager {
     final overlayContext = host.contextNotify ?? host.contextCustom;
     if (overlayContext == null) {
       throw StateError(
-        'SuperOverlay is not initialized. Use SuperOverlay.init() in MaterialApp.builder.',
+        'SuperOverlay is not initialized. Install integration.builder and integration.observer on your app.',
       );
     }
 
@@ -530,7 +588,7 @@ class OverlayManager {
             : host.contextCustom;
     if (overlayContext == null) {
       throw StateError(
-        'SuperOverlay is not initialized. Use SuperOverlay.init() in MaterialApp.builder.',
+        'SuperOverlay is not initialized. Install integration.builder and integration.observer on your app.',
       );
     }
 
@@ -712,6 +770,12 @@ class OverlayManager {
   }) {
     if (!ownsGeneration(generation)) {
       return false;
+    }
+    if (type == OverlayType.loading) {
+      return _hosts[generation]!.loadingOverlay.matchesTag(
+        identityTag,
+        identityTagOnly: true,
+      );
     }
     if (type == OverlayType.notify) {
       return _findNotify(
@@ -989,18 +1053,42 @@ class OverlayManager {
     record.presentationState = _OverlayPresentationState.closing;
     ViewUtils.addSafeUse(() {
       unawaited(
-        _closeSingle<void>(
-          tag: record.tag,
-          result: null,
+        _dismissOwnedDialogRecord(
+          record,
           force: true,
-          type: record.type,
           closeType: OverlayCloseType.route,
-          generation: record.generation,
         ).whenComplete(() {
           record.presentationState = _OverlayPresentationState.closed;
         }),
       );
     });
+  }
+
+  Future<void> _dismissOwnedDialogRecord(
+    _OverlayRecord record, {
+    bool force = false,
+    OverlayCloseType closeType = OverlayCloseType.normal,
+  }) {
+    if (!ownsGeneration(record.generation)) return Future<void>.value();
+    if (_inFlightDialogRecords.contains(record)) {
+      return record.dismissal!.future;
+    }
+    if (!_dialogQueue.contains(record) || (record.permanent && !force)) {
+      return Future<void>.value();
+    }
+    return _closeDialogRecord<void>(record, result: null, closeType: closeType);
+  }
+
+  Future<void> _dismissOwnedNotifyRecord(
+    _NotifyRecord record, {
+    OverlayCloseType closeType = OverlayCloseType.normal,
+  }) {
+    if (!ownsGeneration(record.generation)) return Future<void>.value();
+    if (_inFlightNotifyRecords.contains(record)) {
+      return record.dismissal!.future;
+    }
+    if (!_notifyQueue.contains(record)) return Future<void>.value();
+    return _closeNotifyRecord<void>(record, result: null, closeType: closeType);
   }
 
   void _suspendRecord(_OverlayRecord record) {
@@ -1036,6 +1124,14 @@ class OverlayManager {
         return;
     }
     record.overlay.appear();
+  }
+
+  /// Whether a focused overlay can synchronously claim a back-style key.
+  bool get hasConsumingBackTarget {
+    final generation = _activeHost?.generation;
+    return generation != null &&
+        ownsGeneration(generation) &&
+        _generationBlocksBack(generation);
   }
 
   Future<bool> handleBackEvent() {
@@ -1106,6 +1202,10 @@ class OverlayManager {
       return Future<void>.value();
     }
     final dismissal = switch (status) {
+      DismissStatus.loading => _hosts[generation]!.loadingOverlay.dismiss(
+        tag: identityTag,
+        identityTagOnly: true,
+      ),
       DismissStatus.custom || DismissStatus.attach => _closeSingle<T>(
         tag: identityTag,
         result: result,
@@ -1159,7 +1259,6 @@ class OverlayManager {
         closeType: OverlayCloseType.normal,
         generation: generation,
         businessTagOnly: true,
-        includeInFlight: true,
       ),
       DismissStatus.notify => _closeAllNotify<void>(
         tag: businessTag,
@@ -1167,7 +1266,6 @@ class OverlayManager {
         closeType: OverlayCloseType.normal,
         generation: generation,
         businessTagOnly: true,
-        includeInFlight: true,
       ),
       DismissStatus.toast => ToastTool.instance.dismissBusinessTag(
         generation: generation,
@@ -1184,6 +1282,17 @@ class OverlayManager {
     );
   }
 
+  bool isCommandRouteOwnerAttached({
+    required int generation,
+    required OverlayRouteOwner routeOwner,
+  }) {
+    final host = _hosts[generation];
+    return host != null &&
+        routeOwner.generation == generation &&
+        identical(routeOwner.ownerIdentity, host.ownerIdentity) &&
+        NavigatorScopeRegistry.instance.isOwnerTracked(routeOwner);
+  }
+
   void validateCommandRoute({
     required int generation,
     required bool bindToRoute,
@@ -1194,10 +1303,10 @@ class OverlayManager {
   }) {
     if (routeOwner != null) {
       requireActiveGenerationMatch(generation);
-      final host = _hostFor(generation);
-      if (routeOwner.generation != generation ||
-          !identical(routeOwner.ownerIdentity, host.ownerIdentity) ||
-          !NavigatorScopeRegistry.instance.isOwnerTracked(routeOwner)) {
+      if (!isCommandRouteOwnerAttached(
+        generation: generation,
+        routeOwner: routeOwner,
+      )) {
         throw StateError(
           '$operation route owner is no longer attached to the active '
           'SuperOverlayIntegration.',
@@ -1233,39 +1342,87 @@ class OverlayManager {
     if (_backAttemptsInProgress.contains(generation)) {
       return true;
     }
-    final loading = _hosts[generation]?.loadingOverlay;
-    if (loading != null &&
-        (loading.isVisible || loading.isDismissPending) &&
-        _canConsumeBack(loading.backType, loading.onBack)) {
-      return true;
-    }
-    if (_notifyQueue.any(
-          (record) =>
-              record.generation == generation &&
-              _canConsumeBack(record.backType, record.onBack),
-        ) ||
-        _inFlightNotifyRecords.any(
-          (record) =>
-              record.generation == generation &&
-              _canConsumeBack(record.backType, record.onBack),
-        )) {
-      return true;
-    }
-    return _dialogQueue.any(
-          (record) =>
-              record.generation == generation &&
-              !record.permanent &&
-              record.overlay.mainOverlay.visible &&
-              _canConsumeBack(record.backType, record.onBack),
-        ) ||
-        _inFlightDialogRecords.any(
-          (record) =>
-              record.generation == generation &&
-              _canConsumeBack(record.backType, record.onBack),
-        );
+    return _backTargets(generation).isNotEmpty;
   }
 
   bool _canConsumeBack(BackType backType, SuperOverlayOnBack? onBack) {
     return backType != BackType.ignore || onBack != null;
   }
+}
+
+/// Ownership of a callback from one exact record presentation.
+///
+/// Weak records let retained UI callbacks outlive teardown without keeping the
+/// route, anchor, content or replacement presentation alive.
+class OverlayCallbackOwner {
+  OverlayCallbackOwner._({
+    required this.generation,
+    required Object presentation,
+    WeakReference<_OverlayRecord>? dialog,
+    WeakReference<_NotifyRecord>? notify,
+  }) : _presentation = presentation,
+       _dialog = dialog,
+       _notify = notify;
+
+  final int generation;
+  final Object _presentation;
+  final WeakReference<_OverlayRecord>? _dialog;
+  final WeakReference<_NotifyRecord>? _notify;
+
+  bool get isCurrent {
+    final manager = OverlayManager.instance;
+    if (!manager.ownsGeneration(generation)) return false;
+    final dialog = _dialog?.target;
+    if (dialog != null) {
+      return identical(dialog.overlay.callbackPresentation, _presentation) &&
+          (manager._dialogQueue.contains(dialog) ||
+              manager._inFlightDialogRecords.contains(dialog));
+    }
+    final notify = _notify?.target;
+    return notify != null &&
+        identical(notify.overlay.callbackPresentation, _presentation) &&
+        (manager._notifyQueue.contains(notify) ||
+            manager._inFlightNotifyRecords.contains(notify));
+  }
+
+  bool get _isClosing =>
+      _dialog?.target?.dismissal != null || _notify?.target?.dismissal != null;
+
+  VoidCallback maskCallback({
+    required VoidCallback? onMask,
+    required bool dismissible,
+    bool debounce = false,
+  }) => () {
+    if (!isCurrent) return;
+    if (_isClosing) {
+      if (dismissible) unawaited(close(closeType: OverlayCloseType.mask));
+      return;
+    }
+    onMask?.call();
+    if (!isCurrent || !dismissible) return;
+    if (debounce && DebounceUtils.instance.banMaskContinue()) return;
+    unawaited(close(closeType: OverlayCloseType.mask));
+  };
+
+  Future<void> close({
+    bool force = false,
+    OverlayCloseType closeType = OverlayCloseType.normal,
+  }) {
+    if (!isCurrent) return Future<void>.value();
+    final manager = OverlayManager.instance;
+    final dialog = _dialog?.target;
+    if (dialog != null) {
+      return manager._dismissOwnedDialogRecord(
+        dialog,
+        force: force,
+        closeType: closeType,
+      );
+    }
+    return manager._dismissOwnedNotifyRecord(
+      _notify!.target!,
+      closeType: closeType,
+    );
+  }
+
+  Future<void> closeUnavailableTarget() => close(force: true);
 }

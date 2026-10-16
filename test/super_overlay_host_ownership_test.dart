@@ -157,12 +157,12 @@ Future<void> _verifyCloseInFlightSettlesBeforePromotion(
   }) {
     return switch (surface) {
       _ClosingSurface.dialog => SuperOverlay.dialog.show<void>(
-        builder: (_) => Text(label),
+        builder: (_, _) => Text(label),
         options: OverlayDialogOptions(tag: tag, strategy: strategy),
       ),
       _ClosingSurface.popup => SuperOverlay.popup.show<void>(
         targetContext: targetContext,
-        builder: (_) => Text(label),
+        builder: (_, _) => Text(label),
         options: OverlayPopupOptions(tag: tag, strategy: strategy),
       ),
       _ClosingSurface.notification => SuperOverlay.notify.success(
@@ -311,7 +311,7 @@ void main() {
 
     await tester.pumpWidget(_hostSlots(active: retainedHost()));
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('retained route overlay'),
+      builder: (_, _) => const Text('retained route overlay'),
       options: OverlayDialogOptions(
         tag: 'retained-route-overlay',
         bindToRoute: true,
@@ -385,7 +385,7 @@ void main() {
 
     await tester.pumpWidget(_hostSlots(candidate: candidateHost()));
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('promoted route overlay'),
+      builder: (_, _) => const Text('promoted route overlay'),
       options: const OverlayDialogOptions(
         tag: 'promoted-route-overlay',
         bindToRoute: true,
@@ -726,7 +726,7 @@ void main() {
           ),
         );
         final promotedDialog = SuperOverlay.dialog.show<void>(
-          builder: (_) => const Text('promoted persistent dialog'),
+          builder: (_, _) => const Text('promoted persistent dialog'),
           options: const OverlayDialogOptions(
             tag: 'promoted-persistent-dialog',
           ),
@@ -882,7 +882,7 @@ void main() {
         _host(key: const ValueKey('retained'), integration: retained),
       );
       final retainedHandle = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('retained generation overlay'),
+        builder: (_, _) => const Text('retained generation overlay'),
         options: const OverlayDialogOptions(tag: 'retained-generation'),
       );
       await tester.pumpAndSettle();
@@ -935,7 +935,7 @@ void main() {
       _host(key: const ValueKey('active'), integration: active),
     );
     final oldHandle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('old generation'),
+      builder: (_, _) => const Text('old generation'),
       options: const OverlayDialogOptions(tag: 'shared-generation-tag'),
     );
     await tester.pumpAndSettle();
@@ -955,7 +955,7 @@ void main() {
     await oldHandle.closed;
 
     final promotedHandle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('promoted generation'),
+      builder: (_, _) => const Text('promoted generation'),
       options: const OverlayDialogOptions(tag: 'shared-generation-tag'),
     );
     final promotedToast = SuperOverlay.toast(

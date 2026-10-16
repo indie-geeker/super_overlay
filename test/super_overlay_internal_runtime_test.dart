@@ -136,14 +136,14 @@ void main() {
       await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
 
       SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Closing gap dialog')),
+        builder: (_, _) => const Center(child: Text('Closing gap dialog')),
         options: const OverlayDialogOptions(tag: 'gap-replace-dialog'),
       );
       await tester.pumpAndSettle();
       expect(find.text('Closing gap dialog'), findsOneWidget);
 
       final replacement = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Canceled replacement')),
+        builder: (_, _) => const Center(child: Text('Canceled replacement')),
         options: const OverlayDialogOptions(
           tag: 'gap-replace-dialog',
           strategy: OverlayStrategy.replaceExisting,
@@ -176,14 +176,14 @@ void main() {
       await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
 
       SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Closing dialog')),
+        builder: (_, _) => const Center(child: Text('Closing dialog')),
         options: const OverlayDialogOptions(tag: 'animated-replace-dialog'),
       );
       await tester.pumpAndSettle();
       expect(find.text('Closing dialog'), findsOneWidget);
 
       final second = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Replacement dialog')),
+        builder: (_, _) => const Center(child: Text('Replacement dialog')),
         options: const OverlayDialogOptions(
           tag: 'animated-replace-dialog',
           strategy: OverlayStrategy.replaceExisting,
@@ -222,7 +222,7 @@ void main() {
       show:
           ({required label, required strategy}) =>
               SuperOverlay.dialog.show<void>(
-                builder: (_) => Center(child: Text(label)),
+                builder: (_, _) => Center(child: Text(label)),
                 options: OverlayDialogOptions(
                   tag: 'in-flight-dialog',
                   strategy: strategy,
@@ -257,7 +257,7 @@ void main() {
           ({required label, required strategy}) =>
               SuperOverlay.popup.show<void>(
                 targetContext: targetContext,
-                builder: (_) => Text(label),
+                builder: (_, _) => Text(label),
                 options: OverlayPopupOptions(
                   tag: 'in-flight-popup',
                   strategy: strategy,
@@ -305,7 +305,7 @@ void main() {
       show:
           ({required label, required strategy}) =>
               SuperOverlay.dialog.show<void>(
-                builder: (_) => Center(child: Text(label)),
+                builder: (_, _) => Center(child: Text(label)),
                 options: OverlayDialogOptions(
                   tag: 'join-replacement-dialog',
                   strategy: strategy,
@@ -338,7 +338,7 @@ void main() {
           ({required label, required strategy}) =>
               SuperOverlay.popup.show<void>(
                 targetContext: targetContext,
-                builder: (_) => Text(label),
+                builder: (_, _) => Text(label),
                 options: OverlayPopupOptions(
                   tag: 'join-replacement-popup',
                   strategy: strategy,

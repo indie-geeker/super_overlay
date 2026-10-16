@@ -123,7 +123,7 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
   void _showRouteBoundOverlay() {
     SuperOverlay.dialog.show<void>(
       builder:
-          (_) => const SmallOverlay(
+          (_, _) => const SmallOverlay(
             title: 'Route-bound Dialog',
             message:
                 'It hides under a covering route and returns with this page.',
@@ -158,7 +158,7 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
   void _showWidgetBoundOverlay(BuildContext targetContext) {
     SuperOverlay.dialog.show<void>(
       builder:
-          (_) => const SmallOverlay(
+          (_, _) => const SmallOverlay(
             title: 'Widget-bound Dialog',
             message: 'This dialog follows the target widget lifecycle.',
           ),
@@ -176,7 +176,7 @@ class _LifecycleDemoPageState extends State<LifecycleDemoPage> {
   void _showBackOverlay(OverlayBackBehavior behavior) {
     SuperOverlay.dialog.show<void>(
       builder:
-          (_) => SmallOverlay(
+          (_, _) => SmallOverlay(
             title: 'OverlayBackBehavior.${behavior.name}',
             message: switch (behavior) {
               OverlayBackBehavior.dismiss =>

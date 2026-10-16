@@ -429,6 +429,41 @@ void main() {
     ToastTool.instance.reset();
     expect(ToastTool.instance.isExist(generation), isFalse);
   });
+
+  testWidgets(
+    'early refresh-lane reset settles historical appearance futures',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: SuperOverlay.init(),
+          home: const SizedBox.shrink(),
+        ),
+      );
+      final generation = OverlayManager.instance.requireActiveGeneration();
+      var completed = 0;
+      final results = [
+        for (var i = 0; i < 2; i++)
+          ToastTool.instance.showCommand<void>(
+            _toastParam(
+              'appearance $i',
+              displayType: ToastDisplayType.onlyRefresh,
+              awaitCompletion: AwaitCompletion.appear,
+            ),
+            generation: generation,
+          ),
+      ];
+      for (final result in results) {
+        result.closed.then((_) => completed++);
+      }
+      ToastTool.instance.reset(generation: generation);
+      // Flush completion microtasks without running the appearance timers.
+      await tester.idle();
+      expect(completed, 2);
+      await Future.wait(results.map((result) => result.visible));
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 ShowToastParam _toastParam(

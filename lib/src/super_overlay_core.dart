@@ -25,11 +25,6 @@ import 'widget/default/notify_success.dart';
 import 'widget/default/notify_warning.dart';
 import 'widget/default/toast_widget.dart';
 
-part 'builder/super_custom_overlay_builder.dart';
-part 'builder/super_loading_overlay_builder.dart';
-part 'builder/super_notify_overlay_builder.dart';
-part 'builder/super_popup_overlay_builder.dart';
-part 'builder/super_toast_overlay_builder.dart';
 part 'api/overlay_services.dart';
 part 'api/overlay_command_lifecycle.dart';
 part 'api/scoped_super_overlay.dart';
@@ -100,37 +95,11 @@ class SuperOverlay {
     );
   }
 
-  static _SuperCustomOverlayBuilder _custom({
-    required WidgetBuilder builder,
-    OverlayRouteOwner? routeOwner,
-    CapturedThemes? themes,
-  }) {
-    return _SuperCustomOverlayBuilder(
-      builder: builder,
-      routeOwner: routeOwner,
-      themes: themes,
-    );
-  }
-
-  static _SuperLoadingOverlayBuilder _loading({
-    String message = '',
-    WidgetBuilder? builder,
-  }) {
-    return _SuperLoadingOverlayBuilder(message: message, builder: builder);
-  }
-
-  static _SuperToastOverlayBuilder _toastCommand(
-    String message, {
-    WidgetBuilder? builder,
-  }) {
-    return _SuperToastOverlayBuilder(message: message, builder: builder);
-  }
-
   /// Shows a toast message through the command API.
   ///
   /// When [builder] is provided, it renders this toast only and takes
   /// precedence over the default builder configured with
-  /// `SuperOverlay.init(toastBuilder: ...)`.
+  /// `SuperOverlay.integration(toastBuilder: ...)`.
   static OverlayHandle<void> toast(
     String message, {
     WidgetBuilder? builder,
@@ -139,39 +108,13 @@ class SuperOverlay {
     return _toastService.show(message, builder: builder, options: options);
   }
 
-  static _SuperPopupOverlayBuilder _popup({
-    BuildContext? targetContext,
-    required WidgetBuilder builder,
-    OverlayRouteOwner? routeOwner,
-    CapturedThemes? themes,
-  }) {
-    return _SuperPopupOverlayBuilder(
-      targetContext: targetContext,
-      builder: builder,
-      routeOwner: routeOwner,
-      themes: themes,
-    );
-  }
-
-  static _SuperNotifyOverlayBuilder _notification({
-    required String message,
-    required NotifyType type,
-    WidgetBuilder? builder,
-  }) {
-    return _SuperNotifyOverlayBuilder(
-      message: message,
-      type: type,
-      builder: builder,
-    );
-  }
-
   /// Closes overlays outside of a specific [OverlayHandle].
   ///
   /// Prefer `handle.close()` when the caller owns the overlay. Use this method
   /// for global commands such as clearing all toasts, closing a tagged dialog
   /// from inside its content, or cleaning up an overlay family in tests.
   static Future<void> close<T>({
-    OverlayCloseTarget target = OverlayCloseTarget.topMost,
+    OverlayCloseTarget target = OverlayCloseTarget.highestPriority,
     String? tag,
     T? result,
     bool force = false,
@@ -218,41 +161,24 @@ class SuperOverlay {
     required bool force,
     required int? generation,
   }) async {
-    await _dismiss<T>(
-      status: DismissStatus.loading,
-      tag: tag,
-      result: result,
-      force: force,
-      generation: generation,
-    );
-    await _dismiss<T>(
-      status: DismissStatus.allNotify,
-      tag: tag,
-      result: result,
-      force: force,
-      generation: generation,
-    );
-    await _dismiss<T>(
-      status: DismissStatus.allAttach,
-      tag: tag,
-      result: result,
-      force: force,
-      generation: generation,
-    );
-    await _dismiss<T>(
-      status: DismissStatus.allCustom,
-      tag: tag,
-      result: result,
-      force: force,
-      generation: generation,
-    );
-    await _dismiss<T>(
-      status: DismissStatus.allToast,
-      tag: tag,
-      result: result,
-      force: force,
-      generation: generation,
-    );
+    // Start every family in this turn, capturing its existing owners before
+    // awaiting any minimum loading duration or dismissal animation.
+    await Future.wait<void>([
+      for (final status in [
+        DismissStatus.loading,
+        DismissStatus.allNotify,
+        DismissStatus.allAttach,
+        DismissStatus.allCustom,
+        DismissStatus.allToast,
+      ])
+        _dismiss<T>(
+          status: status,
+          tag: tag,
+          result: result,
+          force: force,
+          generation: generation,
+        ),
+    ]);
   }
 
   /// Returns whether a matching overlay currently exists.
@@ -304,7 +230,7 @@ class SuperOverlay {
 
 DismissStatus _dismissStatusFor(OverlayCloseTarget target) {
   return switch (target) {
-    OverlayCloseTarget.topMost => DismissStatus.auto,
+    OverlayCloseTarget.highestPriority => DismissStatus.auto,
     OverlayCloseTarget.dialog => DismissStatus.custom,
     OverlayCloseTarget.allDialogs => DismissStatus.allCustom,
     OverlayCloseTarget.popup => DismissStatus.attach,

@@ -2,6 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
+/// Builds dialog or popup content with its own typed lifecycle handle.
+typedef OverlayWidgetBuilder<T> =
+    Widget Function(BuildContext context, OverlayHandle<T> overlay);
+
 /// A stable handle returned from command-style overlay APIs.
 class OverlayHandle<T> {
   /// Creates a handle backed by explicit lifecycle futures and callbacks.
@@ -24,6 +28,24 @@ class OverlayHandle<T> {
     );
   }
 
+  /// Internal constructor for a shared runtime close signal observed on demand.
+  /// @nodoc
+  OverlayHandle.lazyClosed({
+    required Future<void> visible,
+    required Future<T?> Function() closed,
+    required Future<void> Function([T? result]) close,
+    required VoidCallback refresh,
+    required bool Function() isVisible,
+  }) : _visible = visible,
+       _readClosed = closed,
+       _close = close,
+       _refresh = refresh,
+       _isVisible = isVisible {
+    unawaited(
+      visible.then<void>((_) {}, onError: (Object _, StackTrace __) {}),
+    );
+  }
+
   /// Creates a handle that is already closed and not attached to an overlay.
   factory OverlayHandle.detached() {
     return OverlayHandle<T>(
@@ -36,7 +58,8 @@ class OverlayHandle<T> {
   }
 
   final Future<void> _visible;
-  final Future<T?> _closed;
+  Future<T?>? _closed;
+  Future<T?> Function()? _readClosed;
   final Future<void> Function([T? result]) _close;
   final VoidCallback _refresh;
   final bool Function() _isVisible;
@@ -50,7 +73,14 @@ class OverlayHandle<T> {
   Future<void> get visible => _visible;
 
   /// Completes once, when the overlay has closed.
-  Future<T?> get closed => _closed;
+  Future<T?> get closed {
+    final read = _readClosed;
+    if (read != null) {
+      _closed = read();
+      _readClosed = null;
+    }
+    return _closed!;
+  }
 
   /// Whether the overlay is currently visible according to its runtime owner.
   bool get isVisible => _isVisible();

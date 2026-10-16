@@ -207,7 +207,7 @@ void main() {
     await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
 
     final handle = SuperOverlay.dialog.show<String>(
-      builder: (_) => const Center(child: Text('Confirm changes')),
+      builder: (_, _) => const Center(child: Text('Confirm changes')),
       options: const OverlayDialogOptions(tag: 'confirm-dialog'),
     );
 
@@ -230,10 +230,10 @@ void main() {
     await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
 
     final first = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('First untagged dialog')),
+      builder: (_, _) => const Center(child: Text('First untagged dialog')),
     );
     final second = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('Second untagged dialog')),
+      builder: (_, _) => const Center(child: Text('Second untagged dialog')),
     );
     await tester.pump();
 
@@ -262,11 +262,11 @@ void main() {
     await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
 
     final first = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('First shared-tag dialog')),
+      builder: (_, _) => const Center(child: Text('First shared-tag dialog')),
       options: const OverlayDialogOptions(tag: 'shared-stack-dialog'),
     );
     final second = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('Second shared-tag dialog')),
+      builder: (_, _) => const Center(child: Text('Second shared-tag dialog')),
       options: const OverlayDialogOptions(tag: 'shared-stack-dialog'),
     );
     await tester.pump();
@@ -301,15 +301,15 @@ void main() {
     await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
 
     SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('First family dialog')),
+      builder: (_, _) => const Center(child: Text('First family dialog')),
       options: const OverlayDialogOptions(tag: 'family-a'),
     );
     SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('Second family dialog')),
+      builder: (_, _) => const Center(child: Text('Second family dialog')),
       options: const OverlayDialogOptions(tag: 'family-a'),
     );
     final other = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('Other family dialog')),
+      builder: (_, _) => const Center(child: Text('Other family dialog')),
       options: const OverlayDialogOptions(tag: 'family-b'),
     );
     await tester.pump();
@@ -348,7 +348,7 @@ void main() {
       ),
     );
     final dialog = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('Tagged dialog')),
+      builder: (_, _) => const Center(child: Text('Tagged dialog')),
       options: const OverlayDialogOptions(tag: 'target-dialog'),
     );
     await tester.pump();
@@ -373,7 +373,7 @@ void main() {
     await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
 
     final first = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('First dialog')),
+      builder: (_, _) => const Center(child: Text('First dialog')),
       options: const OverlayDialogOptions(tag: 'replace-dialog'),
     );
 
@@ -381,7 +381,7 @@ void main() {
     expect(find.text('First dialog'), findsOneWidget);
 
     final second = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('Second dialog')),
+      builder: (_, _) => const Center(child: Text('Second dialog')),
       options: const OverlayDialogOptions(
         tag: 'replace-dialog',
         strategy: OverlayStrategy.replaceExisting,
@@ -403,14 +403,14 @@ void main() {
       await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
 
       final first = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Stale first dialog')),
+        builder: (_, _) => const Center(child: Text('Stale first dialog')),
         options: const OverlayDialogOptions(tag: 'stale-replace-dialog'),
       );
       await tester.pump();
       expect(find.text('Stale first dialog'), findsOneWidget);
 
       final second = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Stale second dialog')),
+        builder: (_, _) => const Center(child: Text('Stale second dialog')),
         options: const OverlayDialogOptions(
           tag: 'stale-replace-dialog',
           strategy: OverlayStrategy.replaceExisting,
@@ -446,13 +446,13 @@ void main() {
       await tester.pumpWidget(_buildCommandOverlayApp(const SizedBox.shrink()));
 
       final first = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Original dialog')),
+        builder: (_, _) => const Center(child: Text('Original dialog')),
         options: const OverlayDialogOptions(tag: 'keep-dialog'),
       );
       await tester.pump();
 
       final second = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Center(child: Text('Ignored dialog')),
+        builder: (_, _) => const Center(child: Text('Ignored dialog')),
         options: const OverlayDialogOptions(
           tag: 'keep-dialog',
           strategy: OverlayStrategy.keepExisting,
@@ -486,14 +486,14 @@ void main() {
 
     var count = 0;
     SuperOverlay.dialog.show<void>(
-      builder: (_) => Center(child: Text('Kept dialog count $count')),
+      builder: (_, _) => Center(child: Text('Kept dialog count $count')),
       options: const OverlayDialogOptions(tag: 'refresh-kept-dialog'),
     );
     await tester.pump();
     expect(find.text('Kept dialog count 0'), findsOneWidget);
 
     final second = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Center(child: Text('Ignored kept dialog')),
+      builder: (_, _) => const Center(child: Text('Ignored kept dialog')),
       options: const OverlayDialogOptions(
         tag: 'refresh-kept-dialog',
         strategy: OverlayStrategy.keepExisting,
@@ -517,7 +517,7 @@ void main() {
 
     var count = 0;
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => Center(child: Text('Refresh count $count')),
+      builder: (_, _) => Center(child: Text('Refresh count $count')),
     );
 
     await tester.pump();
@@ -545,7 +545,7 @@ void main() {
                 onPressed: () {
                   SuperOverlay.popup.show<void>(
                     targetContext: context,
-                    builder: (_) => const Text('Popup action'),
+                    builder: (_, _) => const Text('Popup action'),
                   );
                 },
                 child: const Text('Open popup'),
@@ -581,11 +581,11 @@ void main() {
 
     final first = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('First untagged popup'),
+      builder: (_, _) => const Text('First untagged popup'),
     );
     final second = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Second untagged popup'),
+      builder: (_, _) => const Text('Second untagged popup'),
     );
     await tester.pump();
 
@@ -627,12 +627,12 @@ void main() {
 
     final first = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('First shared-tag popup'),
+      builder: (_, _) => const Text('First shared-tag popup'),
       options: const OverlayPopupOptions(tag: 'shared-stack-popup'),
     );
     final second = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Second shared-tag popup'),
+      builder: (_, _) => const Text('Second shared-tag popup'),
       options: const OverlayPopupOptions(tag: 'shared-stack-popup'),
     );
     await tester.pump();
@@ -684,7 +684,7 @@ void main() {
 
     final first = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('First popup'),
+      builder: (_, _) => const Text('First popup'),
       options: const OverlayPopupOptions(tag: 'replace-popup'),
     );
     await tester.pump();
@@ -692,7 +692,7 @@ void main() {
 
     final second = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Second popup'),
+      builder: (_, _) => const Text('Second popup'),
       options: const OverlayPopupOptions(
         tag: 'replace-popup',
         strategy: OverlayStrategy.replaceExisting,
@@ -727,14 +727,14 @@ void main() {
 
       final first = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
-        builder: (_) => const Text('Original popup'),
+        builder: (_, _) => const Text('Original popup'),
         options: const OverlayPopupOptions(tag: 'keep-popup'),
       );
       await tester.pump();
 
       final second = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
-        builder: (_) => const Text('Ignored popup'),
+        builder: (_, _) => const Text('Ignored popup'),
         options: const OverlayPopupOptions(
           tag: 'keep-popup',
           strategy: OverlayStrategy.keepExisting,
@@ -781,7 +781,7 @@ void main() {
     var count = 0;
     SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => Text('Kept popup count $count'),
+      builder: (_, _) => Text('Kept popup count $count'),
       options: const OverlayPopupOptions(tag: 'refresh-kept-popup'),
     );
     await tester.pump();
@@ -789,7 +789,7 @@ void main() {
 
     final second = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Ignored kept popup'),
+      builder: (_, _) => const Text('Ignored kept popup'),
       options: const OverlayPopupOptions(
         tag: 'refresh-kept-popup',
         strategy: OverlayStrategy.keepExisting,
@@ -827,7 +827,7 @@ void main() {
 
     SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Timed popup'),
+      builder: (_, _) => const Text('Timed popup'),
       options: const OverlayPopupOptions(
         displayDuration: Duration(milliseconds: 20),
       ),
@@ -862,7 +862,7 @@ void main() {
 
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Route independent popup'),
+      builder: (_, _) => const Text('Route independent popup'),
       options: const OverlayPopupOptions(bindToRoute: false),
     );
     await tester.pump();

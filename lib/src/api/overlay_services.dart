@@ -1,10 +1,13 @@
 part of '../super_overlay_core.dart';
 
-/// Shows and controls command-style loading overlays.
+/// Shows and controls the app's single loading surface.
 class OverlayLoadingService {
   const OverlayLoadingService();
 
-  /// Shows a loading overlay and returns a handle for closing it.
+  /// Shows loading. A newer call replaces the previous loading surface.
+  ///
+  /// Each handle owns only its own call; closing an older handle cannot close
+  /// its replacement. Showing or closing loading does not cancel business work.
   OverlayHandle<void> show({
     String message = '',
     WidgetBuilder? builder,
@@ -22,79 +25,95 @@ class OverlayLoadingService {
     );
     final hostBuilder = manager.loadingBuilderFor(generation);
     final controller = SuperOverlayController();
-    final command = SuperOverlay._loading(
-          message: message,
-          builder:
-              builder ??
-              (hostBuilder == null ? null : (_) => hostBuilder(message)),
-        )
-        .withMask(dismissible: options.dismissOnMaskTap)
-        .withLeastLoadingTime(options.minimumVisibleDuration)
-        .withAccessibility(
-          requestFocus: options.requestFocus,
-          semanticsLabel: options.semanticsLabel,
-          barrierSemanticsLabel: options.barrierSemanticsLabel,
-        )
-        .withController(controller)
-        .withBack(type: backType)
-        .withAwait(AwaitCompletion.dismiss);
-
     final identityTag = _commandTag('loading');
-    command.withTag(identityTag)._withBusinessTag(options.tag);
-
-    final displayDuration = options.displayDuration;
-    if (displayDuration != null) {
-      command.withDisplayTime(displayDuration);
-    }
-
-    final runtime = OverlayRuntimeResult<void>(
-      visible: controller.visible,
-      closed: command.fire<void>(),
-      identityTag: identityTag,
+    final config = overlayConfig.loading;
+    final closed = manager.showLoading<void>(
+      param: ShowLoadingParam(
+        builder:
+            builder ??
+            (_) =>
+                hostBuilder?.call(message) ??
+                config.builder?.call(message) ??
+                LoadingWidget(message: message),
+        alignment: config.alignment,
+        clickMaskDismiss: options.dismissOnMaskTap,
+        animationType: config.animationType,
+        nonAnimationTypes: config.nonAnimationTypes,
+        animationBuilder: null,
+        usePenetrate: config.usePenetrate,
+        useAnimation: config.useAnimation,
+        animationTime: config.animationTime,
+        maskColor: config.maskColor,
+        maskWidget: config.maskWidget,
+        onDismiss: null,
+        onMask: null,
+        awaitCompletion: AwaitCompletion.dismiss,
+        accessibilityMode: OverlayAccessibilityMode.modal,
+        requestFocus: options.requestFocus,
+        semanticsLabel: options.semanticsLabel,
+        barrierSemanticsLabel: options.barrierSemanticsLabel,
+        controller: controller,
+        displayTime: options.displayDuration,
+        leastLoadingTime: options.minimumVisibleDuration,
+        tag: identityTag,
+        businessTag: options.tag,
+        backType: backType,
+        onBack: null,
+      ),
     );
-    return _overlayHandle<void>(
+    return _loadingHandle(
       generation: generation,
-      visible: runtime.visible,
-      closed: runtime.closed,
-      status: DismissStatus.loading,
-      tag: runtime.identityTag,
-      refresh: controller.refresh,
-      close:
-          ([void result]) => manager.dismiss<void>(
-            status: DismissStatus.loading,
-            tag: identityTag,
-            generation: generation,
-          ),
-      isVisible:
-          () => manager.checkExist(
-            tag: identityTag,
-            generation: generation,
-            types: const {OverlayType.loading},
-          ),
+      controller: controller,
+      closed: closed,
+      identityTag: identityTag,
     );
   }
 
-  /// Closes the active loading overlay.
+  /// Runs [action] and always closes this call's loading afterward.
+  ///
+  /// Returns the action's result and propagates its errors. Work starts without
+  /// waiting for a rendered frame. Overlapping calls run independently; the
+  /// latest call owns the displayed loading. Dismissal does not cancel work.
+  Future<T> run<T>(
+    FutureOr<T> Function() action, {
+    String message = '',
+    WidgetBuilder? builder,
+    OverlayLoadingOptions options = const OverlayLoadingOptions(),
+  }) async {
+    final handle = show(message: message, builder: builder, options: options);
+    try {
+      final result = await action();
+      await handle.close();
+      return result;
+    } catch (_) {
+      try {
+        await handle.close();
+      } catch (_) {
+        // Preserve the action's error when cleanup also fails.
+      }
+      rethrow;
+    }
+  }
+
+  /// Closes the app's currently active loading surface.
   Future<void> close() {
     OverlayManager.instance.requireActiveGeneration();
     return SuperOverlay._dismiss(status: DismissStatus.loading);
   }
 }
 
-/// Shows command-style dialog overlays.
+/// Shows dialog overlays with typed results.
 class OverlayDialogService {
   const OverlayDialogService();
 
-  /// Shows a dialog overlay and returns a handle for its result.
+  /// Shows a dialog. [builder] receives the dialog's own handle.
   OverlayHandle<T> show<T>({
-    required WidgetBuilder builder,
+    required OverlayWidgetBuilder<T> builder,
     OverlayDialogOptions options = const OverlayDialogOptions(),
-  }) {
-    return _show<T>(builder: builder, options: options);
-  }
+  }) => _show<T>(builder: builder, options: options);
 
   OverlayHandle<T> _show<T>({
-    required WidgetBuilder builder,
+    required OverlayWidgetBuilder<T> builder,
     required OverlayDialogOptions options,
     OverlayRouteOwner? routeOwner,
     CapturedThemes? themes,
@@ -119,67 +138,73 @@ class OverlayDialogService {
       routeOwner: capturedOwner,
     );
     final controller = SuperOverlayController();
-    final command = SuperOverlay._custom(
-          builder: builder,
-          routeOwner: capturedOwner,
-          themes: themes,
-        )
-        .withAlignment(options.alignment)
-        .withMask(
-          color: options.barrierColor,
-          dismissible: options.dismissOnMaskTap,
-        )
-        .bindPage(options.bindToRoute)
-        .withPenetrate(!options.consumeEvents)
-        .withAccessibility(
-          requestFocus: options.requestFocus,
-          semanticsLabel: options.semanticsLabel,
-          barrierSemanticsLabel: options.barrierSemanticsLabel,
-        )
-        .withController(controller)
-        .withBack(type: backType)
-        .withAwait(AwaitCompletion.dismiss);
-
-    final bindToWidget = options.bindToWidget;
-    if (bindToWidget != null) {
-      command.bindWidget(bindToWidget);
-    }
-
-    final tag = options.tag;
-    final identityTag = _commandTag('dialog');
-    command.withTag(identityTag)._withBusinessTag(tag);
-
     final existing = _existingOverlayHandle<T>(
       generation: generation,
       status: DismissStatus.custom,
-      tag: tag,
+      tag: options.tag,
       strategy: options.strategy,
       type: OverlayType.custom,
-      refresh: controller.refresh,
     );
-    if (existing != null) {
-      return existing;
-    }
-
-    final displayDuration = options.displayDuration;
-    if (displayDuration != null) {
-      command.withDisplayTime(displayDuration);
-    }
-
+    if (existing != null) return existing;
+    final identityTag = _commandTag('dialog');
+    late final OverlayHandle<T> handle;
     final lifecycle = _CommandOverlayLifecycle<T>(
       generation: generation,
-      fire:
-          () => OverlayRuntimeResult<T>(
-            visible: controller.visible,
-            closed: command.fire<T>(),
-          ),
       status: DismissStatus.custom,
       tag: identityTag,
-      replaceTag: tag,
+      replaceTag: options.tag,
       strategy: options.strategy,
+      routeOwner: capturedOwner,
+      widgetOwner: options.bindToWidget,
+      fire: () {
+        final config = overlayConfig.custom;
+        return OverlayRuntimeResult<T>(
+          visible: controller.visible,
+          closed: manager.show<T>(
+            param: ShowCustomParam(
+              builder: (context) => builder(context, handle),
+              alignment: options.alignment,
+              clickMaskDismiss: options.dismissOnMaskTap,
+              animationType: config.animationType,
+              nonAnimationTypes: config.nonAnimationTypes,
+              animationBuilder: null,
+              usePenetrate: !options.consumeEvents,
+              useAnimation: config.useAnimation,
+              animationTime: config.animationTime,
+              maskColor: options.barrierColor ?? config.maskColor,
+              maskWidget: config.maskWidget,
+              onDismiss: null,
+              onMask: null,
+              awaitCompletion: AwaitCompletion.dismiss,
+              accessibilityMode:
+                  options.consumeEvents
+                      ? OverlayAccessibilityMode.modal
+                      : OverlayAccessibilityMode.popup,
+              requestFocus: options.requestFocus,
+              semanticsLabel: options.semanticsLabel,
+              barrierSemanticsLabel: options.barrierSemanticsLabel,
+              debounce: config.debounce,
+              debounceTime: config.debounceTime,
+              displayTime: options.displayDuration,
+              tag: identityTag,
+              businessTag: options.tag,
+              keepSingle: false,
+              permanent: false,
+              bindPage: options.bindToRoute,
+              bindWidget: options.bindToWidget,
+              ignoreArea: null,
+              maskTriggerType: config.maskTriggerType,
+              controller: controller,
+              backType: backType,
+              onBack: null,
+              routeOwner: capturedOwner,
+              themes: themes,
+            ),
+          ),
+        );
+      },
     );
-    lifecycle.start();
-    return _overlayHandle<T>(
+    handle = _overlayHandle<T>(
       generation: generation,
       visible: lifecycle.visible,
       closed: lifecycle.closed,
@@ -187,36 +212,36 @@ class OverlayDialogService {
       tag: identityTag,
       close: lifecycle.close,
       refresh: controller.refresh,
-      isVisible:
-          () => manager.isCommandIdentityVisible(
-            identityTag: identityTag,
-            generation: generation,
-            type: OverlayType.custom,
-          ),
+      isVisible: lifecycle.isVisible,
     );
+    lifecycle.start();
+    return handle;
   }
 }
 
-/// Shows command-style popup overlays.
+/// Shows anchored popup overlays with typed results.
 class OverlayPopupService {
   const OverlayPopupService();
 
-  /// Shows a popup overlay and returns a handle for its result.
+  /// Shows a popup. [builder] receives the popup's own handle.
+  ///
+  /// [targetContext] must remain mounted while a replacement waits. It is
+  /// checked before replacement cleanup and again before activation. If it
+  /// unmounts, the pending popup is cancelled: [OverlayHandle.visible] fails
+  /// with [StateError] and [OverlayHandle.closed] completes normally.
   OverlayHandle<T> show<T>({
     BuildContext? targetContext,
-    required WidgetBuilder builder,
+    required OverlayWidgetBuilder<T> builder,
     OverlayPopupOptions options = const OverlayPopupOptions(),
-  }) {
-    return _show<T>(
-      targetContext: targetContext,
-      builder: builder,
-      options: options,
-    );
-  }
+  }) => _show<T>(
+    targetContext: targetContext,
+    builder: builder,
+    options: options,
+  );
 
   OverlayHandle<T> _show<T>({
     BuildContext? targetContext,
-    required WidgetBuilder builder,
+    required OverlayWidgetBuilder<T> builder,
     required OverlayPopupOptions options,
     OverlayRouteOwner? routeOwner,
     CapturedThemes? themes,
@@ -241,90 +266,89 @@ class OverlayPopupService {
       routeOwner: capturedOwner,
     );
     final controller = SuperOverlayController();
-    final command = SuperOverlay._popup(
-          targetContext: targetContext,
-          builder: builder,
-          routeOwner: capturedOwner,
-          themes: themes,
-        )
-        .withAlignment(options.alignment)
-        .withMask(dismissible: options.dismissOnMaskTap)
-        .bindPage(options.bindToRoute)
-        .withAccessibility(requestFocus: options.requestFocus)
-        .withController(controller)
-        .withBack(type: backType)
-        .withAwait(AwaitCompletion.dismiss);
-
-    final targetRectBuilder = options.targetRectBuilder;
-    if (targetRectBuilder != null) {
-      command.withTargetRect(targetRectBuilder);
-    }
-    final targetPointBuilder = options.targetPointBuilder;
-    if (targetPointBuilder != null) {
-      command.withTargetPoint(targetPointBuilder);
-    }
-    final alignmentMode = options.alignmentMode;
-    if (alignmentMode != null) {
-      command.withAlignmentMode(_popupAlignmentModeFor(alignmentMode));
-    }
-    final replacementBuilder = options.replacementBuilder;
-    if (replacementBuilder != null) {
-      command.withReplacement(replacementBuilder);
-    }
-    final adjustmentBuilder = options.adjustmentBuilder;
-    if (adjustmentBuilder != null) {
-      command.withAdjustment(adjustmentBuilder);
-    }
-    final scaleOriginBuilder = options.scaleOriginBuilder;
-    if (scaleOriginBuilder != null) {
-      command.withScaleOrigin(scaleOriginBuilder);
-    }
-
-    final tag = options.tag;
-    final identityTag = _commandTag('popup');
-    command.withTag(identityTag)._withBusinessTag(tag);
-
     final existing = _existingOverlayHandle<T>(
       generation: generation,
       status: DismissStatus.attach,
-      tag: tag,
+      tag: options.tag,
       strategy: options.strategy,
       type: OverlayType.attach,
-      refresh: controller.refresh,
     );
-    if (existing != null) {
-      return existing;
-    }
-    final displayDuration = options.displayDuration;
-    if (displayDuration != null) {
-      command.withDisplayTime(displayDuration);
-    }
-    if (options.highlightTarget) {
-      command.withHighlight(
-        maskColor: options.highlightMaskColor,
-        padding: options.highlightPadding,
-        borderRadius: options.highlightBorderRadius,
-      );
-    }
-    final maskIgnoreArea = options.maskIgnoreArea;
-    if (maskIgnoreArea != null) {
-      command.withMaskIgnoreArea(maskIgnoreArea);
-    }
-
+    if (existing != null) return existing;
+    final identityTag = _commandTag('popup');
+    late final OverlayHandle<T> handle;
     final lifecycle = _CommandOverlayLifecycle<T>(
       generation: generation,
-      fire:
-          () => OverlayRuntimeResult<T>(
-            visible: controller.visible,
-            closed: command.fire<T>(),
-          ),
       status: DismissStatus.attach,
       tag: identityTag,
-      replaceTag: tag,
+      replaceTag: options.tag,
       strategy: options.strategy,
+      routeOwner: capturedOwner,
+      widgetOwner: targetContext,
+      fire: () {
+        final config = overlayConfig.attach;
+        return OverlayRuntimeResult<T>(
+          visible: controller.visible,
+          closed: manager.showAttach<T>(
+            param: ShowAttachParam(
+              builder: (context) => builder(context, handle),
+              alignment: options.alignment,
+              clickMaskDismiss: options.dismissOnMaskTap,
+              animationType: config.animationType,
+              nonAnimationTypes: config.nonAnimationTypes,
+              animationBuilder: null,
+              usePenetrate: config.usePenetrate,
+              useAnimation: config.useAnimation,
+              animationTime: config.animationTime,
+              maskColor:
+                  options.highlightTarget
+                      ? options.highlightMaskColor ?? config.maskColor
+                      : Colors.transparent,
+              maskWidget: config.maskWidget,
+              onDismiss: null,
+              onMask: null,
+              awaitCompletion: AwaitCompletion.dismiss,
+              accessibilityMode: OverlayAccessibilityMode.popup,
+              requestFocus: options.requestFocus,
+              debounce: config.debounce,
+              debounceTime: config.debounceTime,
+              displayTime: options.displayDuration,
+              tag: identityTag,
+              businessTag: options.tag,
+              keepSingle: false,
+              permanent: false,
+              bindPage: options.bindToRoute,
+              bindWidget: targetContext,
+              ignoreArea: null,
+              maskTriggerType: config.maskTriggerType,
+              controller: controller,
+              backType: backType,
+              onBack: null,
+              routeOwner: capturedOwner,
+              themes: themes,
+              targetContext: targetContext,
+              targetRectBuilder: options.targetRectBuilder,
+              targetPointBuilder: options.targetPointBuilder,
+              alignmentMode:
+                  options.alignmentMode == null
+                      ? config.alignmentMode
+                      : _popupAlignmentModeFor(options.alignmentMode!),
+              replacementBuilder: options.replacementBuilder,
+              adjustmentBuilder: options.adjustmentBuilder,
+              scaleOriginBuilder: options.scaleOriginBuilder,
+              maskIgnoreArea: options.maskIgnoreArea,
+              highlight:
+                  options.highlightTarget
+                      ? HighlightConfig(
+                        padding: options.highlightPadding,
+                        borderRadius: options.highlightBorderRadius,
+                      )
+                      : null,
+            ),
+          ),
+        );
+      },
     );
-    lifecycle.start();
-    return _overlayHandle<T>(
+    handle = _overlayHandle<T>(
       generation: generation,
       visible: lifecycle.visible,
       closed: lifecycle.closed,
@@ -332,17 +356,14 @@ class OverlayPopupService {
       tag: identityTag,
       close: lifecycle.close,
       refresh: controller.refresh,
-      isVisible:
-          () => manager.isCommandIdentityVisible(
-            identityTag: identityTag,
-            generation: generation,
-            type: OverlayType.attach,
-          ),
+      isVisible: lifecycle.isVisible,
     );
+    lifecycle.start();
+    return handle;
   }
 }
 
-/// Shows command-style notification overlays.
+/// Shows app-wide notifications.
 class OverlayNotifyService {
   const OverlayNotifyService();
 
@@ -351,49 +372,39 @@ class OverlayNotifyService {
     String message, {
     WidgetBuilder? builder,
     OverlayNotifyOptions options = const OverlayNotifyOptions(),
-  }) {
-    return _show(message, NotifyType.success, builder, options);
-  }
+  }) => _show(message, OverlayNotificationType.success, builder, options);
 
   /// Shows a failure notification.
   OverlayHandle<void> failure(
     String message, {
     WidgetBuilder? builder,
     OverlayNotifyOptions options = const OverlayNotifyOptions(),
-  }) {
-    return _show(message, NotifyType.failure, builder, options);
-  }
+  }) => _show(message, OverlayNotificationType.failure, builder, options);
 
   /// Shows a warning notification.
   OverlayHandle<void> warning(
     String message, {
     WidgetBuilder? builder,
     OverlayNotifyOptions options = const OverlayNotifyOptions(),
-  }) {
-    return _show(message, NotifyType.warning, builder, options);
-  }
+  }) => _show(message, OverlayNotificationType.warning, builder, options);
 
   /// Shows an error notification.
   OverlayHandle<void> error(
     String message, {
     WidgetBuilder? builder,
     OverlayNotifyOptions options = const OverlayNotifyOptions(),
-  }) {
-    return _show(message, NotifyType.error, builder, options);
-  }
+  }) => _show(message, OverlayNotificationType.error, builder, options);
 
   /// Shows an alert notification.
   OverlayHandle<void> alert(
     String message, {
     WidgetBuilder? builder,
     OverlayNotifyOptions options = const OverlayNotifyOptions(),
-  }) {
-    return _show(message, NotifyType.alert, builder, options);
-  }
+  }) => _show(message, OverlayNotificationType.alert, builder, options);
 
   OverlayHandle<void> _show(
     String message,
-    NotifyType type,
+    OverlayNotificationType type,
     WidgetBuilder? builder,
     OverlayNotifyOptions options,
   ) {
@@ -408,46 +419,60 @@ class OverlayNotifyService {
       operation: 'SuperOverlay notification',
     );
     final hostStyle = manager.notifyStyleFor(generation);
-    final styledWidget = hostStyle?.build(_notificationTypeFor(type), message);
     final controller = SuperOverlayController();
-    final command = SuperOverlay._notification(
-          message: message,
-          type: type,
-          builder:
-              builder ?? (styledWidget == null ? null : (_) => styledWidget),
-        )
-        .withAlignment(options.alignment)
-        .withController(controller)
-        .withBack(type: backType)
-        .withAwait(AwaitCompletion.dismiss);
-
-    final tag = options.tag;
-    final identityTag = _commandTag('notify');
-    command.withTag(identityTag)._withBusinessTag(tag);
-
     final existing = _existingOverlayHandle<void>(
       generation: generation,
       status: DismissStatus.notify,
-      tag: tag,
+      tag: options.tag,
       strategy: options.strategy,
       type: OverlayType.notify,
     );
-    if (existing != null) {
-      return existing;
-    }
-    command.withDisplayTime(options.displayDuration);
-
+    if (existing != null) return existing;
+    final identityTag = _commandTag('notify');
     final lifecycle = _CommandOverlayLifecycle<void>(
       generation: generation,
-      fire:
-          () => OverlayRuntimeResult<void>(
-            visible: controller.visible,
-            closed: command.fire<void>(),
-          ),
       status: DismissStatus.notify,
       tag: identityTag,
-      replaceTag: tag,
+      replaceTag: options.tag,
       strategy: options.strategy,
+      fire: () {
+        final config = overlayConfig.notify;
+        return OverlayRuntimeResult<void>(
+          visible: controller.visible,
+          closed: manager.showNotify<void>(
+            param: ShowNotifyParam(
+              builder:
+                  builder ??
+                  (_) =>
+                      hostStyle?.build(type, message) ??
+                      overlayConfig.notify.style?.build(type, message) ??
+                      _notificationWidget(type, message),
+              alignment: options.alignment,
+              clickMaskDismiss: config.clickMaskDismiss,
+              animationType: config.animationType,
+              nonAnimationTypes: config.nonAnimationTypes,
+              animationBuilder: null,
+              usePenetrate: config.usePenetrate,
+              useAnimation: config.useAnimation,
+              animationTime: config.animationTime,
+              maskColor: config.maskColor,
+              maskWidget: config.maskWidget,
+              onDismiss: null,
+              onMask: null,
+              awaitCompletion: AwaitCompletion.dismiss,
+              controller: controller,
+              debounce: config.debounce,
+              debounceTime: config.debounceTime,
+              displayTime: options.displayDuration,
+              tag: identityTag,
+              businessTag: options.tag,
+              keepSingle: false,
+              backType: backType,
+              onBack: null,
+            ),
+          ),
+        );
+      },
     );
     lifecycle.start();
     return _overlayHandle<void>(
@@ -458,15 +483,19 @@ class OverlayNotifyService {
       tag: identityTag,
       close: lifecycle.close,
       refresh: controller.refresh,
-      isVisible:
-          () => manager.isCommandIdentityVisible(
-            identityTag: identityTag,
-            generation: generation,
-            type: OverlayType.notify,
-          ),
+      isVisible: lifecycle.isVisible,
     );
   }
 }
+
+Widget _notificationWidget(OverlayNotificationType type, String message) =>
+    switch (type) {
+      OverlayNotificationType.success => NotifySuccess(message: message),
+      OverlayNotificationType.failure => NotifyFailure(message: message),
+      OverlayNotificationType.warning => NotifyWarning(message: message),
+      OverlayNotificationType.error => NotifyError(message: message),
+      OverlayNotificationType.alert => NotifyAlert(message: message),
+    };
 
 class _OverlayToastService {
   const _OverlayToastService();
@@ -480,56 +509,72 @@ class _OverlayToastService {
     final generation = manager.requireActiveGeneration();
     final hostBuilder = manager.toastBuilderFor(generation);
     final controller = SuperOverlayController();
-    final command = SuperOverlay._toastCommand(
-          message,
-          builder:
-              builder ??
-              (hostBuilder == null ? null : (_) => hostBuilder(message)),
-        )
-        .withAlignment(options.alignment)
-        .withDisplayTime(options.displayDuration)
-        .withDisplayType(_toastDisplayTypeFor(options.displayPolicy))
-        .withConsumeEvent(options.consumeEvents)
-        .withController(controller)
-        .withAwait(AwaitCompletion.dismiss);
-
-    final tag = options.tag;
     final identityTag = _commandTag('toast');
-    command.withTag(identityTag)._withBusinessTag(tag);
-
-    switch (options.strategy) {
-      case OverlayStrategy.stack:
-        break;
-      case OverlayStrategy.replaceExisting:
-        break;
-      case OverlayStrategy.keepExisting:
-        command.withKeepSingle();
-    }
-
     final lifecycle = _CommandOverlayLifecycle<void>(
       generation: generation,
-      fire: () => command._fireCommand<void>(generation),
       status: DismissStatus.toast,
       tag: identityTag,
-      replaceTag: tag,
+      replaceTag: options.tag,
       strategy: options.strategy,
+      fire: () {
+        final config = overlayConfig.toast;
+        final result = ToastTool.instance.showCommand<void>(
+          ShowToastParam(
+            builder:
+                builder ??
+                (_) =>
+                    hostBuilder?.call(message) ??
+                    config.builder?.call(message) ??
+                    ToastWidget(message: message),
+            alignment: options.alignment,
+            clickMaskDismiss: config.clickMaskDismiss,
+            animationType: config.animationType,
+            nonAnimationTypes: config.nonAnimationTypes,
+            animationBuilder: null,
+            usePenetrate: config.usePenetrate,
+            useAnimation: config.useAnimation,
+            animationTime: config.animationTime,
+            maskColor: config.maskColor,
+            maskWidget: config.maskWidget,
+            onDismiss: null,
+            onMask: null,
+            awaitCompletion: AwaitCompletion.dismiss,
+            controller: controller,
+            displayTime: options.displayDuration,
+            debounceTime: config.debounceTime,
+            debounce: config.debounce,
+            displayType: _toastDisplayTypeFor(options.displayPolicy),
+            consumeEvent: options.consumeEvents,
+            tag: identityTag,
+            businessTag: options.tag,
+            keepSingle: options.strategy == OverlayStrategy.keepExisting,
+            replaceExisting: false,
+          ),
+          generation: generation,
+        );
+        if (result.identityTag == null) controller.dismiss();
+        return OverlayRuntimeResult<void>.lazyClosed(
+          visible:
+              result.identityTag == null || result.identityTag == identityTag
+                  ? controller.visible
+                  : result.visible,
+          closed: result.readClosed,
+          identityTag: result.identityTag,
+          refresh: result.refresh ?? controller.refresh,
+        );
+      },
     );
     lifecycle.start();
     return _overlayHandle<void>(
       generation: generation,
       visible: lifecycle.visible,
-      closed: lifecycle.closed,
+      readClosed: lifecycle.readClosed,
       status: DismissStatus.toast,
       tag: identityTag,
       close: lifecycle.close,
       refresh: lifecycle.refresh,
-      isVisible:
-          () =>
-              !lifecycle.isQueued &&
-              ToastTool.instance.isActiveIdentityTag(
-                lifecycle.activeTag,
-                generation: generation,
-              ),
+      // Keep the handle out of the content factory's closure context.
+      isVisible: lifecycle.isVisible,
     );
   }
 }

@@ -7,6 +7,9 @@ build/
 coverage/
 doc/plans/
 docs/plans/
+docs/local/
+docs/design/
+tool/compatibility/
 *.iml
 .metadata
 .idea/

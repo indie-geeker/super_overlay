@@ -21,7 +21,8 @@ void registerWidgetBindingTests() {
                       return ElevatedButton(
                         onPressed: () {
                           handle = SuperOverlay.dialog.show<void>(
-                            builder: (_) => const Text('Widget Bound Dialog'),
+                            builder:
+                                (_, _) => const Text('Widget Bound Dialog'),
                             options: OverlayDialogOptions(
                               tag: 'widget-bound',
                               bindToWidget: targetContext,

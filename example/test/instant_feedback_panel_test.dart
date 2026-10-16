@@ -6,6 +6,37 @@ import 'package:super_overlay/super_overlay.dart';
 import '../lib/main.dart';
 
 void main() {
+  testWidgets(
+    'all notification options remain usable at 320 px and double text',
+    (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(320, 1000);
+      tester.platformDispatcher.textScaleFactorTestValue = 2;
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+      await tester.pumpWidget(const MyApp());
+      final selector = find.byKey(
+        const ValueKey('feedback-notification-selector'),
+      );
+      for (final label in ['Success', 'Failure', 'Warning', 'Error', 'Alert']) {
+        await tester.ensureVisible(selector);
+        await tester.tap(selector);
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text(label).last);
+        await tester.tap(find.text(label).last);
+        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.text('Show Notification'));
+        await tester.tap(find.text('Show Notification'));
+        await tester.pump();
+        expect(find.textContaining('$label notification:'), findsOneWidget);
+        expect(tester.takeException(), isNull);
+        await _closeFeedback(tester);
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
+    },
+  );
   testWidgets('instant feedback separates policy state from its run action', (
     tester,
   ) async {

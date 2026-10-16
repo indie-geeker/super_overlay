@@ -17,13 +17,13 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp());
 
     final first = SuperOverlay.dialog.show<String>(
-      builder: (_) => const Text('Typed tag dialog'),
+      builder: (_, _) => const Text('Typed tag dialog'),
       options: const OverlayDialogOptions(tag: 'typed-tag'),
     );
 
     expect(
       () => SuperOverlay.dialog.show<int>(
-        builder: (_) => const Text('Wrong typed dialog'),
+        builder: (_, _) => const Text('Wrong typed dialog'),
         options: const OverlayDialogOptions(
           tag: 'typed-tag',
           strategy: OverlayStrategy.keepExisting,

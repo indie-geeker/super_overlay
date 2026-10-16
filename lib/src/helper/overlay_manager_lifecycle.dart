@@ -7,87 +7,29 @@ extension _OverlayManagerLifecycle on OverlayManager {
     if (!ownsGeneration(generation)) {
       return false;
     }
-    final initialHost = _hosts[generation];
-    if (initialHost == null || initialHost.resourcesDisposed) {
-      return false;
-    }
-    final generationLoading = initialHost.loadingOverlay;
-    final loadingBackType = generationLoading.backType;
-    final loadingOnBack = generationLoading.onBack;
-    if (generationLoading.isVisible) {
+    for (final target in _backTargets(generation)) {
       final handled = await _handleBackConfig(
         generation: generation,
-        backType: loadingBackType,
-        onBack: loadingOnBack,
-        close:
-            () => dismiss<void>(
-              status: DismissStatus.loading,
-              closeType: OverlayCloseType.back,
-              generation: generation,
-            ),
+        backType: target.backType,
+        onBack: target.onBack,
+        close: target.close,
       );
-      if (!ownsGeneration(generation)) {
-        return false;
-      }
-      if (handled != null) {
-        return handled;
-      }
+      if (!ownsGeneration(generation)) return false;
+      if (handled != null) return handled;
     }
-
-    final notifyRecords = _notifyQueue
-        .where((record) => record.generation == generation)
-        .toList(growable: false);
-    for (var index = notifyRecords.length - 1; index >= 0; index--) {
-      final record = notifyRecords[index];
-      final handled = await _handleBackConfig(
-        generation: generation,
-        backType: record.backType,
-        onBack: record.onBack,
-        close:
-            () => dismiss<void>(
-              status: DismissStatus.notify,
-              tag: record.tag,
-              closeType: OverlayCloseType.back,
-              generation: generation,
-            ),
-      );
-      if (!ownsGeneration(generation)) {
-        return false;
-      }
-      if (handled != null) {
-        return handled;
-      }
-    }
-
-    final record = _lastBackRecord(generation: generation);
-    if (record == null) {
-      return false;
-    }
-
-    final handled = await _handleBackConfig(
-      generation: generation,
-      backType: record.backType,
-      onBack: record.onBack,
-      close:
-          () => dismiss<void>(
-            status:
-                record.type == OverlayType.attach
-                    ? DismissStatus.attach
-                    : DismissStatus.custom,
-            tag: record.tag,
-            closeType: OverlayCloseType.back,
-            generation: generation,
-          ),
-    );
-    if (!ownsGeneration(generation)) {
-      return false;
-    }
-    return handled ?? false;
+    return false;
   }
 
   void _handleWidgetBindingFrame() {
     final removeList = <_OverlayRecord>[];
     for (final record in _dialogQueue.toList(growable: false)) {
+      final context = record.bindWidget;
+      // Unmount is terminal even while the owner route is suspended. Geometry
+      // remains deferred until the route is active again.
+      if (context != null && !_isContextMounted(context)) {
+        removeList.add(record);
+        continue;
+      }
       final owner = record.routeOwner;
       if (record.bindPage && owner != null) {
         final scopeTracked = NavigatorScopeRegistry.instance.isOwnerTracked(
@@ -126,13 +68,7 @@ extension _OverlayManagerLifecycle on OverlayManager {
         }
       }
 
-      final context = record.bindWidget;
       if (context == null) {
-        continue;
-      }
-
-      if (!_isContextMounted(context)) {
-        removeList.add(record);
         continue;
       }
 
@@ -141,7 +77,7 @@ extension _OverlayManagerLifecycle on OverlayManager {
         continue;
       }
 
-      final renderBox = _safeRenderBox(context);
+      final renderBox = OverlayAnchorGeometry.renderBox(context);
       if (renderBox == null) {
         removeList.add(record);
       } else if (record.type == OverlayType.attach) {
@@ -153,11 +89,12 @@ extension _OverlayManagerLifecycle on OverlayManager {
         record.overlay.appear();
         final previousRect = record.lastRenderedAnchorRect;
         if (previousRect == null ||
-            _rectDelta(previousRect, anchorRect) > _anchorMovementTolerance) {
+            OverlayAnchorGeometry.delta(previousRect, anchorRect) >
+                _anchorMovementTolerance) {
           record.lastRenderedAnchorRect = anchorRect;
           record.overlay.mainOverlay.updateAttachTargetRect(anchorRect);
         }
-      } else if (_hasInvalidGeometry(renderBox)) {
+      } else if (OverlayAnchorGeometry.hasInvalidGeometry(renderBox)) {
         record.overlay.hide();
       } else {
         record.overlay.appear();
@@ -166,13 +103,10 @@ extension _OverlayManagerLifecycle on OverlayManager {
 
     for (final record in removeList.reversed) {
       unawaited(
-        _closeSingle<void>(
-          tag: record.tag,
-          result: null,
+        _dismissOwnedDialogRecord(
+          record,
           force: true,
-          type: record.type,
           closeType: OverlayCloseType.normal,
-          generation: record.generation,
         ),
       );
     }
@@ -185,47 +119,7 @@ extension _OverlayManagerLifecycle on OverlayManager {
       return null;
     }
 
-    try {
-      final overlayRenderObject =
-          overlayOf(overlayContext).context.findRenderObject();
-      if (overlayRenderObject is! RenderBox ||
-          !overlayRenderObject.attached ||
-          !overlayRenderObject.hasSize) {
-        return null;
-      }
-      final rect = MatrixUtils.transformRect(
-        targetRenderBox.getTransformTo(overlayRenderObject),
-        Offset.zero & targetRenderBox.size,
-      );
-      final viewport = Offset.zero & overlayRenderObject.size;
-      return _isValidRect(rect) && rect.overlaps(viewport) ? rect : null;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  double _rectDelta(Rect previous, Rect current) {
-    var delta = 0.0;
-    for (final value in <double>[
-      (previous.left - current.left).abs(),
-      (previous.top - current.top).abs(),
-      (previous.right - current.right).abs(),
-      (previous.bottom - current.bottom).abs(),
-    ]) {
-      if (value > delta) {
-        delta = value;
-      }
-    }
-    return delta;
-  }
-
-  bool _isValidRect(Rect rect) {
-    return rect.left.isFinite &&
-        rect.top.isFinite &&
-        rect.right.isFinite &&
-        rect.bottom.isFinite &&
-        rect.width > 0 &&
-        rect.height > 0;
+    return OverlayAnchorGeometry.inOverlay(targetRenderBox, overlayContext);
   }
 
   Future<bool?> _handleBackConfig({
@@ -261,33 +155,5 @@ extension _OverlayManagerLifecycle on OverlayManager {
       return context.mounted;
     }
     return true;
-  }
-
-  RenderBox? _safeRenderBox(BuildContext context) {
-    try {
-      final renderObject = context.findRenderObject();
-      if (renderObject is RenderBox &&
-          renderObject.attached &&
-          renderObject.hasSize) {
-        return renderObject;
-      }
-    } catch (_) {}
-    return null;
-  }
-
-  bool _hasInvalidGeometry(RenderBox renderBox) {
-    try {
-      final offset = renderBox.localToGlobal(Offset.zero);
-      final size = renderBox.size;
-      return size.isEmpty ||
-          offset.dx < 0 ||
-          offset.dy < 0 ||
-          offset.dx.isNaN ||
-          offset.dy.isNaN ||
-          offset.dx.isInfinite ||
-          offset.dy.isInfinite;
-    } catch (_) {
-      return true;
-    }
   }
 }

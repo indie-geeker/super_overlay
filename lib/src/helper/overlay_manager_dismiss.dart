@@ -146,7 +146,6 @@ extension _OverlayManagerDismiss on OverlayManager {
     required OverlayCloseType closeType,
     required int generation,
     bool businessTagOnly = false,
-    bool includeInFlight = false,
   }) async {
     final records = _dialogQueue
         .where((record) => record.generation == generation)
@@ -160,20 +159,17 @@ extension _OverlayManagerDismiss on OverlayManager {
         )
         .where((record) => force || !record.permanent)
         .toList(growable: false);
-    final inFlightRecords =
-        includeInFlight
-            ? _inFlightDialogRecords
-                .where((record) => record.generation == generation)
-                .where((record) => type == null || record.type == type)
-                .where(
-                  (record) =>
-                      tag == null ||
-                      (businessTagOnly
-                          ? record.matchesBusinessTag(tag)
-                          : record.matchesTag(tag)),
-                )
-                .toList(growable: false)
-            : const <_OverlayRecord>[];
+    final inFlightRecords = _inFlightDialogRecords
+        .where((record) => record.generation == generation)
+        .where((record) => type == null || record.type == type)
+        .where(
+          (record) =>
+              tag == null ||
+              (businessTagOnly
+                  ? record.matchesBusinessTag(tag)
+                  : record.matchesTag(tag)),
+        )
+        .toList(growable: false);
 
     for (final record in records.reversed) {
       if ((record.permanent && !force) ||
@@ -235,47 +231,24 @@ extension _OverlayManagerDismiss on OverlayManager {
       tag: record.businessTag ?? record.tag,
       result: result,
     );
-    final dismissal = _RecordDismissalOperation();
+    final dismissal = OverlayDismissalOperation();
     record.dismissal = dismissal;
     record.presentationState = _OverlayPresentationState.closing;
     _dialogQueue.remove(record);
     _inFlightDialogRecords.add(record);
     _syncBackDispositionForGeneration(record.generation);
     record.displayTimer?.cancel();
-    unawaited(
-      _runDialogDismissal<T>(
-        record,
-        dismissal,
-        result: result,
-        closeType: closeType,
-      ),
+    dismissal.start(
+      dismiss:
+          () => record.overlay.dismiss<T>(result: result, closeType: closeType),
+      cleanup: () => _finalizeDialogDismissal(record, dismissal),
     );
     return dismissal.future;
   }
 
-  Future<void> _runDialogDismissal<T>(
-    _OverlayRecord record,
-    _RecordDismissalOperation dismissal, {
-    required T? result,
-    required OverlayCloseType closeType,
-  }) async {
-    try {
-      await record.overlay.dismiss<T>(result: result, closeType: closeType);
-      _finalizeDialogDismissal(record, dismissal);
-      dismissal.complete();
-    } catch (error, stackTrace) {
-      try {
-        _finalizeDialogDismissal(record, dismissal);
-      } catch (_) {
-        // Preserve the first dismissal failure for every joined caller.
-      }
-      dismissal.completeError(error, stackTrace);
-    }
-  }
-
   void _finalizeDialogDismissal(
     _OverlayRecord record,
-    _RecordDismissalOperation dismissal,
+    OverlayDismissalOperation dismissal,
   ) {
     if (!dismissal.beginCleanup()) {
       return;
@@ -293,14 +266,8 @@ extension _OverlayManagerDismiss on OverlayManager {
       return;
     }
     record.displayTimer = Timer(displayTime, () {
-      dismiss<void>(
-        status:
-            record.type == OverlayType.attach
-                ? DismissStatus.attach
-                : DismissStatus.custom,
-        tag: record.tag,
-        generation: record.generation,
-      );
+      record.displayTimer = null;
+      unawaited(_dismissOwnedDialogRecord(record));
     });
   }
 
@@ -311,11 +278,8 @@ extension _OverlayManagerDismiss on OverlayManager {
       return;
     }
     record.displayTimer = Timer(displayTime, () {
-      dismiss<void>(
-        status: DismissStatus.notify,
-        tag: record.tag,
-        generation: record.generation,
-      );
+      record.displayTimer = null;
+      unawaited(_dismissOwnedNotifyRecord(record));
     });
   }
 
@@ -350,7 +314,6 @@ extension _OverlayManagerDismiss on OverlayManager {
     required OverlayCloseType closeType,
     required int generation,
     bool businessTagOnly = false,
-    bool includeInFlight = false,
   }) async {
     final records = _notifyQueue
         .where((record) => record.generation == generation)
@@ -362,19 +325,16 @@ extension _OverlayManagerDismiss on OverlayManager {
                   : record.matchesTag(tag)),
         )
         .toList(growable: false);
-    final inFlightRecords =
-        includeInFlight
-            ? _inFlightNotifyRecords
-                .where((record) => record.generation == generation)
-                .where(
-                  (record) =>
-                      tag == null ||
-                      (businessTagOnly
-                          ? record.matchesBusinessTag(tag)
-                          : record.matchesTag(tag)),
-                )
-                .toList(growable: false)
-            : const <_NotifyRecord>[];
+    final inFlightRecords = _inFlightNotifyRecords
+        .where((record) => record.generation == generation)
+        .where(
+          (record) =>
+              tag == null ||
+              (businessTagOnly
+                  ? record.matchesBusinessTag(tag)
+                  : record.matchesTag(tag)),
+        )
+        .toList(growable: false);
 
     for (final record in records.reversed) {
       if (!_notifyQueue.contains(record) && record.dismissal == null) {
@@ -400,46 +360,23 @@ extension _OverlayManagerDismiss on OverlayManager {
       return existingDismissal.future;
     }
 
-    final dismissal = _RecordDismissalOperation();
+    final dismissal = OverlayDismissalOperation();
     record.dismissal = dismissal;
     _notifyQueue.remove(record);
     _inFlightNotifyRecords.add(record);
     _syncBackDispositionForGeneration(record.generation);
     record.displayTimer?.cancel();
-    unawaited(
-      _runNotifyDismissal<T>(
-        record,
-        dismissal,
-        result: result,
-        closeType: closeType,
-      ),
+    dismissal.start(
+      dismiss:
+          () => record.overlay.dismiss<T>(result: result, closeType: closeType),
+      cleanup: () => _finalizeNotifyDismissal(record, dismissal),
     );
     return dismissal.future;
   }
 
-  Future<void> _runNotifyDismissal<T>(
-    _NotifyRecord record,
-    _RecordDismissalOperation dismissal, {
-    required T? result,
-    required OverlayCloseType closeType,
-  }) async {
-    try {
-      await record.overlay.dismiss<T>(result: result, closeType: closeType);
-      _finalizeNotifyDismissal(record, dismissal);
-      dismissal.complete();
-    } catch (error, stackTrace) {
-      try {
-        _finalizeNotifyDismissal(record, dismissal);
-      } catch (_) {
-        // Preserve the first dismissal failure for every joined caller.
-      }
-      dismissal.completeError(error, stackTrace);
-    }
-  }
-
   void _finalizeNotifyDismissal(
     _NotifyRecord record,
-    _RecordDismissalOperation dismissal,
+    OverlayDismissalOperation dismissal,
   ) {
     if (!dismissal.beginCleanup()) {
       return;

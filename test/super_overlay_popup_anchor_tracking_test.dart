@@ -73,7 +73,7 @@ void main() {
         final handle = SuperOverlay.popup.show<void>(
           targetContext: targetContext,
           builder:
-              (_) => SizedBox(
+              (_, _) => SizedBox(
                 key: popupKey,
                 width: 120,
                 height: 32,
@@ -172,7 +172,7 @@ void main() {
         final handle = SuperOverlay.popup.show<void>(
           targetContext: targetContext,
           builder:
-              (_) => SizedBox(
+              (_, _) => SizedBox(
                 key: popupKey,
                 width: 120,
                 height: 32,
@@ -247,7 +247,7 @@ void main() {
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             key: popupKey,
             width: 120,
             height: 32,
@@ -320,7 +320,7 @@ void main() {
 
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Moving Highlight Popup'),
+      builder: (_, _) => const Text('Moving Highlight Popup'),
       options: const OverlayPopupOptions(
         tag: 'moving-highlight-popup',
         highlightTarget: true,
@@ -397,7 +397,7 @@ void main() {
 
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Fixed Ignore Popup'),
+      builder: (_, _) => const Text('Fixed Ignore Popup'),
       options: const OverlayPopupOptions(
         tag: 'fixed-ignore-popup',
         maskIgnoreArea: ignoreArea,
@@ -453,7 +453,7 @@ void main() {
 
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) {
+      builder: (_, _) {
         popupBuilds++;
         return const Text('Tolerance Popup');
       },
@@ -502,7 +502,7 @@ void main() {
 
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Disposable Popup'),
+      builder: (_, _) => const Text('Disposable Popup'),
       options: const OverlayPopupOptions(tag: 'disposable-popup'),
     );
     await tester.pumpAndSettle();
@@ -546,7 +546,7 @@ void main() {
 
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Invalid Geometry Popup'),
+      builder: (_, _) => const Text('Invalid Geometry Popup'),
       options: const OverlayPopupOptions(tag: 'invalid-geometry-popup'),
     );
     await tester.pumpAndSettle();
@@ -615,7 +615,7 @@ void main() {
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             key: popupKey,
             width: 120,
             height: 32,
@@ -701,7 +701,7 @@ void main() {
 
     final firstHandle = SuperOverlay.popup.show<void>(
       targetContext: firstContext,
-      builder: (_) {
+      builder: (_, _) {
         firstBuilds++;
         return const Text('First Tracked Popup');
       },
@@ -709,7 +709,7 @@ void main() {
     );
     final secondHandle = SuperOverlay.popup.show<void>(
       targetContext: secondContext,
-      builder: (_) {
+      builder: (_, _) {
         secondBuilds++;
         return const Text('Second Tracked Popup');
       },

@@ -25,7 +25,8 @@ void registerRouteOverlayTests() {
                                 onPressed: () {
                                   routeHandle = SuperOverlay.dialog.show<void>(
                                     builder:
-                                        (_) => const Text('Route Bound Dialog'),
+                                        (_, _) =>
+                                            const Text('Route Bound Dialog'),
                                     options: const OverlayDialogOptions(
                                       tag: 'route-bound',
                                       bindToRoute: true,
@@ -88,7 +89,7 @@ void registerRouteOverlayTests() {
                   ElevatedButton(
                     onPressed: () {
                       homeHandle = SuperOverlay.dialog.show<void>(
-                        builder: (_) => const Text('Home Bound Dialog'),
+                        builder: (_, _) => const Text('Home Bound Dialog'),
                         options: const OverlayDialogOptions(
                           tag: 'home-bound',
                           bindToRoute: true,
@@ -166,7 +167,7 @@ void registerRouteOverlayTests() {
                             onPressed: () {
                               routeHandle = SuperOverlay.dialog.show<void>(
                                 builder:
-                                    (_) =>
+                                    (_, _) =>
                                         const Text('Replacement Bound Dialog'),
                                 options: const OverlayDialogOptions(
                                   tag: 'replacement-bound',
@@ -238,7 +239,8 @@ void registerRouteOverlayTests() {
                             onPressed: () {
                               routeHandle = SuperOverlay.dialog.show<void>(
                                 builder:
-                                    (_) => const Text('Removed Bound Dialog'),
+                                    (_, _) =>
+                                        const Text('Removed Bound Dialog'),
                                 options: const OverlayDialogOptions(
                                   tag: 'removed-bound',
                                   bindToRoute: true,

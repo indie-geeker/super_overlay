@@ -53,7 +53,7 @@ void main() {
     expect(handle.close(), completes);
     handle.refresh();
 
-    expect(OverlayCloseTarget.topMost, isA<OverlayCloseTarget>());
+    expect(OverlayCloseTarget.highestPriority, isA<OverlayCloseTarget>());
     expect(OverlaySurface.dialog, isA<OverlaySurface>());
     expect(SuperOverlay.close, isA<Function>());
     expect(SuperOverlay.exists, isA<Function>());
@@ -78,10 +78,10 @@ void main() {
 
 void compileScopedCommands(ScopedSuperOverlay scoped) {
   final OverlayHandle<bool> dialog = scoped.dialog.show<bool>(
-    builder: (_) => const SizedBox.shrink(),
+    builder: (_, _) => const SizedBox.shrink(),
   );
   final OverlayHandle<void> popup = scoped.popup.show<void>(
-    builder: (_) => const SizedBox.shrink(),
+    builder: (_, _) => const SizedBox.shrink(),
   );
   dialog.refresh();
   popup.refresh();

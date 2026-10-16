@@ -14,13 +14,7 @@ class RootOverlayApp extends StatefulWidget {
 }
 
 class _RootOverlayAppState extends State<RootOverlayApp> {
-  late final SuperOverlayIntegration integration;
-
-  @override
-  void initState() {
-    super.initState();
-    integration = SuperOverlay.integration();
-  }
+  late final integration = SuperOverlay.integration();
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +32,38 @@ class _RootOverlayAppState extends State<RootOverlayApp> {
   }
 }
 // snippet:root-integration:end
+
+// snippet:quick-commands:start
+Future<bool?> confirmAndSync(
+  BuildContext context,
+  Future<void> Function() syncProfile,
+) async {
+  final confirmed =
+      await SuperOverlay.of(context).dialog
+          .show<bool>(
+            builder:
+                (_, dialog) => AlertDialog(
+                  title: const Text('Sync profile?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => dialog.close(false),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () => dialog.close(true),
+                      child: const Text('Confirm'),
+                    ),
+                  ],
+                ),
+          )
+          .closed;
+  if (confirmed == true) {
+    await SuperOverlay.loading.run(syncProfile, message: 'Syncing profile...');
+    SuperOverlay.toast('Saved');
+  }
+  return confirmed;
+}
+// snippet:quick-commands:end
 
 // snippet:nested-navigator:start
 class NestedCheckoutFlow extends StatefulWidget {
@@ -150,13 +176,106 @@ class StatefulShellRouterOwner {
 }
 // snippet:stateful-shell-branches:end
 
+// snippet:explicit-local-values:start
+OverlayHandle<void> showLocalizedConfirmation(
+  BuildContext owner,
+  String confirmationText,
+) {
+  final locale = Localizations.localeOf(owner);
+  return SuperOverlay.of(owner).dialog.show<void>(
+    builder:
+        (overlayContext, _) => Localizations.override(
+          context: overlayContext,
+          locale: locale,
+          child: AlertDialog(content: Text(confirmationText)),
+        ),
+  );
+}
+// snippet:explicit-local-values:end
+
 void main() {
   const snippetIds = [
     'root-integration',
+    'quick-commands',
     'nested-navigator',
     'shell-route',
     'stateful-shell-branches',
+    'explicit-local-values',
   ];
+
+  testWidgets('quick-start confirmation runs and cleans up the task', (
+    tester,
+  ) async {
+    final integration = SuperOverlay.integration();
+    late BuildContext owner;
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: [integration.observer],
+        home: Builder(
+          builder: (context) {
+            owner = context;
+            return const Scaffold();
+          },
+        ),
+      ),
+    );
+    var calls = 0;
+    final result = confirmAndSync(owner, () async {
+      calls++;
+    });
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Confirm'));
+    await tester.pumpAndSettle();
+    expect(await result, isTrue);
+    expect(calls, 1);
+    expect(find.text('Saved'), findsOneWidget);
+    expect(
+      SuperOverlay.exists(surfaces: const {OverlaySurface.loading}),
+      isFalse,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+  });
+
+  testWidgets('explicit values and local locale reach root overlay content', (
+    tester,
+  ) async {
+    final integration = SuperOverlay.integration();
+    late BuildContext owner;
+    await tester.pumpWidget(
+      MaterialApp(
+        builder: integration.builder,
+        navigatorObservers: [integration.observer],
+        home: Builder(
+          builder:
+              (context) => Localizations.override(
+                context: context,
+                locale: const Locale('en', 'GB'),
+                child: Builder(
+                  builder: (context) {
+                    owner = context;
+                    return const Scaffold();
+                  },
+                ),
+              ),
+        ),
+      ),
+    );
+    final handle = showLocalizedConfirmation(owner, 'Captured value');
+    await tester.pumpAndSettle();
+    expect(
+      Localizations.localeOf(tester.element(find.text('Captured value'))),
+      const Locale('en', 'GB'),
+    );
+    final closing = handle.close();
+    await tester.pumpAndSettle();
+    await closing;
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    integration.dispose();
+  });
 
   test('README exposes reciprocal English and Simplified Chinese editions', () {
     final englishFile = File('README.md');

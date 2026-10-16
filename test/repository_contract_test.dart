@@ -25,17 +25,13 @@ void main() {
         ).firstMatch(pubspec)!.group(1)!;
     final exampleLock = File('example/pubspec.lock').readAsStringSync();
 
-    expect(version, '0.3.1');
     for (final path in ['README.md', 'README.zh-CN.md']) {
       final file = File(path);
       expect(file.existsSync(), isTrue, reason: '$path is missing.');
-      expect(file.readAsStringSync(), contains('super_overlay: ^0.3.1'));
+      expect(file.readAsStringSync(), contains('super_overlay: ^$version'));
     }
     final superOverlayLock = _packageStanza(exampleLock, 'super_overlay');
-    expect(
-      superOverlayLock,
-      contains(RegExp(r'^    version: "0\.3\.1"$', multiLine: true)),
-    );
+    expect(superOverlayLock, contains('    version: "$version"'));
   });
 
   test('lock stanza stops before the next package', () {
@@ -52,7 +48,7 @@ packages:
     expect(_packageStanza(lock, 'super_overlay'), isNot(contains('0.3.0')));
   });
 
-  test('changelog separates pending changes from tagged version history', () {
+  test('changelog identifies the candidate and preserves version history', () {
     final changelog = File('CHANGELOG.md').readAsStringSync();
     final headings =
         RegExp(
@@ -61,9 +57,19 @@ packages:
         ).allMatches(changelog).map((match) => match.group(1)!).toList();
 
     expect(headings.where((heading) => heading == '0.3.0'), hasLength(1));
-    expect(headings.first, '0.3.1');
     expect(headings.where((heading) => heading == '0.3.1'), hasLength(1));
-    expect(headings, isNot(contains('Unreleased')));
+    final version =
+        RegExp(
+          r'^version:\s*([^\s]+)',
+          multiLine: true,
+        ).firstMatch(File('pubspec.yaml').readAsStringSync())!.group(1)!;
+    expect(headings.where((heading) => heading == version), hasLength(1));
+    expect(headings.first, isIn(['Unreleased', version]));
+    expect(headings.indexOf(version), lessThanOrEqualTo(1));
+    expect(
+      headings.where((heading) => heading == 'Unreleased').length,
+      lessThanOrEqualTo(1),
+    );
     expect(headings, contains('0.2.0'));
     expect(headings.indexOf('0.3.0'), lessThan(headings.indexOf('0.2.0')));
   });
@@ -250,23 +256,33 @@ Keep documentation tasks [ ] separate from device results.
     );
   });
 
-  test('release intake and coverage matrix track the 0.3.1 README', () {
-    final issueForm =
-        File('.github/ISSUE_TEMPLATE/issue.yml').readAsStringSync();
-    final coverageMatrix =
-        File('tool/verification/example_coverage_matrix.md').readAsStringSync();
+  test(
+    'release intake and coverage matrix track package metadata and README',
+    () {
+      final issueForm =
+          File('.github/ISSUE_TEMPLATE/issue.yml').readAsStringSync();
+      final coverageMatrix =
+          File(
+            'tool/verification/example_coverage_matrix.md',
+          ).readAsStringSync();
 
-    expect(issueForm, contains('placeholder: "0.3.1"'));
-    expect(coverageMatrix, isNot(contains('[Quick Start]')));
-    expect(coverageMatrix, isNot(contains('[Conflict Policy]')));
-    expect(coverageMatrix, contains('[Install](../../README.md#install)'));
-    expect(
-      coverageMatrix,
-      contains(
-        '[Command And Handle Basics](../../README.md#command-and-handle-basics)',
-      ),
-    );
-  });
+      final version =
+          RegExp(
+            r'^version:\s*([^\s]+)',
+            multiLine: true,
+          ).firstMatch(File('pubspec.yaml').readAsStringSync())!.group(1)!;
+      expect(issueForm, contains('placeholder: "$version"'));
+      expect(coverageMatrix, isNot(contains('[Quick Start]')));
+      expect(coverageMatrix, isNot(contains('[Conflict Policy]')));
+      expect(coverageMatrix, contains('[Install](../../README.md#install)'));
+      expect(
+        coverageMatrix,
+        contains(
+          '[Command And Handle Basics](../../README.md#command-and-handle-basics)',
+        ),
+      );
+    },
+  );
 }
 
 Set<String> _dependencyNames(String pubspec, String section) {

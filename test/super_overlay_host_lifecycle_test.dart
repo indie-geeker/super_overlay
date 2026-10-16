@@ -45,7 +45,7 @@ Future<void> _verifyAtomicHostReplacement(
 
   final firstHandles = <OverlayHandle<void>>[
     SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('first generation dialog'),
+      builder: (_, _) => const Text('first generation dialog'),
       options: const OverlayDialogOptions(tag: 'reused-generation-tag'),
     ),
     SuperOverlay.loading.show(
@@ -87,7 +87,7 @@ Future<void> _verifyAtomicHostReplacement(
   expect(firstHandles.map((handle) => handle.isVisible), everyElement(isFalse));
 
   final secondHandle = SuperOverlay.dialog.show<void>(
-    builder: (_) => const Text('second generation dialog'),
+    builder: (_, _) => const Text('second generation dialog'),
     options: const OverlayDialogOptions(tag: 'reused-generation-tag'),
   );
   final toast = SuperOverlay.toast(
@@ -243,11 +243,13 @@ void main() {
     );
 
     final handles = <OverlayHandle<void>>[
-      SuperOverlay.dialog.show<void>(builder: (_) => const Text('Host dialog')),
+      SuperOverlay.dialog.show<void>(
+        builder: (_, _) => const Text('Host dialog'),
+      ),
       SuperOverlay.loading.show(message: 'Host loading'),
       SuperOverlay.popup.show<void>(
         targetContext: targetContext,
-        builder: (_) => const Text('Host popup'),
+        builder: (_, _) => const Text('Host popup'),
       ),
       SuperOverlay.notify.success(
         'Host notification',

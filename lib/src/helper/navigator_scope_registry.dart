@@ -119,6 +119,9 @@ class NavigatorScopeRegistry {
     }
   }
 
+  bool isRouteTrackedByScope(Object scopeIdentity, Route<dynamic> route) =>
+      _scopes[scopeIdentity]?.containsRoute(route) ?? false;
+
   void routePushed({
     required Object scopeIdentity,
     required Route<dynamic> route,
@@ -609,7 +612,16 @@ class _NavigatorScope {
     if (_disposed) {
       return;
     }
-    _pruneDeadReferences();
+    // A declarative Page can be pushed below an unchanged top route, without
+    // didChangeTop. Reconcile didPush's provisional route with Navigator truth
+    // before installing pop gates or capturing the next global command owner.
+    final navigator = navigatorState();
+    for (final route in _resolveRoutes()) {
+      if (identical(route.navigator, navigator) && route.isCurrent) {
+        currentRoute = route;
+        break;
+      }
+    }
     for (final registration in _entries) {
       registration.entry.target?.updateCanPop(
         !(blocked && identical(registration.route.target, currentRoute)),
@@ -785,10 +797,44 @@ class _NavigatorScope {
 
   List<Route<dynamic>> _resolveRoutes() {
     _pruneDeadReferences();
-    return <Route<dynamic>>[
+    final routes = <Route<dynamic>>[
       for (final reference in _routes)
         if (reference.target case final route?) route,
     ];
+    final pages = navigatorState()?.widget.pages;
+    if (pages == null || pages.isEmpty) return routes;
+
+    // Page order can change beneath a stable top PopupRoute, without any
+    // observer top-change event. Pageless routes move with their owning page.
+    final pageOrder = Map<RouteSettings, int>.identity();
+    for (var index = 0; index < pages.length; index++) {
+      pageOrder[pages[index]] = index;
+    }
+    final leading = <Route<dynamic>>[];
+    final groups = <({int order, List<Route<dynamic>> routes})>[];
+    var group = leading;
+    for (final route in routes) {
+      final order = pageOrder[route.settings];
+      if (order != null) {
+        group = <Route<dynamic>>[];
+        groups.add((order: order, routes: group));
+      }
+      group.add(route);
+    }
+    groups.sort((a, b) => a.order.compareTo(b.order));
+    final ordered = <Route<dynamic>>[
+      ...leading,
+      for (final group in groups) ...group.routes,
+    ];
+    for (var index = 0; index < routes.length; index++) {
+      if (!identical(routes[index], ordered[index])) {
+        // Keep the normalized order so later imperative pushes are attached
+        // to the page that is actually current when they arrive.
+        _replaceResolvedRoutes(ordered);
+        break;
+      }
+    }
+    return ordered;
   }
 
   void _replaceResolvedRoutes(List<Route<dynamic>> routes) {

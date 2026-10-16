@@ -68,7 +68,6 @@ class MainOverlay {
       mode: param.accessibilityMode,
       requestFocus: param.requestFocus,
       semanticsLabel: param.semanticsLabel,
-      handlesEscape: param.backType != BackType.ignore || param.onBack != null,
       focusRestoreTarget: _focusRestoreTarget,
       focusLifecycle: _focusLifecycle,
       child: OverlayDialogWidget(
@@ -122,7 +121,6 @@ class MainOverlay {
       mode: param.accessibilityMode,
       requestFocus: param.requestFocus,
       semanticsLabel: param.semanticsLabel,
-      handlesEscape: param.backType != BackType.ignore || param.onBack != null,
       focusRestoreTarget: _focusRestoreTarget,
       focusLifecycle: _focusLifecycle,
       child: AttachDialogWidget(

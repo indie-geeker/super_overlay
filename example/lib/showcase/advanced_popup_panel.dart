@@ -61,7 +61,7 @@ class AdvancedPopupPanel extends StatelessWidget {
   void _showPointPopup() {
     SuperOverlay.popup.show<void>(
       builder:
-          (_) => const PopupDemoSurface(
+          (_, _) => const PopupDemoSurface(
             title: 'Point Popup',
             message: 'Point Popup Content',
             icon: Icons.my_location_outlined,
@@ -79,7 +79,7 @@ class AdvancedPopupPanel extends StatelessWidget {
     SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const PopupDemoSurface(
+          (_, _) => const PopupDemoSurface(
             title: 'Original Popup',
             message: 'Replacement content will replace this surface',
             icon: Icons.flip_to_front_outlined,
@@ -108,7 +108,7 @@ class AdvancedPopupPanel extends StatelessWidget {
     SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const PopupDemoSurface(
+          (_, _) => const PopupDemoSurface(
             title: 'Scale Origin Popup',
             message: "Expands from the popup's upper-right corner",
             icon: Icons.open_with_outlined,
@@ -125,7 +125,7 @@ class AdvancedPopupPanel extends StatelessWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     SuperOverlay.popup.show<void>(
       builder:
-          (_) => const PopupDemoSurface(
+          (_, _) => const PopupDemoSurface(
             title: 'Ignore Mask Area',
             message: 'Top 96px remains interactive through the mask',
             icon: Icons.layers_clear_outlined,

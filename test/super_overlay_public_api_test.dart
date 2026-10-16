@@ -24,7 +24,7 @@ void main() {
   });
 
   test('exports command policies from the package entrypoint', () {
-    expect(OverlayCloseTarget.topMost, isA<OverlayCloseTarget>());
+    expect(OverlayCloseTarget.highestPriority, isA<OverlayCloseTarget>());
     expect(OverlaySurface.dialog, isA<OverlaySurface>());
     expect(OverlayPopupAlignmentMode.center, isA<OverlayPopupAlignmentMode>());
     expect(OverlayNotificationType.success, isA<OverlayNotificationType>());
@@ -65,11 +65,11 @@ void main() {
     await tester.pumpWidget(_buildApp(const SizedBox.shrink()));
 
     final first = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('First'),
+      builder: (_, _) => const Text('First'),
       options: const OverlayDialogOptions(tag: 'first'),
     );
     final second = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Second'),
+      builder: (_, _) => const Text('Second'),
       options: const OverlayDialogOptions(tag: 'second'),
     );
     await tester.pump();
@@ -99,7 +99,7 @@ void main() {
     await tester.pumpWidget(_buildApp(const SizedBox.shrink()));
 
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Animated'),
+      builder: (_, _) => const Text('Animated'),
       options: const OverlayDialogOptions(tag: 'animated'),
     );
     await tester.pumpAndSettle();

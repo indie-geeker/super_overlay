@@ -42,9 +42,11 @@ void main() {
             displayDuration: Duration(minutes: 1),
           ),
         ),
-        'dialog' => SuperOverlay.dialog.show<void>(builder: content),
+        'dialog' => SuperOverlay.dialog.show<void>(
+          builder: (context, _) => (content)(context),
+        ),
         'popup' => SuperOverlay.popup.show<void>(
-          builder: content,
+          builder: (context, _) => (content)(context),
           options: OverlayPopupOptions(
             targetPointBuilder: (_, _) => const Offset(100, 100),
           ),
@@ -115,7 +117,7 @@ void main() {
     final handle = SuperOverlay.popup.show<void>(
       targetContext: target,
       builder:
-          (_) =>
+          (_, _) =>
               const SizedBox(key: ValueKey('popup'), width: 180, height: 160),
     );
     await tester.pumpAndSettle();
@@ -153,9 +155,11 @@ void main() {
       final scoped = SuperOverlay.of(caller);
       final handle =
           surface == 'dialog'
-              ? scoped.dialog.show<void>(builder: content)
+              ? scoped.dialog.show<void>(
+                builder: (context, _) => (content)(context),
+              )
               : scoped.popup.show<void>(
-                builder: content,
+                builder: (context, _) => (content)(context),
                 options: OverlayPopupOptions(
                   targetPointBuilder: (_, _) => const Offset(100, 100),
                 ),
@@ -241,12 +245,16 @@ void main() {
       final scoped = SuperOverlay.of(caller);
       final handle =
           surface == 'dialog'
-              ? scoped.dialog.show<void>(builder: content)
+              ? scoped.dialog.show<void>(
+                builder: (context, _) => (content)(context),
+              )
               : scoped.popup.show<void>(
                 builder:
-                    surface == 'popup'
+                    (context, _) => (surface == 'popup'
                         ? content
-                        : (_) => const SizedBox(width: 100, height: 100),
+                        : (_) => const SizedBox(width: 100, height: 100))(
+                      context,
+                    ),
                 options: OverlayPopupOptions(
                   targetPointBuilder: (_, _) => const Offset(100, 100),
                   replacementBuilder:

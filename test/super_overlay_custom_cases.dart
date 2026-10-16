@@ -41,7 +41,7 @@ void registerCustomOverlayTests() {
         ElevatedButton(
           onPressed: () {
             handle = SuperOverlay.dialog.show<String>(
-              builder: (_) => const Text('Dialog Content'),
+              builder: (_, _) => const Text('Dialog Content'),
               options: const OverlayDialogOptions(tag: 'profile'),
             );
           },
@@ -79,7 +79,7 @@ void registerCustomOverlayTests() {
         ElevatedButton(
           onPressed: () {
             handle = SuperOverlay.dialog.show<void>(
-              builder: (_) => const Text('Mask Dialog'),
+              builder: (_, _) => const Text('Mask Dialog'),
               options: const OverlayDialogOptions(dismissOnMaskTap: true),
             );
           },
@@ -121,7 +121,7 @@ void registerCustomOverlayTests() {
     final toast = SuperOverlay.toast('Saved');
     final popup = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Popup Menu'),
+      builder: (_, _) => const Text('Popup Menu'),
     );
     final notify = SuperOverlay.notify.success('Done');
 
@@ -147,7 +147,7 @@ void registerCustomOverlayTests() {
     await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
 
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Auto Dialog'),
+      builder: (_, _) => const Text('Auto Dialog'),
       options: const OverlayDialogOptions(
         tag: 'auto',
         displayDuration: Duration(milliseconds: 300),
@@ -179,13 +179,13 @@ void registerCustomOverlayTests() {
     await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
 
     final first = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('First Single'),
+      builder: (_, _) => const Text('First Single'),
       options: const OverlayDialogOptions(tag: 'single'),
     );
     await tester.pumpAndSettle();
 
     final second = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Second Single'),
+      builder: (_, _) => const Text('Second Single'),
       options: const OverlayDialogOptions(
         tag: 'single',
         strategy: OverlayStrategy.replaceExisting,
@@ -210,14 +210,14 @@ void registerCustomOverlayTests() {
 
     var count = 0;
     final first = SuperOverlay.dialog.show<String>(
-      builder: (_) => Text('Kept Dialog $count'),
+      builder: (_, _) => Text('Kept Dialog $count'),
       options: const OverlayDialogOptions(tag: 'keep-existing'),
     );
     await tester.pumpAndSettle();
     await first.visible;
 
     final second = SuperOverlay.dialog.show<String>(
-      builder: (_) => const Text('Ignored Keep Existing Dialog'),
+      builder: (_, _) => const Text('Ignored Keep Existing Dialog'),
       options: const OverlayDialogOptions(
         tag: 'keep-existing',
         strategy: OverlayStrategy.keepExisting,
@@ -258,7 +258,7 @@ void registerCustomOverlayTests() {
     await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
 
     final handle = SuperOverlay.dialog.show<String>(
-      builder: (_) => const Text('Idempotent Dialog'),
+      builder: (_, _) => const Text('Idempotent Dialog'),
       options: const OverlayDialogOptions(tag: 'idempotent'),
     );
 
@@ -282,7 +282,7 @@ void registerCustomOverlayTests() {
 
     final events = <String>[];
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Lifecycle Dialog'),
+      builder: (_, _) => const Text('Lifecycle Dialog'),
     );
     handle.visible.then((_) => events.add('visible'));
     handle.closed.then((_) => events.add('closed'));
@@ -307,7 +307,7 @@ void registerCustomOverlayTests() {
     await tester.pumpWidget(buildCustomOverlayApp(const SizedBox.shrink()));
 
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => Text('Count $count'),
+      builder: (_, _) => Text('Count $count'),
       options: const OverlayDialogOptions(tag: 'refresh'),
     );
     await tester.pumpAndSettle();

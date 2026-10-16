@@ -1,5 +1,18 @@
 part of 'overlay_manager.dart';
 
+/// One consuming back policy, shared by the route gate and event dispatcher.
+class _OverlayBackTarget {
+  const _OverlayBackTarget({
+    required this.backType,
+    required this.close,
+    this.onBack,
+  });
+
+  final BackType backType;
+  final SuperOverlayOnBack? onBack;
+  final Future<void> Function() close;
+}
+
 enum _OverlayHostTopology { empty, active, pending, conflict }
 
 class _OverlayHostDefaults {
@@ -93,7 +106,7 @@ class _OverlayRecord {
   final SuperOverlayOnBack? onBack;
   bool permanent;
   Timer? displayTimer;
-  _RecordDismissalOperation? dismissal;
+  OverlayDismissalOperation? dismissal;
   int detachedFrameCount = 0;
   Rect? lastRenderedAnchorRect;
   _OverlayPresentationState presentationState =
@@ -131,43 +144,12 @@ class _NotifyRecord {
   final BackType backType;
   final SuperOverlayOnBack? onBack;
   Timer? displayTimer;
-  _RecordDismissalOperation? dismissal;
+  OverlayDismissalOperation? dismissal;
 
   bool matchesIdentityTag(String value) => tag == value;
   bool matchesBusinessTag(String value) => businessTag == value;
   bool matchesTag(String value) =>
       matchesIdentityTag(value) || matchesBusinessTag(value);
-}
-
-class _RecordDismissalOperation {
-  final Completer<void> _completer = Completer<void>();
-  bool _cleanupClaimed = false;
-
-  Future<void> get future => _completer.future;
-
-  bool beginCleanup() {
-    if (_cleanupClaimed) {
-      return false;
-    }
-    _cleanupClaimed = true;
-    return true;
-  }
-
-  void complete() {
-    if (!_completer.isCompleted) {
-      _completer.complete();
-    }
-  }
-
-  void completeError(Object error, StackTrace stackTrace) {
-    if (!_completer.isCompleted) {
-      _completer.completeError(error, stackTrace);
-    }
-  }
-
-  void settleForTeardown() {
-    complete();
-  }
 }
 
 class ExistingCommandOverlay<T> {

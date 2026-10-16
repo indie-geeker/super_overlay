@@ -12,6 +12,7 @@ class SuperOverlayController {
   VoidCallback? _callback;
   final Completer<void> _visible = Completer<void>();
   bool _presentationEnabled = true;
+  bool _hasRenderedFrame = false;
 
   Future<void> get visible => _visible.future;
 
@@ -30,6 +31,7 @@ class SuperOverlayController {
   }
 
   void markVisible() {
+    _hasRenderedFrame = true;
     if (!_presentationEnabled) {
       return;
     }
@@ -39,7 +41,15 @@ class SuperOverlayController {
   }
 
   void setPresentationEnabled(bool enabled) {
+    if (_presentationEnabled == enabled) return;
     _presentationEnabled = enabled;
+    // A route can suspend after content was painted but before its first
+    // frame callback. That content is retained and may not rebuild on resume.
+    if (enabled && _hasRenderedFrame && !_visible.isCompleted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_presentationEnabled) markVisible();
+      });
+    }
   }
 
   void failVisible(String message) {

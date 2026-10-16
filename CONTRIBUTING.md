@@ -34,19 +34,44 @@ contract. Keep unrelated formatting or refactors out of the same change.
 Run these commands from the repository root before opening a pull request:
 
 ```bash
-dart format --output=none --set-exit-if-changed .
-flutter analyze
-flutter test --coverage
-dart doc --dry-run
-flutter pub publish --dry-run
-cd example
-flutter analyze
-flutter test
-flutter build web
+dart tool/verify.dart --suite full --publish-check
+dart tool/verify.dart --suite minimum --flutter /path/to/flutter-3.29/bin/flutter
+dart tool/verify.dart --suite router --flutter /path/to/flutter-3.47.4/bin/flutter
 ```
 
-Package coverage must stay at or above 90%. CI calculates the threshold from
-`coverage/lcov.info`.
+The same entry runs in CI. It copies the current source, including uncommitted
+changes, to an isolated workspace before resolving dependencies. It does not
+download SDKs, alter the source lockfiles, publish, commit, or push. The full
+suite combines coverage and seed `20260713` in one package test run, enforces
+90% line coverage, checks API docs, and builds all four example Web entries.
+`--publish-check` adds a dry run from that clean copy; it is accepted only for
+the full suite.
+
+Package tests enable the VM service on both SDK suites. Toast retention
+regressions use weak references and an explicit VM garbage collection to verify
+that superseded builders can be released even while callers retain their handles.
+They connect only to the test process's local VM service. To run these directly:
+
+```bash
+flutter test --enable-vmservice test/super_overlay_toast_retention_test.dart
+```
+
+Use `flutter test --enable-vmservice` when running the entire package directly.
+
+Per-step logs and `report.json` include commands, SDK, exit codes and unrun
+steps after a failure. Output defaults to a system temporary directory; use
+`--output docs/local/verification/my-run` to retain it privately and
+`--keep-workspace` to inspect the generated artifacts. The command returns the
+first failure's nonzero status. `git diff --check` still checks the original
+working tree.
+
+For a focused isolated check use `--only package-test`, `--only example-test`,
+or `--only package-analyze`. Dependencies are resolved first; `--only coverage`
+also runs the package tests to generate a fresh LCOV file. For a single test,
+use Flutter directly as below. Geometry and close ownership are documented in
+[the runtime responsibilities](docs/design/overlay-runtime-responsibilities.md).
+For timing changes, follow the
+[performance protocol](tool/verification/performance_protocol.md).
 
 For a faster local loop, run a focused test first:
 

@@ -1,0 +1,19 @@
+name: super_overlay_go_router_18_contracts
+description: Private go_router 18 compatibility contracts for SuperOverlay.
+publish_to: none
+
+environment:
+  sdk: '>=3.12.0 <4.0.0'
+  flutter: '>=3.44.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  go_router: 18.0.2
+  super_overlay:
+    path: ../../..
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0

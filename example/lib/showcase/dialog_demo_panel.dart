@@ -61,13 +61,12 @@ class _DialogDemoPanelState extends State<DialogDemoPanel> {
 
   void _showDialog() {
     final maskColor = _dimmed ? ShowcaseColors.scrim : Colors.transparent;
-    late final OverlayHandle<bool> handle;
-    handle = SuperOverlay.dialog.show<bool>(
+    final handle = SuperOverlay.of(context).dialog.show<bool>(
       builder:
-          (_) => DialogSurface(
+          (_, dialog) => DialogSurface(
             dismissible: _dismissible,
             dimmed: _dimmed,
-            onResult: (result) => unawaited(handle.close(result)),
+            onResult: (result) => unawaited(dialog.close(result)),
           ),
       options: OverlayDialogOptions(
         tag: 'dialog-lab',

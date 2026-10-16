@@ -2,9 +2,17 @@
 
 Status: **manual checks pending**
 
-Release status: **blocked until every required mobile row has real device
-evidence**. Claim-only rows do not block publication unless those platform or
-topology claims are made for this release.
+The maintainer requested publication of 0.4.0 on 2026-10-16 after these pending
+checks were disclosed. This is the release-specific exception recorded in
+[RELEASE.md](../../RELEASE.md). Publication does not complete any row below or
+establish real-device acceptance; the default requirements remain applicable to
+future releases without such an explicit instruction.
+
+Published status: **0.3.1 was published on 2026-09-09**; verified against the
+[pub.dev API](https://pub.dev/api/packages/super_overlay) on 2026-10-15. Device
+evidence remains pending for the published version. For the **next candidate**,
+every required mobile row must have real-device evidence. Claim-only rows gate
+only the corresponding platform or topology claims.
 
 Automated widget tests verify simulated safe-area padding, anchored popup
 geometry, and responsive layouts at 320, 600, and 1200 logical pixels. They do
@@ -30,18 +38,18 @@ complete any manual row:
 - publish dry-run from both the Git worktree and a copy without `.git`, with
   zero warnings.
 
-The current source passed the refreshed local gates on 2026-07-14 with 298
+A later source snapshot passed the refreshed local gates on 2026-07-14 with 298
 package tests, 90.9398% line coverage (3774 of 4150 lines), 29 example tests,
 and successful Web and Android debug APK builds. Flutter stable and Flutter
 3.29 passed in GitHub Actions run #9 for the earlier source commit
-`daa9af70608e887f4ee3361eb78a1d851e917d24`. Subsequent local blocker fixes
-still require exact-SHA remote CI. The required mobile evidence below also
-remains pending.
+`daa9af70608e887f4ee3361eb78a1d851e917d24`. The current 0.4.0 candidate changes
+still require remote CI for their final commit. The required mobile evidence
+below also remains pending.
 
 ## Required Mobile Release Blockers
 
 Every row in this section requires real Android or iOS device evidence before
-publication.
+the next publication. It does not retroactively change 0.3.1 publication status.
 
 | Done | Device and orientation | Scenario | Expected result | Evidence |
 | --- | --- | --- | --- | --- |
@@ -56,6 +64,8 @@ publication.
 | [ ] | Android with gesture navigation | Use system back with `dismiss`, `block`, and `passThrough` dialogs | Overlay and route behavior matches the selected policy without a double pop | Device/OS and recording |
 | [ ] | Android with predictive back enabled | Start, cancel, then complete predictive back with an active modal | Preview and completion respect the modal policy and never expose a stale route | Device/OS and recording |
 | [ ] | iPhone or Android in a scrolling view | Move a popup anchor partially and then fully outside the viewport, then remove it | Popup follows while partially visible and closes after full exit or target removal | Device/OS and recording |
+| [ ] | Android with TalkBack enabled | Open a labelled dialog/loading and an unlabelled AlertDialog; close and reopen | The chosen route name is announced without duplicate entry announcements; focus returns correctly | Device/OS and recording |
+| [ ] | iPhone with VoiceOver enabled | Repeat explicit label and content-provided modal names | Route name and focus behavior match the documented priority | Device/OS and recording |
 
 ## Claim-Only And Optional Evidence
 

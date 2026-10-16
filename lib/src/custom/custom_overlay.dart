@@ -1,4 +1,3 @@
-import '../config/enum_config.dart';
 import '../data/show_param.dart';
 import '../helper/overlay_manager.dart';
 import '../kit/debounce_utils.dart';
@@ -8,6 +7,9 @@ import 'base_overlay.dart';
 class CustomOverlay extends BaseOverlay {
   CustomOverlay({required SuperOverlayEntry overlayEntry})
     : super(overlayEntry);
+
+  Object _callbackPresentation = Object();
+  Object get callbackPresentation => _callbackPresentation;
 
   Future<T?> show<T>({required ShowCustomParam param}) {
     final config = param.debounce;
@@ -23,24 +25,19 @@ class CustomOverlay extends BaseOverlay {
     if (push.reused && push.overlay != this) {
       overlayEntry.remove();
     }
+    push.overlay._callbackPresentation = Object();
+    final owner = OverlayManager.instance.captureCustomCallbackOwner(
+      overlay: push.overlay,
+      generation: push.generation,
+    );
 
     return push.overlay.mainOverlay.show<T>(
       param: param,
-      onMask: () {
-        param.onMask?.call();
-        if (!param.clickMaskDismiss || param.permanent) {
-          return;
-        }
-        if (DebounceUtils.instance.banMaskContinue()) {
-          return;
-        }
-        OverlayManager.instance.dismiss<void>(
-          status: DismissStatus.custom,
-          tag: push.tag,
-          closeType: OverlayCloseType.mask,
-          generation: push.generation,
-        );
-      },
+      onMask: owner.maskCallback(
+        onMask: param.onMask,
+        dismissible: param.clickMaskDismiss && !param.permanent,
+        debounce: true,
+      ),
     );
   }
 
@@ -57,31 +54,20 @@ class CustomOverlay extends BaseOverlay {
     if (push.reused && push.overlay != this) {
       overlayEntry.remove();
     }
+    push.overlay._callbackPresentation = Object();
+    final owner = OverlayManager.instance.captureCustomCallbackOwner(
+      overlay: push.overlay,
+      generation: push.generation,
+    );
 
     return push.overlay.mainOverlay.showAttach<T>(
       param: param,
-      onMask: () {
-        param.onMask?.call();
-        if (!param.clickMaskDismiss || param.permanent) {
-          return;
-        }
-        if (DebounceUtils.instance.banMaskContinue()) {
-          return;
-        }
-        OverlayManager.instance.dismiss<void>(
-          status: DismissStatus.attach,
-          tag: push.tag,
-          closeType: OverlayCloseType.mask,
-          generation: push.generation,
-        );
-      },
-      onTargetUnavailable:
-          () => OverlayManager.instance.dismiss<void>(
-            status: DismissStatus.attach,
-            tag: push.tag,
-            force: true,
-            generation: push.generation,
-          ),
+      onMask: owner.maskCallback(
+        onMask: param.onMask,
+        dismissible: param.clickMaskDismiss && !param.permanent,
+        debounce: true,
+      ),
+      onTargetUnavailable: owner.closeUnavailableTarget,
     );
   }
 

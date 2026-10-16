@@ -48,7 +48,7 @@ void registerPopupGeometryTests() {
                     handle = SuperOverlay.popup.show<void>(
                       targetContext: targetContext,
                       builder:
-                          (_) => const SizedBox(
+                          (_, _) => const SizedBox(
                             width: 120,
                             height: 40,
                             child: Text('Popup Content'),
@@ -112,7 +112,7 @@ void registerPopupGeometryTests() {
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             key: popupKey,
             width: 80,
             height: 20,
@@ -150,7 +150,7 @@ void registerPopupGeometryTests() {
 
     final handle = SuperOverlay.popup.show<void>(
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             key: popupKey,
             width: 100,
             height: 24,
@@ -181,7 +181,7 @@ void registerPopupGeometryTests() {
 
     final handle = SuperOverlay.popup.show<void>(
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             width: 80,
             height: 20,
             child: Text('Invalid Point Popup'),
@@ -230,7 +230,7 @@ void registerPopupGeometryTests() {
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             width: 80,
             height: 20,
             child: Text('Invalid Context Popup'),
@@ -293,7 +293,7 @@ void registerPopupGeometryTests() {
     final rightHandle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             key: rightPopupKey,
             width: 60,
             height: 30,
@@ -316,7 +316,7 @@ void registerPopupGeometryTests() {
     final leftHandle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             key: leftPopupKey,
             width: 60,
             height: 30,
@@ -353,7 +353,7 @@ void registerPopupGeometryTests() {
                     handle = SuperOverlay.popup.show<void>(
                       targetContext: targetContext,
                       builder:
-                          (_) => const SizedBox(
+                          (_, _) => const SizedBox(
                             width: 320,
                             height: 160,
                             child: Text('Clamped Popup'),
@@ -416,7 +416,7 @@ void registerPopupGeometryTests() {
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             key: popupKey,
             width: 120,
             height: 24,
@@ -468,7 +468,7 @@ void registerPopupGeometryTests() {
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             key: popupKey,
             width: 100,
             height: 80,
@@ -526,7 +526,7 @@ void registerPopupGeometryTests() {
       final handle = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
         builder:
-            (_) => SizedBox(
+            (_, _) => SizedBox(
               key: popupKey,
               width: 60,
               height: 24,
@@ -598,7 +598,7 @@ void registerPopupGeometryTests() {
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             width: 60,
             height: 20,
             child: Text('Original Popup'),
@@ -663,7 +663,7 @@ void registerPopupGeometryTests() {
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             width: 50,
             height: 20,
             child: Text('Unadjusted Popup'),
@@ -698,7 +698,7 @@ void registerPopupGeometryTests() {
 
     final handle = SuperOverlay.popup.show<void>(
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             width: 80,
             height: 40,
             child: Text('Scaled Popup'),
@@ -728,7 +728,7 @@ void registerPopupGeometryTests() {
 
     final handle = SuperOverlay.popup.show<void>(
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             width: 80,
             height: 20,
             child: Text('Base Replacement Popup'),
@@ -775,7 +775,7 @@ void registerPopupGeometryTests() {
                   if (targetClicks == 1) {
                     handle = SuperOverlay.popup.show<void>(
                       targetContext: targetContext,
-                      builder: (_) => const Text('Highlighted Popup'),
+                      builder: (_, _) => const Text('Highlighted Popup'),
                       options: const OverlayPopupOptions(highlightTarget: true),
                     );
                   }
@@ -825,7 +825,7 @@ void registerPopupGeometryTests() {
     final radius = BorderRadius.circular(18);
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Configured Highlight Popup'),
+      builder: (_, _) => const Text('Configured Highlight Popup'),
       options: OverlayPopupOptions(
         dismissOnMaskTap: false,
         highlightTarget: true,
@@ -871,7 +871,7 @@ void registerPopupGeometryTests() {
 
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('No Fade Popup'),
+      builder: (_, _) => const Text('No Fade Popup'),
       options: const OverlayPopupOptions(
         tag: 'no-fade-popup',
         highlightTarget: true,

@@ -3,18 +3,18 @@ import 'package:flutter/material.dart';
 class ShowcaseColors {
   const ShowcaseColors._();
 
-  static const background = Color(0xFFF6F8FB);
+  static const background = Color(0xFFF5F7F6);
   static const surface = Color(0xFFFFFFFF);
-  static const surfaceHigh = Color(0xFFF1F5F9);
-  static const codeSurface = Color(0xFFEFF4FA);
-  static const border = Color(0xFFCBD5E1);
-  static const muted = Color(0xFF475569);
-  static const text = Color(0xFF0F172A);
-  static const primary = Color(0xFF0F766E);
-  static const info = Color(0xFF2563EB);
+  static const surfaceHigh = Color(0xFFF0F4F2);
+  static const codeSurface = Color(0xFFE8EFEB);
+  static const border = Color(0xFFDCE4E0);
+  static const muted = Color(0xFF52635C);
+  static const text = Color(0xFF1C2923);
+  static const primary = Color(0xFF236B58);
+  static const info = Color(0xFF3867A1);
   static const warning = Color(0xFFB45309);
   static const danger = Color(0xFFBE123C);
-  static const violet = Color(0xFF7C3AED);
+  static const violet = Color(0xFF75638D);
   static const shadow = Color(0x1A0F172A);
   static const scrim = Color(0x990F172A);
 }
@@ -36,14 +36,16 @@ class ShowcaseTheme {
       appBarTheme: const AppBarTheme(
         centerTitle: false,
         elevation: 0,
+        scrolledUnderElevation: 0,
         backgroundColor: ShowcaseColors.background,
         foregroundColor: ShowcaseColors.text,
       ),
       cardTheme: CardThemeData(
         color: ShowcaseColors.surface,
         elevation: 0,
+        margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           side: const BorderSide(color: ShowcaseColors.border),
         ),
       ),
@@ -54,7 +56,9 @@ class ShowcaseTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size(44, 44),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -62,7 +66,9 @@ class ShowcaseTheme {
           minimumSize: const Size(44, 44),
           foregroundColor: ShowcaseColors.text,
           side: const BorderSide(color: ShowcaseColors.border),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(
@@ -71,16 +77,14 @@ class ShowcaseTheme {
             BorderSide(color: ShowcaseColors.border),
           ),
           shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
       ),
-      switchTheme: SwitchThemeData(
-        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
-          return states.contains(WidgetState.selected)
-              ? ShowcaseColors.primary
-              : ShowcaseColors.border;
-        }),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: ShowcaseColors.surface,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
       textTheme: Typography.blackMountainView.apply(
         bodyColor: ShowcaseColors.text,

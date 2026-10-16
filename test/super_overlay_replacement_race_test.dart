@@ -197,14 +197,14 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
 
     final first = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('First racing dialog'),
+      builder: (_, _) => const Text('First racing dialog'),
       options: const OverlayDialogOptions(
         tag: 'racing-dialog',
         strategy: OverlayStrategy.replaceExisting,
       ),
     );
     final second = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Second racing dialog'),
+      builder: (_, _) => const Text('Second racing dialog'),
       options: const OverlayDialogOptions(
         tag: 'racing-dialog',
         strategy: OverlayStrategy.replaceExisting,
@@ -238,7 +238,7 @@ void main() {
 
     final first = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('First racing popup'),
+      builder: (_, _) => const Text('First racing popup'),
       options: const OverlayPopupOptions(
         tag: 'racing-popup',
         strategy: OverlayStrategy.replaceExisting,
@@ -246,7 +246,7 @@ void main() {
     );
     final second = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Second racing popup'),
+      builder: (_, _) => const Text('Second racing popup'),
       options: const OverlayPopupOptions(
         tag: 'racing-popup',
         strategy: OverlayStrategy.replaceExisting,
@@ -341,7 +341,7 @@ void main() {
       show:
           ({required label, required strategy}) =>
               SuperOverlay.dialog.show<void>(
-                builder: (_) => Text(label),
+                builder: (_, _) => Text(label),
                 options: OverlayDialogOptions(
                   tag: 'stacked-dialog',
                   strategy: strategy,
@@ -372,7 +372,7 @@ void main() {
           ({required label, required strategy}) =>
               SuperOverlay.popup.show<void>(
                 targetContext: targetContext,
-                builder: (_) => Text(label),
+                builder: (_, _) => Text(label),
                 options: OverlayPopupOptions(
                   tag: 'stacked-popup',
                   strategy: strategy,
@@ -438,7 +438,7 @@ void main() {
         show:
             ({required label, required tag, required strategy}) =>
                 SuperOverlay.dialog.show<void>(
-                  builder: (_) => Text(label),
+                  builder: (_, _) => Text(label),
                   options: OverlayDialogOptions(tag: tag, strategy: strategy),
                 ),
       );
@@ -470,7 +470,7 @@ void main() {
             ({required label, required tag, required strategy}) =>
                 SuperOverlay.popup.show<void>(
                   targetContext: targetContext,
-                  builder: (_) => Text(label),
+                  builder: (_, _) => Text(label),
                   options: OverlayPopupOptions(tag: tag, strategy: strategy),
                 ),
       );
@@ -545,17 +545,17 @@ void main() {
 
     final popup = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Cross-surface popup'),
+      builder: (_, _) => const Text('Cross-surface popup'),
       options: const OverlayPopupOptions(tag: 'cross-surface-tag'),
     );
     final originalDialog = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Cross-surface original dialog'),
+      builder: (_, _) => const Text('Cross-surface original dialog'),
       options: const OverlayDialogOptions(tag: 'cross-surface-tag'),
     );
     await tester.pumpAndSettle();
 
     final replacement = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Cross-surface replacement dialog'),
+      builder: (_, _) => const Text('Cross-surface replacement dialog'),
       options: const OverlayDialogOptions(
         tag: 'cross-surface-tag',
         strategy: OverlayStrategy.replaceExisting,
@@ -589,7 +589,7 @@ void main() {
         show:
             ({required label, required tag, required strategy}) =>
                 SuperOverlay.dialog.show<void>(
-                  builder: (_) => Text(label),
+                  builder: (_, _) => Text(label),
                   options: OverlayDialogOptions(tag: tag, strategy: strategy),
                 ),
       );
@@ -620,7 +620,7 @@ void main() {
             ({required label, required tag, required strategy}) =>
                 SuperOverlay.popup.show<void>(
                   targetContext: targetContext,
-                  builder: (_) => Text(label),
+                  builder: (_, _) => Text(label),
                   options: OverlayPopupOptions(tag: tag, strategy: strategy),
                 ),
       );
@@ -682,7 +682,7 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
 
     final original = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Original queued dialog'),
+      builder: (_, _) => const Text('Original queued dialog'),
       options: const OverlayDialogOptions(
         tag: 'queued-dialog',
         strategy: OverlayStrategy.replaceExisting,
@@ -692,14 +692,14 @@ void main() {
     await original.visible;
 
     final winner = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Current queued winner'),
+      builder: (_, _) => const Text('Current queued winner'),
       options: const OverlayDialogOptions(
         tag: 'queued-dialog',
         strategy: OverlayStrategy.replaceExisting,
       ),
     );
     final canceled = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Canceled queued successor'),
+      builder: (_, _) => const Text('Canceled queued successor'),
       options: const OverlayDialogOptions(
         tag: 'queued-dialog',
         strategy: OverlayStrategy.replaceExisting,

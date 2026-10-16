@@ -66,14 +66,14 @@ List<_OverlayProbe> _showBulkRepresentatives(
         _track(
           'Bulk bool dialog',
           SuperOverlay.dialog.show<bool>(
-            builder: (_) => const Text('Bulk bool dialog'),
+            builder: (_, _) => const Text('Bulk bool dialog'),
             options: const OverlayDialogOptions(tag: 'bulk-bool-dialog'),
           ),
         ),
         _track(
           'Bulk int dialog',
           SuperOverlay.dialog.show<int>(
-            builder: (_) => const Text('Bulk int dialog'),
+            builder: (_, _) => const Text('Bulk int dialog'),
             options: const OverlayDialogOptions(tag: 'bulk-int-dialog'),
           ),
         ),
@@ -84,7 +84,7 @@ List<_OverlayProbe> _showBulkRepresentatives(
           'Bulk bool popup',
           SuperOverlay.popup.show<bool>(
             targetContext: targetContext,
-            builder: (_) => const Text('Bulk bool popup'),
+            builder: (_, _) => const Text('Bulk bool popup'),
             options: const OverlayPopupOptions(tag: 'bulk-bool-popup'),
           ),
         ),
@@ -92,7 +92,7 @@ List<_OverlayProbe> _showBulkRepresentatives(
           'Bulk int popup',
           SuperOverlay.popup.show<int>(
             targetContext: targetContext,
-            builder: (_) => const Text('Bulk int popup'),
+            builder: (_, _) => const Text('Bulk int popup'),
             options: const OverlayPopupOptions(tag: 'bulk-int-popup'),
           ),
         ),
@@ -136,12 +136,12 @@ List<_OverlayProbe> _showBulkRepresentatives(
         _track(
           'Bulk all dialog',
           SuperOverlay.dialog.show<bool>(
-            builder: (_) => const Text('Bulk all dialog'),
+            builder: (_, _) => const Text('Bulk all dialog'),
             options: const OverlayDialogOptions(tag: 'bulk-all-dialog'),
           ),
         ),
       ];
-    case OverlayCloseTarget.topMost:
+    case OverlayCloseTarget.highestPriority:
     case OverlayCloseTarget.dialog:
     case OverlayCloseTarget.popup:
     case OverlayCloseTarget.notification:
@@ -172,7 +172,7 @@ void main() {
     expect(targetContext, isNotNull);
 
     final handle = SuperOverlay.dialog.show<bool>(
-      builder: (_) => const Text('Typed global dialog'),
+      builder: (_, _) => const Text('Typed global dialog'),
       options: const OverlayDialogOptions(tag: 'typed-global-dialog'),
     );
     await tester.pumpAndSettle();
@@ -226,7 +226,7 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp((_) {}));
 
     final handle = SuperOverlay.dialog.show<bool>(
-      builder: (_) => const Text('Exact result dialog'),
+      builder: (_, _) => const Text('Exact result dialog'),
     );
     await tester.pumpAndSettle();
 
@@ -248,7 +248,7 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp((_) {}));
 
     final handle = SuperOverlay.dialog.show<num>(
-      builder: (_) => const Text('Supertype result dialog'),
+      builder: (_, _) => const Text('Supertype result dialog'),
     );
     await tester.pumpAndSettle();
 
@@ -270,7 +270,7 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp((_) {}));
 
     final handle = SuperOverlay.dialog.show<String?>(
-      builder: (_) => const Text('Nullable result dialog'),
+      builder: (_, _) => const Text('Nullable result dialog'),
     );
     await tester.pumpAndSettle();
 
@@ -292,7 +292,7 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp((_) {}));
 
     final handle = SuperOverlay.dialog.show<dynamic>(
-      builder: (_) => const Text('Dynamic result dialog'),
+      builder: (_, _) => const Text('Dynamic result dialog'),
     );
     await tester.pumpAndSettle();
     final result = <String, bool>{'accepted': true};
@@ -315,7 +315,7 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp((_) {}));
 
     final handleOwned = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Handle-owned void dialog'),
+      builder: (_, _) => const Text('Handle-owned void dialog'),
     );
     await tester.pumpAndSettle();
 
@@ -330,7 +330,7 @@ void main() {
     expect(find.text('Handle-owned void dialog'), findsNothing);
 
     final global = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Global void dialog'),
+      builder: (_, _) => const Text('Global void dialog'),
     );
     await tester.pumpAndSettle();
 

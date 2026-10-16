@@ -40,7 +40,7 @@ void main() {
       currentHandle = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
         builder:
-            (_) => const SizedBox(
+            (_, _) => const SizedBox(
               key: ValueKey('animated-popup'),
               width: 120,
               height: 80,

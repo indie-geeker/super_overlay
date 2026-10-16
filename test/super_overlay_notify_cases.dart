@@ -239,13 +239,13 @@ void registerNotifyOverlayTests() {
       await tester.pumpWidget(buildNotifyOverlayApp(const SizedBox.shrink()));
 
       final dialog = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Auto Custom'),
+        builder: (_, _) => const Text('Auto Custom'),
       );
       final notify = SuperOverlay.notify.alert('Auto Notify');
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      await SuperOverlay.close(target: OverlayCloseTarget.topMost);
+      await SuperOverlay.close(target: OverlayCloseTarget.highestPriority);
       await tester.pumpAndSettle();
       await notify.closed;
 

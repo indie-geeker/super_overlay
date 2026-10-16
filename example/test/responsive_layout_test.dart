@@ -4,11 +4,17 @@ import 'package:flutter_test/flutter_test.dart';
 // ignore: avoid_relative_lib_imports
 import '../lib/main.dart';
 
-Future<void> _pumpAtWidth(WidgetTester tester, double width) async {
+Future<void> _pumpAtWidth(
+  WidgetTester tester,
+  double width, {
+  double scale = 1,
+}) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = Size(width, 1000);
   addTearDown(tester.view.resetDevicePixelRatio);
   addTearDown(tester.view.resetPhysicalSize);
+  tester.platformDispatcher.textScaleFactorTestValue = scale;
+  addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
   await tester.pumpWidget(const MyApp());
   await tester.pumpAndSettle();
 }
@@ -32,12 +38,15 @@ Future<void> _revealEveryHomePanel(WidgetTester tester) async {
 
 void main() {
   for (final width in [320.0, 600.0, 1200.0]) {
-    testWidgets('home has no layout overflow at ${width.toInt()} px', (
-      tester,
-    ) async {
-      await _pumpAtWidth(tester, width);
-      await _revealEveryHomePanel(tester);
-    });
+    for (final scale in [1.0, 2.0]) {
+      testWidgets(
+        'home has no layout overflow at ${width.toInt()} px, scale=$scale',
+        (tester) async {
+          await _pumpAtWidth(tester, width, scale: scale);
+          await _revealEveryHomePanel(tester);
+        },
+      );
+    }
   }
 
   testWidgets('common scenarios stack in one column at 320 px', (tester) async {

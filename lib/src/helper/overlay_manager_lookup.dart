@@ -173,20 +173,74 @@ extension _OverlayManagerLookup on OverlayManager {
         NavigatorScopeRegistry.instance.isOwnerCurrent(owner);
   }
 
-  _OverlayRecord? _lastBackRecord({required int generation}) {
-    final records = _dialogQueue.toList(growable: false);
-    for (var index = records.length - 1; index >= 0; index--) {
-      final record = records[index];
-      if (record.generation != generation ||
-          record.permanent ||
-          !record.overlay.mainOverlay.visible ||
-          record.presentationState == _OverlayPresentationState.suspended ||
-          record.presentationState ==
-              _OverlayPresentationState.suspendedBeforeVisible) {
-        continue;
-      }
-      return record;
+  Iterable<_OverlayBackTarget> _backTargets(int generation) sync* {
+    final loading = _hosts[generation]?.loadingOverlay;
+    if (loading != null &&
+        (loading.isVisible || loading.isDismissPending) &&
+        _canConsumeBack(loading.backType, loading.onBack)) {
+      final closing = loading.isClosing;
+      yield _OverlayBackTarget(
+        backType: closing ? BackType.normal : loading.backType,
+        onBack: closing ? null : loading.onBack,
+        close: loading.captureBackDismissal(),
+      );
     }
-    return null;
+
+    // An existing close owns the event until its animation and cleanup settle.
+    for (final record in _inFlightNotifyRecords.toList(growable: false)) {
+      if (record.generation == generation &&
+          _canConsumeBack(record.backType, record.onBack)) {
+        yield _OverlayBackTarget(
+          backType: BackType.normal,
+          close: () => record.dismissal!.future,
+        );
+      }
+    }
+    for (final record in _notifyQueue.toList(growable: false).reversed) {
+      if (record.generation == generation &&
+          _notifyQueue.contains(record) &&
+          _canConsumeBack(record.backType, record.onBack)) {
+        yield _OverlayBackTarget(
+          backType: record.backType,
+          onBack: record.onBack,
+          close:
+              () => _closeNotifyRecord<void>(
+                record,
+                result: null,
+                closeType: OverlayCloseType.back,
+              ),
+        );
+      }
+    }
+    for (final record in _inFlightDialogRecords.toList(growable: false)) {
+      if (record.generation == generation &&
+          _canConsumeBack(record.backType, record.onBack)) {
+        yield _OverlayBackTarget(
+          backType: BackType.normal,
+          close: () => record.dismissal!.future,
+        );
+      }
+    }
+    for (final record in _dialogQueue.toList(growable: false).reversed) {
+      if (record.generation == generation &&
+          _dialogQueue.contains(record) &&
+          !record.permanent &&
+          record.overlay.mainOverlay.visible &&
+          record.presentationState != _OverlayPresentationState.suspended &&
+          record.presentationState !=
+              _OverlayPresentationState.suspendedBeforeVisible &&
+          _canConsumeBack(record.backType, record.onBack)) {
+        yield _OverlayBackTarget(
+          backType: record.backType,
+          onBack: record.onBack,
+          close:
+              () => _closeDialogRecord<void>(
+                record,
+                result: null,
+                closeType: OverlayCloseType.back,
+              ),
+        );
+      }
+    }
   }
 }

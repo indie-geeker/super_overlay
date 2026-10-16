@@ -146,7 +146,7 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
     late final OverlayHandle<void> handle;
     handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const SizedBox.shrink(),
+      builder: (_, _) => const SizedBox.shrink(),
       options: OverlayPopupOptions(
         tag: 'showcase-sort-menu',
         strategy: OverlayStrategy.replaceExisting,
@@ -184,7 +184,7 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
     late final OverlayHandle<void> handle;
     handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const SizedBox.shrink(),
+      builder: (_, _) => const SizedBox.shrink(),
       options: OverlayPopupOptions(
         tag: 'showcase-attachment-menu',
         strategy: OverlayStrategy.replaceExisting,
@@ -221,7 +221,7 @@ class _AnchoredMenuPanelState extends State<AnchoredMenuPanel> {
     late final OverlayHandle<void> handle;
     handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const SizedBox.shrink(),
+      builder: (_, _) => const SizedBox.shrink(),
       options: OverlayPopupOptions(
         tag: 'showcase-moving-anchor',
         strategy: OverlayStrategy.replaceExisting,

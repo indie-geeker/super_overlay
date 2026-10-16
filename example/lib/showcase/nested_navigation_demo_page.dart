@@ -90,7 +90,7 @@ class _NestedHomePage extends StatelessWidget {
   void _showScopedDialog(BuildContext context) {
     SuperOverlay.of(context).dialog.show<void>(
       builder:
-          (_) => const SmallOverlay(
+          (_, _) => const SmallOverlay(
             title: 'Nested Home Scoped Dialog',
             message:
                 'It suspends on the detail route and returns with Nested Home.',
@@ -144,7 +144,7 @@ class _NestedDetailPage extends StatelessWidget {
   void _showScopedDialog(BuildContext context) {
     SuperOverlay.of(context).dialog.show<void>(
       builder:
-          (_) => const SmallOverlay(
+          (_, _) => const SmallOverlay(
             title: 'Detail Route Scoped Dialog',
             message:
                 'This record closes with the detail owner route when returning home.',

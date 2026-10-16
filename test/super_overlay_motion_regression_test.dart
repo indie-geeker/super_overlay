@@ -77,7 +77,7 @@ void main() {
     final handle = SuperOverlay.popup.show<void>(
       targetContext: target,
       builder:
-          (_) => const SizedBox(
+          (_, _) => const SizedBox(
             key: ValueKey('popup-body'),
             width: 160,
             height: 160,

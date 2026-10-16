@@ -84,7 +84,7 @@ void main() {
   ) async {
     final harness = await _pumpNestedApp(tester);
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Root-bound dialog'),
+      builder: (_, _) => const Text('Root-bound dialog'),
     );
     await tester.pumpAndSettle();
 
@@ -110,7 +110,7 @@ void main() {
     final harness = await _pumpNestedApp(tester);
     final handle = SuperOverlay.of(
       harness.nestedContext,
-    ).dialog.show<void>(builder: (_) => const Text('Scoped nested dialog'));
+    ).dialog.show<void>(builder: (_, _) => const Text('Scoped nested dialog'));
     await tester.pumpAndSettle();
     await handle.visible;
 
@@ -158,7 +158,7 @@ void main() {
 
     final handle = SuperOverlay.of(
       ownerContext,
-    ).dialog.show<void>(builder: (_) => const Text('Removed scoped dialog'));
+    ).dialog.show<void>(builder: (_, _) => const Text('Removed scoped dialog'));
     await tester.pumpAndSettle();
 
     harness.navigatorKey.currentState!.removeRoute(ownerRoute);
@@ -232,7 +232,7 @@ void main() {
 
     final handle = SuperOverlay.of(
       contextA,
-    ).dialog.show<void>(builder: (_) => const Text('A scoped dialog'));
+    ).dialog.show<void>(builder: (_, _) => const Text('A scoped dialog'));
     await tester.pumpAndSettle();
 
     navigatorB.currentState!.push<void>(
@@ -276,7 +276,7 @@ void main() {
   ) async {
     final harness = await _pumpNestedApp(tester);
     final handle = SuperOverlay.of(harness.nestedContext).dialog.show<void>(
-      builder: (_) => const Text('Unbound scoped dialog'),
+      builder: (_, _) => const Text('Unbound scoped dialog'),
       options: const OverlayDialogOptions(bindToRoute: false),
     );
     await tester.pumpAndSettle();
@@ -304,7 +304,7 @@ void main() {
       var builds = 0;
       var visibleCompleted = false;
       final handle = SuperOverlay.of(harness.nestedContext).dialog.show<void>(
-        builder: (_) {
+        builder: (_, _) {
           builds++;
           return const Text('Deferred scoped dialog');
         },
@@ -344,7 +344,7 @@ void main() {
   ) async {
     final harness = await _pumpNestedApp(tester);
     final handle = SuperOverlay.of(harness.nestedContext).dialog.show<void>(
-      builder: (_) => const Text('Never rendered scoped dialog'),
+      builder: (_, _) => const Text('Never rendered scoped dialog'),
     );
     Object? visibleError;
     var closedCount = 0;
@@ -377,7 +377,7 @@ void main() {
     late ModalRoute<Object?> coveringRoute;
     final handle = SuperOverlay.of(
       harness.nestedContext,
-    ).dialog.show<void>(builder: (_) => const Text('Suspended back dialog'));
+    ).dialog.show<void>(builder: (_, _) => const Text('Suspended back dialog'));
     await tester.pumpAndSettle();
 
     harness.navigatorKey.currentState!.push<void>(
@@ -414,13 +414,13 @@ void main() {
     final harness = await _pumpNestedApp(tester);
     final scoped = SuperOverlay.of(harness.nestedContext);
     final first = scoped.dialog.show<void>(
-      builder: (_) => const Text('First replaceable dialog'),
+      builder: (_, _) => const Text('First replaceable dialog'),
       options: const OverlayDialogOptions(tag: 'scoped-replacement'),
     );
     await tester.pumpAndSettle();
 
     final replacement = scoped.dialog.show<void>(
-      builder: (_) => const Text('Replacement scoped dialog'),
+      builder: (_, _) => const Text('Replacement scoped dialog'),
       options: const OverlayDialogOptions(
         tag: 'scoped-replacement',
         strategy: OverlayStrategy.replaceExisting,
@@ -465,9 +465,9 @@ void main() {
     harness.navigatorKey.currentState!.push<void>(ownerRoute);
     await tester.pumpAndSettle();
 
-    final handle = SuperOverlay.of(
-      ownerContext,
-    ).dialog.show<void>(builder: (_) => const Text('Immediate removed dialog'));
+    final handle = SuperOverlay.of(ownerContext).dialog.show<void>(
+      builder: (_, _) => const Text('Immediate removed dialog'),
+    );
     Object? visibleError;
     var closedCount = 0;
     handle.visible.then<void>(
@@ -492,7 +492,7 @@ void main() {
     final observer = harness.nestedObserver!;
     final handle = SuperOverlay.of(
       harness.nestedContext,
-    ).dialog.show<void>(builder: (_) => const Text('Observer-owned dialog'));
+    ).dialog.show<void>(builder: (_, _) => const Text('Observer-owned dialog'));
     await tester.pumpAndSettle();
 
     observer.dispose();
@@ -542,7 +542,7 @@ void main() {
 
     final handle = SuperOverlay.of(
       shellContext,
-    ).dialog.show<void>(builder: (_) => const Text('Shell root dialog'));
+    ).dialog.show<void>(builder: (_, _) => const Text('Shell root dialog'));
     await tester.pumpAndSettle();
     nestedKey.currentState!.push<void>(
       MaterialPageRoute<void>(
@@ -606,7 +606,7 @@ void main() {
 
     final handle = SuperOverlay.of(
       nestedContext,
-    ).dialog.show<void>(builder: (_) => const Text('Detached owner dialog'));
+    ).dialog.show<void>(builder: (_, _) => const Text('Detached owner dialog'));
     await tester.pumpAndSettle();
     var closed = false;
     handle.closed.then((_) => closed = true);
@@ -844,7 +844,7 @@ void main() {
 
     final handle = SuperOverlay.of(routeContext).popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Scoped nested popup'),
+      builder: (_, _) => const Text('Scoped nested popup'),
     );
     await tester.pumpAndSettle();
     await handle.visible;
@@ -876,7 +876,7 @@ void main() {
   ) async {
     final harness = await _pumpNestedApp(tester);
     final handle = SuperOverlay.of(harness.nestedContext).dialog.show<void>(
-      builder: (_) => const Text('Timed scoped dialog'),
+      builder: (_, _) => const Text('Timed scoped dialog'),
       options: const OverlayDialogOptions(
         displayDuration: Duration(seconds: 2),
       ),
@@ -908,7 +908,7 @@ void main() {
   ) async {
     final harness = await _pumpNestedApp(tester);
     final handle = SuperOverlay.of(harness.nestedContext).dialog.show<void>(
-      builder: (_) => const Text('Pre-frame observer dialog'),
+      builder: (_, _) => const Text('Pre-frame observer dialog'),
     );
     Object? visibleError;
     handle.visible.then<void>(
@@ -930,7 +930,7 @@ void main() {
   ) async {
     final harness = await _pumpNestedApp(tester);
     final handle = SuperOverlay.of(harness.nestedContext).dialog.show<void>(
-      builder: (_) => const Text('Nested dialog from root back'),
+      builder: (_, _) => const Text('Nested dialog from root back'),
     );
     await tester.pumpAndSettle();
 
@@ -988,9 +988,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final handle = SuperOverlay.of(
-      invocationContext,
-    ).dialog.show<void>(builder: (_) => const Text('Invocation-owned dialog'));
+    final handle = SuperOverlay.of(invocationContext).dialog.show<void>(
+      builder: (_, _) => const Text('Invocation-owned dialog'),
+    );
     await tester.pumpAndSettle();
     var closed = false;
     handle.closed.then((_) => closed = true);
@@ -1023,7 +1023,7 @@ void main() {
     final harness = await _pumpNestedApp(tester);
     final scoped = SuperOverlay.of(harness.nestedContext);
     final first = scoped.dialog.show<void>(
-      builder: (_) => const Text('Kept scoped dialog'),
+      builder: (_, _) => const Text('Kept scoped dialog'),
       options: const OverlayDialogOptions(tag: 'kept-scoped'),
     );
     await tester.pumpAndSettle();
@@ -1035,7 +1035,7 @@ void main() {
     );
     await tester.pumpAndSettle();
     final reused = scoped.dialog.show<void>(
-      builder: (_) => const Text('Unused replacement content'),
+      builder: (_, _) => const Text('Unused replacement content'),
       options: const OverlayDialogOptions(
         tag: 'kept-scoped',
         strategy: OverlayStrategy.keepExisting,

@@ -77,6 +77,7 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
             builder: (context, constraints) {
               final selector = DropdownButtonFormField<OverlayNotificationType>(
                 key: const ValueKey('feedback-notification-selector'),
+                isExpanded: true,
                 // `initialValue` is unavailable on the minimum Flutter 3.29.
                 // ignore: deprecated_member_use
                 value: _notificationType,
@@ -103,7 +104,8 @@ class _InstantFeedbackPanelState extends State<InstantFeedbackPanel> {
                 icon: const Icon(Icons.campaign_outlined),
                 label: const Text('Show Notification'),
               );
-              if (constraints.maxWidth < 420) {
+              final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+              if (constraints.maxWidth < 420 * textScale) {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [selector, const SizedBox(height: 10), action],

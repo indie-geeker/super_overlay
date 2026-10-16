@@ -1,37 +1,55 @@
+import 'package:flutter/widgets.dart';
+
 import '../config/enum_config.dart';
 import '../data/show_param.dart';
 import '../helper/overlay_manager.dart';
 import '../kit/super_overlay_entry.dart';
 import '../kit/view_utils.dart';
+import '../widget/default/toast_widget.dart';
 import '../widget/helper/toast_helper.dart';
+import '../widget/helper/toast_stack_layout.dart';
 import 'base_overlay.dart';
 
 class CustomToast extends BaseOverlay {
   CustomToast({
     required SuperOverlayEntry overlayEntry,
     required this.generation,
+    required this.stackEntry,
   }) : super(overlayEntry);
 
   final int generation;
+  final ToastStackEntry stackEntry;
+  bool _insertionRequested = false;
+  bool _removed = false;
 
-  factory CustomToast.create({required int generation}) {
+  factory CustomToast.create({
+    required int generation,
+    required ToastStackEntry stackEntry,
+  }) {
     CustomToast? toast;
     final entry = SuperOverlayEntry(builder: (_) => toast!.getWidget());
-    toast = CustomToast(overlayEntry: entry, generation: generation);
+    toast = CustomToast(
+      overlayEntry: entry,
+      generation: generation,
+      stackEntry: stackEntry,
+    );
     return toast;
   }
 
-  void show(ShowToastParam param) {
+  void show(ShowToastParam param, {required VoidCallback onMask}) {
     final overlayContext = OverlayManager.instance.contextToast;
     if (overlayContext == null) {
       throw StateError(
-        'SuperOverlay is not initialized. Use SuperOverlay.init() in MaterialApp.builder.',
+        'SuperOverlay is not initialized. Install integration.builder and integration.observer on your app.',
       );
     }
 
-    if (!overlayEntry.mounted) {
+    // Insertion precedes mounting. A refresh in that interval must reuse the
+    // entry, including when insertion itself is deferred until after build.
+    if (!_insertionRequested && !_removed) {
+      _insertionRequested = true;
       ViewUtils.addSafeUse(() {
-        if (!OverlayManager.instance.ownsGeneration(generation)) {
+        if (_removed || !OverlayManager.instance.ownsGeneration(generation)) {
           return;
         }
         overlayOf(overlayContext).insert(overlayEntry);
@@ -39,17 +57,8 @@ class CustomToast extends BaseOverlay {
     }
 
     mainOverlay.show<void>(
-      param: param.asCustomParam(),
-      onMask: () {
-        param.onMask?.call();
-        if (!param.clickMaskDismiss) {
-          return;
-        }
-        OverlayManager.instance.dismiss<void>(
-          status: DismissStatus.toast,
-          generation: generation,
-        );
-      },
+      param: param.asCustomParam(stackEntry),
+      onMask: onMask,
     );
   }
 
@@ -59,8 +68,14 @@ class CustomToast extends BaseOverlay {
   }
 
   void remove() {
+    _removed = true;
+    stackEntry.remove();
     overlayEntry.remove();
   }
+
+  @override
+  Widget getWidget() =>
+      ToastStackPosition(entry: stackEntry, child: super.getWidget());
 
   void disposeImmediately() {
     mainOverlay.disposeImmediately();
@@ -69,11 +84,19 @@ class CustomToast extends BaseOverlay {
 }
 
 extension on ShowToastParam {
-  ShowCustomParam asCustomParam() {
+  ShowCustomParam asCustomParam(ToastStackEntry stackEntry) {
     return ShowCustomParam(
-      builder:
-          (context) =>
-              ToastHelper(consumeEvent: consumeEvent, child: builder(context)),
+      builder: (context) {
+        final content = builder(context);
+        return ToastStackMeasure(
+          entry: stackEntry,
+          outerMargin:
+              content is ToastWidget
+                  ? ToastWidget.outerMargin
+                  : EdgeInsets.zero,
+          child: ToastHelper(consumeEvent: consumeEvent, child: content),
+        );
+      },
       alignment: alignment,
       avoidKeyboard: true,
       clickMaskDismiss: clickMaskDismiss,

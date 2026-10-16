@@ -31,11 +31,12 @@ enum OverlaySurface {
 
 /// Selects which overlay or overlay family should be closed.
 enum OverlayCloseTarget {
-  /// Close the most relevant currently active overlay.
+  /// Close one overlay using the app's surface priority.
   ///
   /// Loading has priority, followed by notification, dialog or popup, then
-  /// toast. Use a more specific target when the caller owns a particular flow.
-  topMost,
+  /// toast. This priority is independent of visual stacking order. Use a handle
+  /// or a more specific target when the caller owns a particular flow.
+  highestPriority,
 
   /// Close one dialog overlay.
   dialog,
@@ -76,7 +77,8 @@ enum OverlayBackBehavior {
   /// Keep the overlay visible and consume the back event.
   block,
 
-  /// Ignore the back event and let the app handle it.
+  /// Skip this overlay and inspect the next consuming overlay. If none exists,
+  /// let the app handle the back event.
   passThrough,
 }
 
@@ -101,6 +103,8 @@ enum OverlayToastDisplayPolicy {
   replaceLatest,
 
   /// Refresh the active toast content instead of adding a new entry.
+  /// Superseded content is released; previous handles still wait for the lane
+  /// to close and cannot close or refresh the latest request.
   refreshActive,
 
   /// Show multiple toast messages at the same time.

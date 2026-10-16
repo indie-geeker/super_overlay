@@ -241,10 +241,9 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
   }
 
   void _showStrategyDialog(String label, OverlayStrategy strategy) {
-    late final OverlayHandle<void> handle;
-    handle = SuperOverlay.dialog.show<void>(
+    final handle = SuperOverlay.of(context).dialog.show<void>(
       builder:
-          (_) => OverlayCard(
+          (_, dialog) => OverlayCard(
             width: 320,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -264,7 +263,7 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () => unawaited(handle.close()),
+                    onPressed: () => unawaited(dialog.close()),
                     child: const Text('Close This Prompt'),
                   ),
                 ),
@@ -331,10 +330,9 @@ class _OverlayControlLabPageState extends State<OverlayControlLabPage> {
     _awaitEvents
       ..clear()
       ..add('1. Handle created');
-    late final OverlayHandle<void> handle;
-    handle = SuperOverlay.dialog.show<void>(
+    final handle = SuperOverlay.of(context).dialog.show<void>(
       builder:
-          (_) => OverlayCard(
+          (_, _) => OverlayCard(
             width: 320,
             child: Column(
               mainAxisSize: MainAxisSize.min,

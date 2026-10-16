@@ -37,7 +37,7 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
 
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Visible dialog'),
+      builder: (_, _) => const Text('Visible dialog'),
     );
 
     await _expectVisibleAfterRender(
@@ -78,7 +78,7 @@ void main() {
 
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Visible popup'),
+      builder: (_, _) => const Text('Visible popup'),
     );
 
     await _expectVisibleAfterRender(tester, handle, find.text('Visible popup'));
@@ -115,11 +115,11 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
 
     final first = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Shared visible dialog'),
+      builder: (_, _) => const Text('Shared visible dialog'),
       options: const OverlayDialogOptions(tag: 'shared-visible'),
     );
     final second = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Ignored duplicate dialog'),
+      builder: (_, _) => const Text('Ignored duplicate dialog'),
       options: const OverlayDialogOptions(
         tag: 'shared-visible',
         strategy: OverlayStrategy.keepExisting,
@@ -147,7 +147,7 @@ void main() {
     await tester.pumpWidget(_buildOverlayApp(const SizedBox.shrink()));
 
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Never rendered dialog'),
+      builder: (_, _) => const Text('Never rendered dialog'),
     );
     var visibleSucceeded = false;
     Object? visibleError;

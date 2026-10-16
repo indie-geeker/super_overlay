@@ -137,7 +137,7 @@ class _GuidedMaskPanelState extends State<GuidedMaskPanel> {
       }
       final handle = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
-        builder: (_) => GuideBubble(step: step),
+        builder: (_, _) => GuideBubble(step: step),
         options: OverlayPopupOptions(
           tag: _guideTag,
           strategy: OverlayStrategy.replaceExisting,

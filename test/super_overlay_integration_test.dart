@@ -210,7 +210,7 @@ void main() {
       );
 
       final handle = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Legacy observer dialog'),
+        builder: (_, _) => const Text('Legacy observer dialog'),
         options: const OverlayDialogOptions(
           tag: 'legacy-observer-dialog',
           bindToRoute: true,

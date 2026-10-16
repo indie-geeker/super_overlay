@@ -48,7 +48,7 @@ void registerPopupDismissTests() {
                     handle = SuperOverlay.popup.show<void>(
                       targetContext: targetContext,
                       builder:
-                          (_) => const SizedBox(
+                          (_, _) => const SizedBox(
                             width: 120,
                             height: 40,
                             child: Text('Shifted Popup'),
@@ -95,7 +95,7 @@ void registerPopupDismissTests() {
 
     final lockedHandle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Locked Popup'),
+      builder: (_, _) => const Text('Locked Popup'),
       options: const OverlayPopupOptions(
         tag: 'locked',
         dismissOnMaskTap: false,
@@ -112,7 +112,7 @@ void registerPopupDismissTests() {
 
     final dismissibleHandle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Dismissible Popup'),
+      builder: (_, _) => const Text('Dismissible Popup'),
       options: const OverlayPopupOptions(dismissOnMaskTap: true),
     );
     await tester.pumpAndSettle();
@@ -165,7 +165,7 @@ void registerPopupDismissTests() {
 
     final handle = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Ignore Area Popup'),
+      builder: (_, _) => const Text('Ignore Area Popup'),
       options: const OverlayPopupOptions(
         tag: 'ignore-area-popup',
         dismissOnMaskTap: true,
@@ -206,7 +206,7 @@ void registerPopupDismissTests() {
 
       final attachOne = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
-        builder: (_) => const Text('Attach One'),
+        builder: (_, _) => const Text('Attach One'),
         options: const OverlayPopupOptions(tag: 'attach-one'),
       );
       await tester.pumpAndSettle();
@@ -223,10 +223,10 @@ void registerPopupDismissTests() {
 
       final attachTwo = SuperOverlay.popup.show<void>(
         targetContext: targetContext,
-        builder: (_) => const Text('Attach Two'),
+        builder: (_, _) => const Text('Attach Two'),
       );
       final customTwo = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Custom Two'),
+        builder: (_, _) => const Text('Custom Two'),
       );
       await tester.pumpAndSettle();
       expect(attachTwo.isVisible, isTrue);

@@ -15,6 +15,76 @@ Future<void> _disposeRouterApp(
 }
 
 void main() {
+  for (final behavior in OverlayBackBehavior.values) {
+    testWidgets('shell system back honors ${behavior.name} once', (
+      tester,
+    ) async {
+      final integration = SuperOverlay.integration();
+      final observer = integration.navigatorObserver();
+      late BuildContext detailContext;
+      final router = GoRouter(
+        observers: [integration.observer],
+        routes: [
+          ShellRoute(
+            observers: [observer],
+            builder: (_, __, child) => Scaffold(body: child),
+            routes: [
+              GoRoute(
+                path: '/',
+                builder: (_, __) => const Text('shell home'),
+                routes: [
+                  GoRoute(
+                    path: 'detail',
+                    builder: (context, _) {
+                      detailContext = context;
+                      return const Text('shell detail');
+                    },
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        MaterialApp.router(builder: integration.builder, routerConfig: router),
+      );
+      await tester.pumpAndSettle();
+      router.push('/detail');
+      await tester.pumpAndSettle();
+      expect(find.text('shell detail'), findsOneWidget);
+      expect(router.canPop(), isTrue);
+      var closed = 0;
+      final handle = SuperOverlay.of(detailContext).dialog.show<void>(
+        builder: (_, _) => const Text('back policy overlay'),
+        options: OverlayDialogOptions(backBehavior: behavior),
+      );
+      handle.closed.then((_) => closed++);
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      // Imperative push does not necessarily change the URL. Check the actual
+      // displayed route and navigation stack after system back instead.
+      expect(
+        find.text('shell detail'),
+        behavior == OverlayBackBehavior.passThrough
+            ? findsNothing
+            : findsOneWidget,
+      );
+      expect(router.canPop(), behavior != OverlayBackBehavior.passThrough);
+      expect(closed, behavior == OverlayBackBehavior.block ? 0 : 1);
+      expect(handle.isVisible, behavior == OverlayBackBehavior.block);
+      if (behavior == OverlayBackBehavior.block) {
+        final closing = handle.close();
+        await tester.pumpAndSettle();
+        await closing;
+      }
+      expect(closed, 1);
+      await _disposeRouterApp(tester, router, integration);
+      observer.dispose();
+    });
+  }
+
   testWidgets('ShellRoute scopes page overlays but not shell chrome', (
     tester,
   ) async {
@@ -72,7 +142,7 @@ void main() {
 
     final pageHandle = SuperOverlay.of(
       pageContext,
-    ).dialog.show<void>(builder: (_) => const Text('Shell page overlay'));
+    ).dialog.show<void>(builder: (_, _) => const Text('Shell page overlay'));
     await tester.pumpAndSettle();
 
     router.push('/shell-detail');
@@ -96,7 +166,7 @@ void main() {
 
     final chromeHandle = SuperOverlay.of(
       shellChromeContext,
-    ).dialog.show<void>(builder: (_) => const Text('Shell chrome overlay'));
+    ).dialog.show<void>(builder: (_, _) => const Text('Shell chrome overlay'));
     await tester.pumpAndSettle();
 
     router.push('/shell-a');
@@ -182,7 +252,7 @@ void main() {
 
     final handle = SuperOverlay.of(
       branchAContext,
-    ).dialog.show<void>(builder: (_) => const Text('Branch A overlay'));
+    ).dialog.show<void>(builder: (_, _) => const Text('Branch A overlay'));
     await tester.pumpAndSettle();
 
     expect(rootRoute.popDisposition, RoutePopDisposition.doNotPop);
@@ -289,9 +359,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final handle = SuperOverlay.of(
-        branchAContext,
-      ).dialog.show<void>(builder: (_) => const Text('Custom branch overlay'));
+      final handle = SuperOverlay.of(branchAContext).dialog.show<void>(
+        builder: (_, _) => const Text('Custom branch overlay'),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Custom branch overlay'), findsOneWidget);

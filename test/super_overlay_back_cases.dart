@@ -15,7 +15,7 @@ void registerBackOverlayTests() {
                 body: ElevatedButton(
                   onPressed: () {
                     SuperOverlay.dialog.show<void>(
-                      builder: (_) => const Text('Back Normal Dialog'),
+                      builder: (_, _) => const Text('Back Normal Dialog'),
                       options: const OverlayDialogOptions(
                         backBehavior: OverlayBackBehavior.dismiss,
                       ),
@@ -55,7 +55,7 @@ void registerBackOverlayTests() {
                 body: ElevatedButton(
                   onPressed: () {
                     handle = SuperOverlay.dialog.show<void>(
-                      builder: (_) => const Text('Back Block Dialog'),
+                      builder: (_, _) => const Text('Back Block Dialog'),
                       options: const OverlayDialogOptions(
                         backBehavior: OverlayBackBehavior.block,
                       ),
@@ -97,7 +97,7 @@ void registerBackOverlayTests() {
                 body: ElevatedButton(
                   onPressed: () {
                     SuperOverlay.dialog.show<void>(
-                      builder: (_) => const Text('Back Ignore Dialog'),
+                      builder: (_, _) => const Text('Back Ignore Dialog'),
                       options: const OverlayDialogOptions(
                         backBehavior: OverlayBackBehavior.passThrough,
                       ),

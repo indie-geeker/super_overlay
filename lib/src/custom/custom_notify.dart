@@ -8,6 +8,9 @@ import 'base_overlay.dart';
 class CustomNotify extends BaseOverlay {
   CustomNotify({required SuperOverlayEntry overlayEntry}) : super(overlayEntry);
 
+  Object _callbackPresentation = Object();
+  Object get callbackPresentation => _callbackPresentation;
+
   Future<T?> showNotify<T>({required ShowNotifyParam param}) {
     if (DebounceUtils.instance.banContinue(
       OverlayDebounceType.notify,
@@ -21,21 +24,18 @@ class CustomNotify extends BaseOverlay {
     if (push.reused && push.overlay != this) {
       overlayEntry.remove();
     }
+    push.overlay._callbackPresentation = Object();
+    final owner = OverlayManager.instance.captureNotifyCallbackOwner(
+      overlay: push.overlay,
+      generation: push.generation,
+    );
 
     return push.overlay.mainOverlay.show<T>(
       param: param.asCustomParam(),
-      onMask: () {
-        param.onMask?.call();
-        if (!param.clickMaskDismiss) {
-          return;
-        }
-        OverlayManager.instance.dismiss<void>(
-          status: DismissStatus.notify,
-          tag: push.tag,
-          closeType: OverlayCloseType.mask,
-          generation: push.generation,
-        );
-      },
+      onMask: owner.maskCallback(
+        onMask: param.onMask,
+        dismissible: param.clickMaskDismiss,
+      ),
     );
   }
 

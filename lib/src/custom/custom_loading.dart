@@ -1,8 +1,11 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import '../config/enum_config.dart';
 import '../data/show_param.dart';
 import '../helper/overlay_manager.dart';
+import '../kit/overlay_controller.dart';
 import '../kit/super_overlay_entry.dart';
 import '../kit/typedef.dart';
 import 'base_overlay.dart';
@@ -29,15 +32,20 @@ class CustomLoading extends BaseOverlay {
   SuperOverlayOnBack? _onBack;
 
   bool get isVisible => _visible;
-  bool matchesTag(String tag) =>
-      _visible && (_tag == tag || _businessTag == tag);
+  bool matchesTag(String tag, {bool identityTagOnly = false}) =>
+      _visible && (_tag == tag || (!identityTagOnly && _businessTag == tag));
   bool get isDismissPending => _pendingDismiss != null || _deferredShow != null;
+  bool get isClosing => !_visible && isDismissPending;
   bool matchesDismissTag(String tag) =>
       matchesTag(tag) ||
       _pendingDismiss?.matchesTag(tag) == true ||
       _deferredShow?.matchesTag(tag) == true;
   BackType get backType => _backType;
   SuperOverlayOnBack? get onBack => _onBack;
+
+  Future<void> Function() captureBackDismissal() {
+    return _LoadingCallbackOwner(this, _lifecycle).close;
+  }
 
   Future<T?> showLoading<T>({required ShowLoadingParam param}) {
     final pending = _pendingDismiss;
@@ -60,7 +68,7 @@ class CustomLoading extends BaseOverlay {
     _lifecycle++;
     _settlePendingDismiss();
     _visible = true;
-    _canDismiss = param.leastLoadingTime == Duration.zero;
+    _canDismiss = param.leastLoadingTime <= Duration.zero;
     _tag = param.tag;
     _businessTag = param.businessTag;
     _backType = param.backType;
@@ -69,12 +77,20 @@ class CustomLoading extends BaseOverlay {
     _leastTimer?.cancel();
     _displayTimer?.cancel();
 
+    final controller = param.controller ?? SuperOverlayController();
     if (!_canDismiss) {
-      _leastTimer = Timer(param.leastLoadingTime, () {
-        _leastTimer = null;
-        _canDismiss = true;
-        _startPendingDismiss();
-      });
+      final lifecycle = _lifecycle;
+      final minimum = param.leastLoadingTime;
+      unawaited(
+        controller.visible.then<void>((_) {
+          if (lifecycle != _lifecycle || !_visible) return;
+          _leastTimer = Timer(minimum, () {
+            _leastTimer = null;
+            _canDismiss = true;
+            _startPendingDismiss();
+          });
+        }, onError: (Object _, StackTrace __) {}),
+      );
     }
 
     if (param.displayTime != null) {
@@ -85,30 +101,33 @@ class CustomLoading extends BaseOverlay {
     }
 
     return mainOverlay.show<T>(
-      param: param.asCustomParam(),
-      onMask: () {
-        param.onMask?.call();
-        if (param.clickMaskDismiss) {
-          dismiss(closeType: OverlayCloseType.mask);
-        }
-      },
+      param: param.asCustomParam(controller),
+      onMask: _LoadingCallbackOwner(
+        this,
+        _lifecycle,
+      ).maskCallback(onMask: param.onMask, dismissible: param.clickMaskDismiss),
     );
   }
 
   Future<void> dismiss({
     OverlayCloseType closeType = OverlayCloseType.normal,
     String? tag,
+    bool identityTagOnly = false,
   }) {
     Future<void>? deferredClose;
     final deferred = _deferredShow;
-    if (deferred != null && (tag == null || deferred.matchesTag(tag))) {
+    if (deferred != null &&
+        (tag == null ||
+            deferred.matchesTag(tag, identityTagOnly: identityTagOnly))) {
       _deferredShow = null;
       deferred.cancel();
       deferredClose = deferred.future.then<void>((_) {});
     }
 
     final pending = _pendingDismiss;
-    if (pending != null && (tag == null || pending.matchesTag(tag))) {
+    if (pending != null &&
+        (tag == null ||
+            pending.matchesTag(tag, identityTagOnly: identityTagOnly))) {
       if (deferredClose != null) {
         return Future.wait<void>([
           pending.future,
@@ -122,7 +141,8 @@ class CustomLoading extends BaseOverlay {
       return deferredClose;
     }
 
-    if (!_visible || (tag != null && !matchesTag(tag))) {
+    if (!_visible ||
+        (tag != null && !matchesTag(tag, identityTagOnly: identityTagOnly))) {
       return Future<void>.value();
     }
 
@@ -243,6 +263,44 @@ class CustomLoading extends BaseOverlay {
   }
 }
 
+class _LoadingCallbackOwner {
+  _LoadingCallbackOwner(CustomLoading loading, this.lifecycle)
+    : _loading = WeakReference(loading);
+
+  final WeakReference<CustomLoading> _loading;
+  final int lifecycle;
+
+  CustomLoading? get _current {
+    final loading = _loading.target;
+    return loading != null && loading._lifecycle == lifecycle ? loading : null;
+  }
+
+  Future<void> close({OverlayCloseType closeType = OverlayCloseType.back}) {
+    final loading = _current;
+    if (loading == null) return Future<void>.value();
+    final pending = loading._pendingDismiss;
+    if (pending != null) return pending.future;
+    if (!loading._visible) return Future<void>.value();
+    return loading.dismiss(closeType: closeType);
+  }
+
+  VoidCallback maskCallback({
+    required VoidCallback? onMask,
+    required bool dismissible,
+  }) => () {
+    final loading = _current;
+    if (loading == null) return;
+    // A closing surface may still receive pointer events. Join its own close
+    // without re-running application callbacks or cancelling a deferred show.
+    if (!loading._visible) {
+      if (dismissible) unawaited(close(closeType: OverlayCloseType.mask));
+      return;
+    }
+    onMask?.call();
+    if (dismissible) unawaited(close(closeType: OverlayCloseType.mask));
+  };
+}
+
 class _DeferredLoadingShow<T> {
   _DeferredLoadingShow({required this.lifecycle, required this.param});
 
@@ -253,7 +311,8 @@ class _DeferredLoadingShow<T> {
 
   Future<T?> get future => _completer.future;
 
-  bool matchesTag(String tag) => param.tag == tag || param.businessTag == tag;
+  bool matchesTag(String tag, {bool identityTagOnly = false}) =>
+      param.tag == tag || (!identityTagOnly && param.businessTag == tag);
 
   void cancel() {
     if (cancelled) {
@@ -297,7 +356,8 @@ class _LoadingDismissOperation {
   Future<void> get future => _completer.future;
   bool get started => _started;
 
-  bool matchesTag(String value) => tag == value || businessTag == value;
+  bool matchesTag(String value, {bool identityTagOnly = false}) =>
+      tag == value || (!identityTagOnly && businessTag == value);
 
   bool start() {
     if (_started || cancelled || _completer.isCompleted) {
@@ -320,7 +380,7 @@ class _LoadingDismissOperation {
 }
 
 extension on ShowLoadingParam {
-  ShowCustomParam asCustomParam() {
+  ShowCustomParam asCustomParam(SuperOverlayController presentationController) {
     return ShowCustomParam(
       builder: builder,
       alignment: alignment,
@@ -350,7 +410,7 @@ extension on ShowLoadingParam {
       bindWidget: null,
       ignoreArea: null,
       maskTriggerType: MaskTriggerType.up,
-      controller: controller,
+      controller: presentationController,
       backType: backType,
       onBack: onBack,
     );

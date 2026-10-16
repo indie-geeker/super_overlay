@@ -25,9 +25,22 @@ class SuperOverlayObserver extends NavigatorObserver {
   VoidCallback? _onDispose;
   bool _disposed = false;
 
+  // Routers can forward nested Navigator events to their root observers.
+  // A scope must only track its own Navigator, including detached removals.
+  bool _ownsRoute(Route<dynamic> route) {
+    final routeNavigator = route.navigator;
+    if (routeNavigator != null) {
+      return identical(routeNavigator, navigator);
+    }
+    return NavigatorScopeRegistry.instance.isRouteTrackedByScope(
+      _scopeIdentity,
+      route,
+    );
+  }
+
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (_disposed) {
+    if (_disposed || !_ownsRoute(route)) {
       return;
     }
     NavigatorScopeRegistry.instance.routePushed(
@@ -44,7 +57,7 @@ class SuperOverlayObserver extends NavigatorObserver {
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (_disposed) {
+    if (_disposed || !_ownsRoute(route)) {
       return;
     }
     NavigatorScopeRegistry.instance.routePopped(
@@ -62,7 +75,7 @@ class SuperOverlayObserver extends NavigatorObserver {
 
   @override
   void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    if (_disposed) {
+    if (_disposed || !_ownsRoute(route)) {
       return;
     }
     NavigatorScopeRegistry.instance.routeRemoved(
@@ -79,7 +92,9 @@ class SuperOverlayObserver extends NavigatorObserver {
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
-    if (_disposed) {
+    if (_disposed ||
+        !((newRoute != null && _ownsRoute(newRoute)) ||
+            (oldRoute != null && _ownsRoute(oldRoute)))) {
       return;
     }
     NavigatorScopeRegistry.instance.routeReplaced(
@@ -97,7 +112,7 @@ class SuperOverlayObserver extends NavigatorObserver {
 
   @override
   void didChangeTop(Route<dynamic> topRoute, Route<dynamic>? previousTopRoute) {
-    if (_disposed) {
+    if (_disposed || !_ownsRoute(topRoute)) {
       return;
     }
     NavigatorScopeRegistry.instance.topRouteChanged(

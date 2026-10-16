@@ -217,7 +217,7 @@ void main() {
                 body: ElevatedButton(
                   onPressed: () {
                     SuperOverlay.dialog.show<void>(
-                      builder: (_) => const Text('Back dialog'),
+                      builder: (_, _) => const Text('Back dialog'),
                       options: const OverlayDialogOptions(
                         backBehavior: OverlayBackBehavior.dismiss,
                       ),
@@ -251,7 +251,7 @@ void main() {
     final harness = await _pumpApp(tester);
     await _pushSecond(tester, harness);
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Blocking dialog'),
+      builder: (_, _) => const Text('Blocking dialog'),
       options: const OverlayDialogOptions(
         backBehavior: OverlayBackBehavior.block,
       ),
@@ -273,7 +273,7 @@ void main() {
     final harness = await _pumpApp(tester);
     await _pushSecond(tester, harness);
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Pass-through dialog'),
+      builder: (_, _) => const Text('Pass-through dialog'),
       options: const OverlayDialogOptions(
         backBehavior: OverlayBackBehavior.passThrough,
       ),
@@ -295,11 +295,11 @@ void main() {
     await _pushSecond(tester, harness);
     final targetContext = tester.element(find.text('Second page'));
     final dialog = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Priority dialog'),
+      builder: (_, _) => const Text('Priority dialog'),
     );
     final popup = SuperOverlay.popup.show<void>(
       targetContext: targetContext,
-      builder: (_) => const Text('Priority popup'),
+      builder: (_, _) => const Text('Priority popup'),
     );
     final notify = SuperOverlay.notify.alert(
       'Priority notify',
@@ -408,7 +408,7 @@ void main() {
     final harness = await _pumpApp(tester, installObserver: false);
     final routeBound = _captureOverlay(
       () => SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Unexpected route-bound dialog'),
+        builder: (_, _) => const Text('Unexpected route-bound dialog'),
         options: const OverlayDialogOptions(
           backBehavior: OverlayBackBehavior.passThrough,
         ),
@@ -416,13 +416,13 @@ void main() {
     );
     final consuming = _captureOverlay(
       () => SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Unexpected consuming dialog'),
+        builder: (_, _) => const Text('Unexpected consuming dialog'),
         options: const OverlayDialogOptions(bindToRoute: false),
       ),
     );
     final routeNeutral = _captureOverlay(
       () => SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Allowed route-neutral dialog'),
+        builder: (_, _) => const Text('Allowed route-neutral dialog'),
         options: const OverlayDialogOptions(
           bindToRoute: false,
           backBehavior: OverlayBackBehavior.passThrough,
@@ -481,7 +481,7 @@ void main() {
 
     final routeBound = _captureOverlay(
       () => SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Unexpected detached observer dialog'),
+        builder: (_, _) => const Text('Unexpected detached observer dialog'),
         options: const OverlayDialogOptions(
           backBehavior: OverlayBackBehavior.passThrough,
         ),
@@ -514,7 +514,7 @@ void main() {
 
     final routeBound = _captureOverlay(
       () => SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Unexpected non-modal route binding'),
+        builder: (_, _) => const Text('Unexpected non-modal route binding'),
         options: const OverlayDialogOptions(
           backBehavior: OverlayBackBehavior.passThrough,
         ),
@@ -522,13 +522,13 @@ void main() {
     );
     final consuming = _captureOverlay(
       () => SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Unexpected non-modal back consumer'),
+        builder: (_, _) => const Text('Unexpected non-modal back consumer'),
         options: const OverlayDialogOptions(bindToRoute: false),
       ),
     );
     final routeNeutral = _captureOverlay(
       () => SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Allowed non-modal route-neutral dialog'),
+        builder: (_, _) => const Text('Allowed non-modal route-neutral dialog'),
         options: const OverlayDialogOptions(
           bindToRoute: false,
           backBehavior: OverlayBackBehavior.passThrough,
@@ -584,7 +584,7 @@ void main() {
     );
     await _pushSecond(tester, harness);
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Form blocking dialog'),
+      builder: (_, _) => const Text('Form blocking dialog'),
       options: const OverlayDialogOptions(
         backBehavior: OverlayBackBehavior.block,
       ),
@@ -640,7 +640,7 @@ void main() {
       ),
     );
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Nested-dispatched dialog'),
+      builder: (_, _) => const Text('Nested-dispatched dialog'),
     );
     await tester.pumpAndSettle();
 
@@ -677,7 +677,7 @@ void main() {
     );
     await _pushSecond(tester, harness);
     SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Observer teardown dialog'),
+      builder: (_, _) => const Text('Observer teardown dialog'),
       options: const OverlayDialogOptions(
         backBehavior: OverlayBackBehavior.block,
       ),
@@ -707,7 +707,7 @@ void main() {
     );
     await _pushSecond(tester, harness);
     final handle = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Host teardown dialog'),
+      builder: (_, _) => const Text('Host teardown dialog'),
       options: const OverlayDialogOptions(
         backBehavior: OverlayBackBehavior.block,
       ),
@@ -747,7 +747,7 @@ void main() {
     navigatorKey.currentState!.pushNamed('/second');
     await tester.pumpAndSettle();
     final retired = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Retired blocking dialog'),
+      builder: (_, _) => const Text('Retired blocking dialog'),
       options: const OverlayDialogOptions(
         backBehavior: OverlayBackBehavior.block,
       ),
@@ -760,7 +760,7 @@ void main() {
     await retired.closed;
 
     final active = SuperOverlay.dialog.show<void>(
-      builder: (_) => const Text('Replacement dialog'),
+      builder: (_, _) => const Text('Replacement dialog'),
     );
     await tester.pumpAndSettle();
 
@@ -809,7 +809,7 @@ void main() {
       await tester.idle();
 
       final active = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Disposed observer replacement dialog'),
+        builder: (_, _) => const Text('Disposed observer replacement dialog'),
       );
       await tester.pumpAndSettle();
 
@@ -864,7 +864,7 @@ void main() {
 
       expect(NavigatorScopeRegistry.instance.debugTrackedRouteCount, 1);
       final active = SuperOverlay.dialog.show<void>(
-        builder: (_) => const Text('Different navigator dialog'),
+        builder: (_, _) => const Text('Different navigator dialog'),
       );
       await tester.pumpAndSettle();
       expect(await _dispatchBack(tester), isTrue);

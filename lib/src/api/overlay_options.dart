@@ -67,6 +67,9 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
   /// When provided, the dialog is bound to the widget represented by this
   /// context and closes automatically when that widget unmounts. Use this for
   /// dialogs whose lifetime should not outlive a button, field, or local view.
+  /// An unmounted owner cancels a pending command before replacement cleanup
+  /// or activation: content is not built, `visible` fails with [StateError],
+  /// and `closed` completes normally with any previously supplied close result.
   final BuildContext? bindToWidget;
 
   /// Whether the dialog mask should consume pointer events.
@@ -86,7 +89,8 @@ class OverlayDialogOptions extends OverlaySurfaceOptions {
   /// previous focus when possible. When handled, Escape follows [backBehavior].
   final bool requestFocus;
 
-  /// Optional semantic container label for the dialog content.
+  /// Optional semantic content label. For a modal dialog, a non-empty label
+  /// names its route and takes precedence over names supplied by the content.
   ///
   /// Modal dialogs also expose this container as a scoped semantic route.
   final String? semanticsLabel;
@@ -198,6 +202,10 @@ class OverlayLoadingOptions {
   final Duration? displayDuration;
 
   /// Minimum time the loading overlay should stay visible before closing.
+  ///
+  /// Starts after the first rendered frame. A positive duration makes an early
+  /// close wait for that frame and interval. Replacements start a new interval;
+  /// host teardown settles pending closes without waiting for the minimum.
   final Duration minimumVisibleDuration;
 
   /// Whether the loading surface should capture focus while it is visible.
@@ -212,7 +220,8 @@ class OverlayLoadingOptions {
   /// [backBehavior].
   final bool requestFocus;
 
-  /// Optional semantic route label for the loading content.
+  /// Optional modal route name for the loading content. A non-empty label takes
+  /// precedence over route names supplied by the content itself.
   final String? semanticsLabel;
 
   /// Optional semantic label for the loading barrier.
